@@ -10,6 +10,9 @@
   <a href="https://huggingface.co/xpeng-robotics/VLA-UniT-checkpoints">
     <img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-VLA--UniT--checkpoints-ffbf00?style=flat-square">
   </a>
+  <a href="https://xpeng-robotics.github.io/fe0/">
+    <img alt="Fe0 Blog" src="https://img.shields.io/badge/Fe%E2%82%80-Blog-2d6a4f?style=flat-square">
+  </a>
 </p>
 
 <p align="center">
@@ -67,8 +70,22 @@ Ultimately, by inducing a more aligned cross-embodiment representation
 human and humanoid features), UniT offers a scalable path to distill human
 priors into humanoid manipulation capabilities.
 
+## Follow-up: Fe₀
+
+**[Inside Fe₀](https://xpeng-robotics.github.io/fe0/)** is our follow-up embodied
+foundation model that scales UniT to heterogeneous robots and human data (on the
+order of **10k hours**—roughly **1,587×** the target teleoperation anchor in
+duration), unlocking broader generalization across multiple axes. Built on UniT’s
+unified physical language, Fe₀ is evaluated on IRON-R01-1.11 through an **L1–L5**
+framework: from visual robustness and semantic grounding, through relational
+reasoning and compositional planning, to novel action execution. The study also
+maps where transfer is strongest (vision and semantics) versus where it remains
+fragile (mid-level relational/temporal reasoning and precise physical execution).
+See the [blog post](https://xpeng-robotics.github.io/fe0/) for details.
+
 ## Table of contents
 
+- [Follow-up: Fe₀](#follow-up-fe₀)
 - [Installation](#installation)
   - [Training environment](#training-environment)
   - [Simulation evaluation environment](#simulation-evaluation-environment)
