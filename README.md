@@ -78,20 +78,24 @@ load a full policy checkpoint, train a model, or run an evaluation rollout.
 
 ### View a GR1 Episode
 
-On a desktop workstation with the pinned LeRobot viewer installed, the official
-viewer opens RGB streams, joint state, and actions for a local episode:
+The current GR1 source data uses the LeRobot v2.0 schema. The UniT-pinned
+official viewer cannot directly read this layout because it expects a
+`frame_index` field that is not present. Use the standalone local data viewer
+instead; it embeds RGB video, a UniT-aligned goal frame (+16 steps), and raw
+joint state/action trajectories without claiming a simulator replay:
 
 ```bash
-python -m lerobot.scripts.visualize_dataset \
-  --repo-id gr1_unified.PnPCupToDrawerClose \
-  --root "$GR1_DATASET_DIR/gr1_unified.PnPCupToDrawerClose" \
-  --episode-index 0 \
-  --mode local \
-  --num-workers 0
+python scripts/reproduce/visualize_gr1_data.py \
+  --dataset-root "$GR1_DATASET_DIR" \
+  --task gr1_unified.PnPWineToCabinetClose \
+  --episodes 0 500 999
+
+xdg-open .local/artifacts/visualization/\
+gr1_unified.PnPWineToCabinetClose_episodes_0-500-999.html
 ```
 
-The exact workstation setup is provided in the S0 reproduction report. This is
-a dataset viewer, not a simulator replay.
+The generated HTML is standalone and opens directly in a desktop browser. This
+is a dataset viewer, not a simulator replay or physical-3D trajectory viewer.
 
 ## Core Workflow
 

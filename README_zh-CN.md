@@ -71,18 +71,22 @@ python scripts/reproduce/check_gr1_data_contract.py \
 
 ### 查看 GR1 Episode
 
-在已安装固定版本 LeRobot viewer 的桌面工作站上，可使用官方工具打开本地 episode 的 RGB、关节 state 与 action：
+当前 GR1 源数据采用 LeRobot v2.0 schema；UniT 固定的官方 viewer 要求该布局中不存在的
+`frame_index` 字段，无法直接读取。请改用 standalone 本地数据 viewer：它嵌入 RGB 视频、与
+UniT 对齐的 goal frame（+16 steps）和原始关节 state/action 轨迹，不会伪装成仿真 replay：
 
 ```bash
-python -m lerobot.scripts.visualize_dataset \
-  --repo-id gr1_unified.PnPCupToDrawerClose \
-  --root "$GR1_DATASET_DIR/gr1_unified.PnPCupToDrawerClose" \
-  --episode-index 0 \
-  --mode local \
-  --num-workers 0
+python scripts/reproduce/visualize_gr1_data.py \
+  --dataset-root "$GR1_DATASET_DIR" \
+  --task gr1_unified.PnPWineToCabinetClose \
+  --episodes 0 500 999
+
+xdg-open .local/artifacts/visualization/\
+gr1_unified.PnPWineToCabinetClose_episodes_0-500-999.html
 ```
 
-精确的工作站配置见 S0 复现报告。该工具是数据集 viewer，并非仿真 replay。
+生成的 HTML 是 standalone 文件，可由桌面浏览器直接打开。该工具是数据集 viewer，
+并非仿真 replay 或物理三维轨迹 viewer。
 
 ## 核心流程
 
