@@ -25,8 +25,8 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 
 ## 当前 TODO
 
-- [ ] 验证 S0 数据与模型资产
-- [ ] 验证 GR1 数据契约
+- [x] 验证 S0 数据与模型资产
+- [x] 验证 GR1 数据契约
 - [ ] 加载官方 UniT checkpoint
 - [ ] 复现离线评估
 - [ ] 复现 RoboCasa 无头 rollout
@@ -68,6 +68,21 @@ python scripts/reproduce/check_gr1_data_contract.py \
 ```
 
 这些命令只验证 S0 资产和 GR1 数据契约；不会加载完整策略 checkpoint、训练模型或运行评估 rollout。
+
+### 查看 GR1 Episode
+
+在已安装固定版本 LeRobot viewer 的桌面工作站上，可使用官方工具打开本地 episode 的 RGB、关节 state 与 action：
+
+```bash
+python -m lerobot.scripts.visualize_dataset \
+  --repo-id gr1_unified.PnPCupToDrawerClose \
+  --root "$GR1_DATASET_DIR/gr1_unified.PnPCupToDrawerClose" \
+  --episode-index 0 \
+  --mode local \
+  --num-workers 0
+```
+
+精确的工作站配置见 S0 复现报告。该工具是数据集 viewer，并非仿真 replay。
 
 ## 核心流程
 

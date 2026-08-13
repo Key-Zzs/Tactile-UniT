@@ -28,8 +28,8 @@ is claimed as implemented.
 
 ## Current TODOs
 
-- [ ] Validate S0 data/model assets
-- [ ] Validate GR1 data contract
+- [x] Validate S0 data/model assets
+- [x] Validate GR1 data contract
 - [ ] Load official UniT checkpoint
 - [ ] Reproduce offline evaluation
 - [ ] Reproduce RoboCasa headless rollout
@@ -75,6 +75,23 @@ python scripts/reproduce/check_gr1_data_contract.py \
 
 These commands validate S0 assets and the GR1 data contract only. They do not
 load a full policy checkpoint, train a model, or run an evaluation rollout.
+
+### View a GR1 Episode
+
+On a desktop workstation with the pinned LeRobot viewer installed, the official
+viewer opens RGB streams, joint state, and actions for a local episode:
+
+```bash
+python -m lerobot.scripts.visualize_dataset \
+  --repo-id gr1_unified.PnPCupToDrawerClose \
+  --root "$GR1_DATASET_DIR/gr1_unified.PnPCupToDrawerClose" \
+  --episode-index 0 \
+  --mode local \
+  --num-workers 0
+```
+
+The exact workstation setup is provided in the S0 reproduction report. This is
+a dataset viewer, not a simulator replay.
 
 ## Core Workflow
 
