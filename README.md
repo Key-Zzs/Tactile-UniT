@@ -30,9 +30,9 @@ is claimed as implemented.
 
 - [x] Validate S0 data/model assets
 - [x] Validate GR1 data contract
-- [ ] Load official UniT checkpoint
-- [ ] Reproduce offline evaluation
-- [ ] Reproduce RoboCasa headless rollout
+- [x] Load official UniT checkpoint
+- [x] Reproduce offline evaluation
+- [x] Reproduce RoboCasa headless rollout
 - [ ] Reproduce official ID metric
 - [ ] Smoke-test tokenizer training
 - [ ] Smoke-test dual-system training

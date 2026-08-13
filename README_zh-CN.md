@@ -27,9 +27,9 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 
 - [x] 验证 S0 数据与模型资产
 - [x] 验证 GR1 数据契约
-- [ ] 加载官方 UniT checkpoint
-- [ ] 复现离线评估
-- [ ] 复现 RoboCasa 无头 rollout
+- [x] 加载官方 UniT checkpoint
+- [x] 复现离线评估
+- [x] 复现 RoboCasa 无头 rollout
 - [ ] 复现官方 ID 指标
 - [ ] 冒烟测试 tokenizer 训练
 - [ ] 冒烟测试双系统训练
