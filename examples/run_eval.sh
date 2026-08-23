@@ -195,8 +195,10 @@ echo "Server PID: $SERVER_PID (log: $SERVER_LOG); waiting 30s for warm-up..."
 sleep 30s
 
 cleanup() {
-    kill -9 "$SERVER_PID" 2>/dev/null || true
-    ps aux | grep "port $PORT" | grep -v grep | awk '{print $2}' | xargs -r kill -9 || true
+    # Only manage the inference server started by this invocation.  Do not
+    # search for or signal unrelated processes that happen to use this port.
+    kill "$SERVER_PID" 2>/dev/null || true
+    wait "$SERVER_PID" 2>/dev/null || true
 }
 trap cleanup EXIT
 

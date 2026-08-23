@@ -30,10 +30,15 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] 加载官方 UniT checkpoint
 - [x] 复现离线评估
 - [x] 复现 RoboCasa 无头 rollout
-- [ ] 复现官方 ID 指标
+- [x] 复现官方 ID 评估协议
+- [x] 建立 Canonical Local UniT baseline
+- [x] 验证官方 OOD 评估协议
 - [ ] 冒烟测试 tokenizer 训练
 - [ ] 冒烟测试双系统训练
 - [ ] 完成 M0
+
+已在完整 GR1 ID 协议上验证公开发布的 `VLA-UniT-3B-fulldata` checkpoint，并将本地复现结果冻结为项目的 Canonical UniT baseline。公开协议与 baseline 元数据见
+[`configs/reproduction/baselines/unit_gr1_fulldata.json`](configs/reproduction/baselines/unit_gr1_fulldata.json)。
 
 ## 环境
 

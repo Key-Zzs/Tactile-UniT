@@ -33,10 +33,18 @@ is claimed as implemented.
 - [x] Load official UniT checkpoint
 - [x] Reproduce offline evaluation
 - [x] Reproduce RoboCasa headless rollout
-- [ ] Reproduce official ID metric
+- [x] Reproduce official ID evaluation protocol
+- [x] Establish canonical local UniT baseline
+- [x] Validate official OOD evaluation protocols
 - [ ] Smoke-test tokenizer training
 - [ ] Smoke-test dual-system training
 - [ ] Close M0
+
+The released `VLA-UniT-3B-fulldata` checkpoint has been validated on the full
+GR1 ID protocol, and the resulting local reproduction is frozen as the
+project's canonical UniT baseline. See
+[`configs/reproduction/baselines/unit_gr1_fulldata.json`](configs/reproduction/baselines/unit_gr1_fulldata.json)
+for the public protocol and baseline metadata.
 
 ## Environment
 
