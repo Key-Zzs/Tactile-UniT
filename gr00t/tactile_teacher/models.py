@@ -127,6 +127,74 @@ class TemporalCNN(FutureRegressor):
         return self.project(pooled)
 
 
+class PredictiveContactTeacher(nn.Module):
+    """S1.3 continuous teacher: residual TCN plus learned query pooling."""
+
+    def __init__(
+        self,
+        input_dim: int = 60,
+        history_steps: int = 16,
+        future_steps: int = 8,
+        latent_dim: int = 256,
+        channels: int = 256,
+    ):
+        super().__init__()
+        self.input_dim = input_dim
+        self.history_steps = history_steps
+        self.future_steps = future_steps
+        self.latent_dim = latent_dim
+        # First differences are deterministic features of the same 60-D wrench history.
+        self.stem = nn.Conv1d(2 * input_dim, channels, 3, padding=1)
+        self.position = nn.Parameter(torch.randn(1, channels, history_steps) * 0.02)
+        self.temporal = nn.Sequential(
+            ResidualTemporalBlock(channels, 1),
+            ResidualTemporalBlock(channels, 2),
+            ResidualTemporalBlock(channels, 4),
+            ResidualTemporalBlock(channels, 8),
+        )
+        self.query = nn.Parameter(torch.randn(channels) * channels**-0.5)
+        self.project = nn.Sequential(
+            nn.Linear(2 * channels, 384),
+            nn.GELU(),
+            nn.LayerNorm(384),
+            nn.Linear(384, latent_dim),
+            nn.LayerNorm(latent_dim),
+        )
+        self.history_head = nn.Sequential(
+            nn.Linear(latent_dim, 512),
+            nn.GELU(),
+            nn.Linear(512, history_steps * input_dim),
+        )
+        self.future_head = nn.Sequential(
+            nn.Linear(latent_dim, 512),
+            nn.GELU(),
+            nn.Linear(512, future_steps * input_dim),
+        )
+
+    def encode(self, history: torch.Tensor) -> torch.Tensor:
+        if history.shape[1:] != (self.history_steps, self.input_dim):
+            raise ValueError(
+                f"expected history [B,{self.history_steps},{self.input_dim}], "
+                f"got {tuple(history.shape)}"
+            )
+        delta = torch.diff(history, dim=1, prepend=history[:, :1])
+        value = torch.cat([history, delta], dim=-1).transpose(1, 2)
+        features = self.temporal(self.stem(value) + self.position)
+        scores = torch.einsum("bct,c->bt", features, self.query) / features.shape[1] ** 0.5
+        weights = scores.softmax(dim=-1)
+        queried = torch.einsum("bct,bt->bc", features, weights)
+        pooled = torch.cat([queried, features[:, :, -1]], dim=-1)
+        return self.project(pooled)
+
+    def forward(self, history: torch.Tensor) -> dict[str, torch.Tensor]:
+        latent = self.encode(history)
+        reconstruction = self.history_head(latent).view(
+            -1, self.history_steps, self.input_dim
+        )
+        future = self.future_head(latent).view(-1, self.future_steps, self.input_dim)
+        return {"latent": latent, "reconstruction": reconstruction, "future": future}
+
+
 class VQEMA(nn.Module):
     """EMA codebook with periodic dead-code revival, following T-Rex."""
 
