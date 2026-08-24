@@ -39,7 +39,7 @@ is claimed as implemented.
 - [x] Validate single-task tokenizer training behavior
 - [x] Validate single-GPU multi-task tokenizer mixture
 - [ ] Smoke-test dual-system training
-- [ ] Freeze original UniT representation baseline
+- [x] Freeze original UniT representation baseline
 - [ ] Close M0
 
 Multi-GPU DDP validation is deferred because GPU availability is currently
@@ -50,6 +50,14 @@ GR1 ID protocol, and the resulting local reproduction is frozen as the
 project's canonical UniT baseline. See
 [`configs/reproduction/baselines/unit_gr1_fulldata.json`](configs/reproduction/baselines/unit_gr1_fulldata.json)
 for the public protocol and baseline metadata.
+
+The canonical Original UniT representation benchmark is now established. T4
+freezes the official nested tokenizer, deterministic held-out GR1 sampling, and
+the shared L1–L5 alignment metric protocol for future UniT, Tactile-UniT,
+UniT-3D, and Tactile3D-UniT comparisons. See
+[`configs/reproduction/baselines/unit_representation_gr1.json`](configs/reproduction/baselines/unit_representation_gr1.json)
+for the tracked benchmark specification; generated tensors and results remain
+local under `.local/artifacts/reproduction/t4/`.
 
 ## Environment
 

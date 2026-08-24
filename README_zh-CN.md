@@ -36,13 +36,20 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] 验证单任务 tokenizer 训练行为
 - [x] 验证单 GPU 多任务 tokenizer mixture
 - [ ] 冒烟测试双系统训练
-- [ ] 冻结原始 UniT representation baseline
+- [x] 冻结原始 UniT representation baseline
 - [ ] 完成 M0
 
 由于当前项目仅有单张可用 GPU，多 GPU DDP 验证延期进行。
 
 已在完整 GR1 ID 协议上验证公开发布的 `VLA-UniT-3B-fulldata` checkpoint，并将本地复现结果冻结为项目的 Canonical UniT baseline。公开协议与 baseline 元数据见
 [`configs/reproduction/baselines/unit_gr1_fulldata.json`](configs/reproduction/baselines/unit_gr1_fulldata.json)。
+
+Canonical Original UniT representation benchmark 已建立。T4 冻结官方 nested
+tokenizer、确定性的 GR1 held-out sample 选择，以及供未来 UniT、Tactile-UniT、
+UniT-3D 和 Tactile3D-UniT 比较的 L1–L5 统一指标协议。受 Git 跟踪的 benchmark
+specification 见
+[`configs/reproduction/baselines/unit_representation_gr1.json`](configs/reproduction/baselines/unit_representation_gr1.json)；
+生成的 tensor 和结果仍保存在本地 `.local/artifacts/reproduction/t4/`。
 
 ## 环境
 

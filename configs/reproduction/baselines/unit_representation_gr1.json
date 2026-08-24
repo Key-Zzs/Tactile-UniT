@@ -1,0 +1,94 @@
+{
+  "benchmark_name": "canonical_original_unit_representation_gr1",
+  "benchmark_version": "t4.v1",
+  "dataset": {
+    "family": "LeRobot GR1 unified",
+    "task_source": "24 GR1 task directories under the configured GR1 dataset root",
+    "task_directories": [
+      "gr1_unified.PnPBottleToCabinetClose",
+      "gr1_unified.PnPCanToDrawerClose",
+      "gr1_unified.PnPCupToDrawerClose",
+      "gr1_unified.PnPMilkToMicrowaveClose",
+      "gr1_unified.PnPPotatoToMicrowaveClose",
+      "gr1_unified.PnPWineToCabinetClose",
+      "gr1_unified.PosttrainPnPNovelFromCuttingboardToBasketSplitA",
+      "gr1_unified.PosttrainPnPNovelFromCuttingboardToCardboardboxSplitA",
+      "gr1_unified.PosttrainPnPNovelFromCuttingboardToPanSplitA",
+      "gr1_unified.PosttrainPnPNovelFromCuttingboardToPotSplitA",
+      "gr1_unified.PosttrainPnPNovelFromCuttingboardToTieredbasketSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlacematToBasketSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlacematToBowlSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlacematToPlateSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlacematToTieredshelfSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlateToBowlSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlateToCardboardboxSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlateToPanSplitA",
+      "gr1_unified.PosttrainPnPNovelFromPlateToPlateSplitA",
+      "gr1_unified.PosttrainPnPNovelFromTrayToCardboardboxSplitA",
+      "gr1_unified.PosttrainPnPNovelFromTrayToPlateSplitA",
+      "gr1_unified.PosttrainPnPNovelFromTrayToPotSplitA",
+      "gr1_unified.PosttrainPnPNovelFromTrayToTieredbasketSplitA",
+      "gr1_unified.PosttrainPnPNovelFromTrayToTieredshelfSplitA"
+    ],
+    "data_config": "fourier_gr1_arms_waist_gausNorm_crop_cam_ego_joints_only",
+    "official_training_split": ["[:-10]"],
+    "held_out_policy": "last 10 episodes in the dataset metadata order, per task",
+    "episodes_per_task": 10,
+    "intervals_per_episode": 4,
+    "sampling_rule": "np.linspace(0, episode_length - 1 - goal_horizon, 4, dtype=int), with deterministic unique fallback when needed",
+    "goal_horizon": 16,
+    "action_horizon": 16,
+    "expected_samples": 960,
+    "seed": 42
+  },
+  "tokenizer": {
+    "source": "official released checkpoint nested tokenizer",
+    "identity_reference": "configs/reproduction/baselines/unit_gr1_fulldata.json",
+    "variant": "VLA-UniT-3B-fulldata",
+    "path_selector": "$UNIT_FULLDATA_CKPT/tokenizer",
+    "forbidden_substitutes": ["T1 checkpoint-500", "T2-SG checkpoint-100"]
+  },
+  "representations": {
+    "modalities": {
+      "vision": {"pv": 1, "pa": 0},
+      "action": {"pv": 0, "pa": 1},
+      "multimodal": {"pv": 1, "pa": 1}
+    },
+    "l0_encoder_query_features": {
+      "vision": "vision_branch output vision_query_features",
+      "action": "action_branch output action_query_features"
+    },
+    "l1_routed_pre_vq": "fusion output unit_tokens",
+    "l2_vq_input": "vq_down_resampler(unit_tokens)",
+    "l3_quantized": "quantized_tokens from the existing Residual VQ",
+    "l4_discrete_codes": "vq_indices from the existing Residual VQ",
+    "l5_projected_quantized": "bridge_projector(quantized_tokens)"
+  },
+  "pooling": {
+    "primary": "mean across query tokens, then L2 normalize",
+    "secondary": "flatten query tokens then L2 normalize",
+    "primary_used_for_metrics": true
+  },
+  "metrics": {
+    "paired_pairs": ["vision-action", "vision-multimodal", "action-multimodal"],
+    "negative_sampling": "seeded permutation of pair IDs",
+    "negative_sampling_seed": 42,
+    "retrieval_candidates": "all canonical samples; positive iff pair_id is identical",
+    "retrieval": ["Recall@1", "Recall@5", "Recall@10", "Median Rank", "MRR"],
+    "mmd": "RBF MMD distance (square root of biased MMD squared); bandwidth is global median pairwise Euclidean distance",
+    "sliced_wasserstein": "mean absolute sorted projected-coordinate distance over 128 Gaussian projections, seed 42",
+    "cka": "linear CKA on paired sample matrices after row-centering",
+    "discrete": ["active ratio", "entropy", "perplexity", "top-1 frequency", "top-5 frequency", "stage agreement", "full tuple agreement", "active-set Jaccard", "NMI", "AMI"]
+  },
+  "visualization": {
+    "seed": 42,
+    "tsne": {"joint_fit": true},
+    "umap": {"joint_fit": true, "n_neighbors": 15, "min_dist": 0.1, "metric": "cosine", "random_state": 42},
+    "pca": {"joint_fit": true},
+    "pair_connection_subset": 100
+  },
+  "future_compatibility": {
+    "representation_interface_accepts_new_modality_labels": true,
+    "required_fixed_fields": ["sample_manifest_hash", "mean_query_pooling", "metric_definitions", "negative_sampling_seed", "retrieval_positive_pair_id"]
+  }
+}
