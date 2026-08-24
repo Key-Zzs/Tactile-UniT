@@ -42,6 +42,38 @@ from gr00t.model.transforms import EMBODIMENT_TAG_MAPPING
 from transformers import set_seed
 
 
+def configure_single_gpu_visibility() -> None:
+    """Default to GPU 0 without overriding an explicit caller selection."""
+    os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
+
+
+def configure_local_torch_load_resume_compat(resume: bool) -> bool:
+    """Opt in to loading a trusted local optimizer state on Torch < 2.6.
+
+    Recent Transformers releases reject every ``torch.load`` call on older
+    Torch versions.  Checkpoints created by this project contain optimizer and
+    RNG state as ``.pt`` files, so this otherwise prevents Trainer's official
+    resume path.  The bypass is deliberately disabled by default and requires
+    the caller to explicitly attest that the local checkpoint is trusted.
+    """
+    if not resume or os.environ.get("GR00T_ALLOW_TRUSTED_LOCAL_TORCH_LOAD") != "1":
+        return False
+
+    from packaging.version import Version
+
+    if Version(torch.__version__.split("+")[0]) >= Version("2.6"):
+        return False
+
+    import transformers.trainer as trainer_module
+
+    trainer_module.check_torch_load_is_safe = lambda: None
+    print(
+        "⚠️  Enabled trusted-local checkpoint resume compatibility for Torch "
+        f"{torch.__version__}; only use with a checkpoint whose provenance you trust."
+    )
+    return True
+
+
 @dataclass
 class ArgsConfig:
     """Configuration for GR00T Tokenizer training."""
@@ -185,6 +217,7 @@ class ArgsConfig:
 
 def main(config: ArgsConfig):
     """Main training function."""
+    configure_local_torch_load_resume_compat(config.resume)
     model_config = AutoConfig.from_pretrained(config.base_model_path)
     
     # ------------ step 1: load dataset ------------
@@ -454,7 +487,7 @@ if __name__ == "__main__":
     
     if config.num_gpus == 1:
         # Single GPU mode
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+        configure_single_gpu_visibility()
         main(config)
     else:
         # Multi-GPU mode - use torchrun
@@ -479,4 +512,3 @@ if __name__ == "__main__":
             env = os.environ.copy()
             env["IS_TORCHRUN"] = "1"
             sys.exit(subprocess.run(cmd, env=env).returncode)
-

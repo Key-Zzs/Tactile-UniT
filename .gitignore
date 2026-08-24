@@ -159,3 +159,6 @@ bash_scripts/
 # Local-only: do not commit (keep copies on developer machines only)
 scan.py
 /CONTRIBUTING.md
+
+# Local runtime artifacts, private machine configuration, and task backups
+.local/
