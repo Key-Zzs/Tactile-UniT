@@ -1,0 +1,101 @@
+{
+  "benchmark_name": "canonical_trex_wrench_contact_state_teacher",
+  "benchmark_version": "s1.wrench.v1",
+  "seed": 42,
+  "data": {
+    "repository": "zekaiwang/trex_dataset",
+    "revision": "bf0eb24c4b8bdd95752b553f0fc50e46a22f1cc8",
+    "schema_version": "v3.0",
+    "input_key": "observation.tactile_force",
+    "input_dim": 60,
+    "sampling_rate_hz_reference": 30,
+    "feature_order": {
+      "major": ["left", "right"],
+      "finger": ["thumb", "index", "middle", "ring", "pinky"],
+      "component": ["Fx", "Fy", "Fz", "Mx", "My", "Mz"]
+    },
+    "units": "UNSPECIFIED",
+    "coordinate_frame": "UNSPECIFIED",
+    "image_and_deformation_modalities": "DEFERRED"
+  },
+  "split": {
+    "unit": "episode",
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "test_ratio": 0.1,
+    "stratify": "motor_primitive",
+    "seed": 42
+  },
+  "normalization": {
+    "fit_partition": "train",
+    "method": "per-feature q01/q99 mapped to [-1,1]",
+    "clip": 1.5,
+    "quantile_samples_per_episode": 64
+  },
+  "temporal_window": {
+    "history_sec": 0.5333333333333333,
+    "future_sec": 0.26666666666666666,
+    "history_steps": 16,
+    "future_steps": 8,
+    "resampling": "linear interpolation on real timestamps",
+    "rationale": "T-Rex paper uses f[t-15:t] at the public dataset's 30 Hz cadence"
+  },
+  "window_sampling": {
+    "train_anchors_per_episode": 64,
+    "val_anchors_per_episode": 32,
+    "test_anchors_per_episode": 32,
+    "anchor_selection": "deterministic evenly spaced valid physical-time anchors"
+  },
+  "representation": {
+    "latent_dim": 256,
+    "continuous": true
+  },
+  "baselines": {
+    "B0": "current-only MLP trained for future wrench prediction",
+    "B1": "flattened resampled history MLP trained for future wrench prediction",
+    "B2": "temporal CNN trained for future wrench prediction",
+    "B3": "T-Rex-style per-finger temporal VQ autoencoder; 256-D embedding, K=64"
+  },
+  "teacher": {
+    "architecture": "residual dilated TCN + learned temporal query pooling + 256-D projection",
+    "objectives": [
+      "history reconstruction",
+      "future wrench prediction"
+    ]
+  },
+  "derived_labels": {
+    "contact": "Otsu threshold on log1p(max per-finger force magnitude), fitted on train",
+    "force_trend": "future minus current max per-finger force magnitude; train-derived deadband"
+  },
+  "probes": [
+    "derived contact/free",
+    "force magnitude",
+    "derived force trend",
+    "actual motor primitive",
+    "actual object"
+  ],
+  "temporal_ablations": [
+    "full_history",
+    "last_frame",
+    "shuffled_history",
+    "reversed_history"
+  ],
+  "corruptions": {
+    "gaussian_noise": [0.05, 0.15],
+    "bias": [0.05, 0.15],
+    "frame_dropout": [0.1, 0.3],
+    "timestamp_jitter_frames": [0.1, 0.25]
+  },
+  "metrics": {
+    "future_regression": ["MSE", "MAE", "R2"],
+    "classification": ["accuracy", "macro_f1"],
+    "collapse": [
+      "per_dimension_variance",
+      "covariance_spectrum",
+      "effective_rank",
+      "pairwise_distance_distribution",
+      "norm_distribution"
+    ],
+    "vq": ["active_codes", "entropy", "perplexity", "dead_code_ratio"]
+  }
+}
