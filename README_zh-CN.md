@@ -6,8 +6,9 @@
 
 Tactile3D-UniT 是基于 [UniT](README_UniT.md) 的研究 fork。项目旨在将
 Unified Physical Language 扩展为未来可统一二维视觉后果、三维几何后果、动作实现和接触动力学的表征。
-**M0-R 与 S1 已完成，M1（可预测的连续接触状态 latent）已建立。** S2 尚未开始：
-触觉分支未集成到 UniT，也不声明已经建立共享触觉 token。
+**M0-R、S1 与 S2 已完成：M1 建立了可预测的连续接触状态 latent，M2 建立了
+预测式连续接触动力学表征。** S3 尚未开始：接触 token 未接入 UniT 的共享 RQ，
+也不声明已经建立共享触觉 token。
 
 ## 阶段路线图
 
@@ -15,7 +16,7 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 | --- | --- | --- |
 | M0-R | 原始 UniT representation-ready 复现 | 已完成 |
 | S1 | 可预测触觉 / 接触状态教师 | 已完成（M1 已建立） |
-| S2 | 接触动力学分支 | 计划中 |
+| S2 | 预测式接触动力学分支 | 已完成（M2 已建立） |
 | S3 | 视觉–动作–接触统一 token | 计划中 |
 | S4 | RGB 点云 / 三维物理转移 | 计划中 |
 | S5 | 完整 Tactile3D-UniT 共享物理词表 | 计划中 |
@@ -40,7 +41,8 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] 冻结原始 UniT representation baseline
 - [x] M0-R 原始 UniT representation-ready 复现
 - [x] S1 可预测接触状态教师
-- [ ] 启动 S2 接触动力学分支
+- [x] S2 预测式接触动力学分支
+- [ ] 启动 S3 视觉–动作–接触统一 token
 
 多 GPU DDP 验证仍是 M0-R 的资源延期项；它不是已完成的单 GPU representation
 里程碑的前置条件。
@@ -61,9 +63,17 @@ benchmark，并建立 256 维连续接触状态表征。受 Git 跟踪的协议�
 数据集、checkpoint、latent tensor、指标和图像仍保存在本地 `.local/`。图像/形变模态与
 UniT 集成均延期到后续阶段。
 
+S2 冻结已验收的 S1 Teacher，并以 `k=16` frames 建模接触状态转移。当前
+`[t-15,t]` 与未来 `[t+1,t+16]` Teacher window 不共享任何原始 wrench sample；
+两者 anchor 相隔 `16/30 = 0.533333` 秒，而每个 history 的物理跨度仍为
+`0.500` 秒。得到的连续 transition code 形状为 `[B,8,32]`，与 Original UniT
+T4 的 VQ-input geometry 对齐，但 S2 不进行量化，也不接入共享 RQ。公开规范见
+[`configs/contact_dynamics/s2_contact_dynamics.json`](configs/contact_dynamics/s2_contact_dynamics.json)；
+checkpoint、缓存 latent、指标与图像仍保存在本地 `.local/`。
+
 ## 环境
 
-M0-R 复现与 S1 使用已有的 UniT 环境：
+M0-R 复现、S1 与 S2 使用已有的 UniT 环境：
 
 ```bash
 conda activate unit
@@ -132,9 +142,14 @@ RoboCasa 评估
 S1 Wrench History 契约
    ↓
 连续接触状态教师（M1）
+   ↓
+非重叠接触转移契约（k=16）
+   ↓
+连续 8×32 接触动力学 code（M2）
 ```
 
-S1 仅建立独立表征。接触转移建模、触觉解码、共享量化与 UniT 集成都属于后续阶段。
+S2 仍是纯触觉、连续表征阶段。共享量化、视觉–动作–接触融合与 UniT 集成从 S3
+或更后续阶段开始。
 
 ## 本地运行产物策略
 
@@ -149,6 +164,7 @@ S1 仅建立独立表征。接触转移建模、触觉解码、共享量化与 U
 - [ID 评估说明](docs/evaluation_id_results.md) — 仓库现有评估文档。
 - [`scripts/reproduce/`](scripts/reproduce/) — 可复用的 S0 验证和可视化工具。
 - [`scripts/tactile/`](scripts/tactile/) — S1 数据、训练、评估、可视化与 M1 审计工具。
+- [`scripts/contact_dynamics/`](scripts/contact_dynamics/) — S2 转移缓存、训练、评估、可视化与 M2 审计工具。
 
 ## 许可证
 
