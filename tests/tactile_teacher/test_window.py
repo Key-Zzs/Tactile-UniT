@@ -1,7 +1,21 @@
+import json
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from gr00t.tactile_teacher.window import TemporalWindow, resample_window, resample_windows
+
+
+def test_canonical_window_matches_inclusive_30hz_physical_support():
+    root = Path(__file__).resolve().parents[2]
+    config = json.loads(
+        (root / "configs/tactile_teacher/s1_contact_state_teacher.json").read_text()
+    )
+    temporal = config["temporal_window"]
+    fps = config["data"]["sampling_rate_hz_reference"]
+    assert temporal["history_sec"] == (temporal["history_steps"] - 1) / fps
+    assert temporal["future_sec"] == temporal["future_steps"] / fps
 
 
 def test_resample_window_uses_physical_timestamps():

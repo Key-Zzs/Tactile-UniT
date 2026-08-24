@@ -91,7 +91,7 @@ def main() -> int:
             "ESTABLISHED" if final != "FAIL" else "NOT ESTABLISHED"
         ),
         "canonical_representation": (
-            "h_t^c = E_T(T_[t-0.533s:t]) in R^256; continuous, order-sensitive, "
+            "h_t^c = E_T(T_[t-0.500s:t]) in R^256; continuous, order-sensitive, "
             "future-predictive"
         ),
         "interpretation": (

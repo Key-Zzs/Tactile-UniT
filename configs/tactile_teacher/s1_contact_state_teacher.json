@@ -33,12 +33,12 @@
     "quantile_samples_per_episode": 64
   },
   "temporal_window": {
-    "history_sec": 0.5333333333333333,
+    "history_sec": 0.5,
     "future_sec": 0.26666666666666666,
     "history_steps": 16,
     "future_steps": 8,
     "resampling": "linear interpolation on real timestamps",
-    "rationale": "T-Rex paper uses f[t-15:t] at the public dataset's 30 Hz cadence"
+    "rationale": "T-Rex uses 16 inclusive samples f[t-15:t], spanning 15/30 = 0.5 seconds at the public dataset's 30 Hz cadence"
   },
   "window_sampling": {
     "train_anchors_per_episode": 64,
