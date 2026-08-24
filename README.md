@@ -7,9 +7,10 @@
 Tactile3D-UniT is a research fork of [UniT](README_UniT.md). It extends the
 idea of a Unified Physical Language toward a representation that can eventually
 unify 2D visual consequence, 3D geometric consequence, action realization, and
-contact dynamics. **M0-R and S1 are complete, and M1 (a predictable continuous
-contact-state latent) is established.** S2 has not started: no tactile branch is
-integrated into UniT and no shared tactile token is claimed.
+contact dynamics. **M0-R, S1, and S2 are complete: M1 establishes a predictable
+continuous contact-state latent, and M2 establishes a predictive continuous
+contact-dynamics representation.** S3 has not started: contact tokens are not
+integrated into UniT's shared RQ and no shared tactile token is claimed.
 
 ## Stage Roadmap
 
@@ -17,7 +18,7 @@ integrated into UniT and no shared tactile token is claimed.
 | --- | --- | --- |
 | M0-R | Original UniT representation-ready reproduction | Complete |
 | S1 | Predictable Tactile / Contact-State Teacher | Complete (M1 established) |
-| S2 | Contact-Dynamics Branch | Planned |
+| S2 | Predictive Contact-Dynamics Branch | Complete (M2 established) |
 | S3 | Vision–Action–Contact Unified Token | Planned |
 | S4 | RGB Point Cloud / 3D Physical Transition | Planned |
 | S5 | Full Tactile3D-UniT Shared Physical Vocabulary | Planned |
@@ -42,7 +43,8 @@ integrated into UniT and no shared tactile token is claimed.
 - [x] Freeze original UniT representation baseline
 - [x] M0-R Original UniT representation-ready reproduction
 - [x] S1 Predictable Contact-State Teacher
-- [ ] Start S2 Contact-Dynamics Branch
+- [x] S2 Predictive Contact-Dynamics Branch
+- [ ] Start S3 Vision–Action–Contact Unified Token
 
 Multi-GPU DDP validation remains a deferred M0-R resource item; it is not a
 prerequisite for the completed single-GPU representation milestone.
@@ -68,9 +70,18 @@ tracked protocol is
 datasets, checkpoints, latent tensors, metrics, and plots remain local under
 `.local/`. Image/deformation modalities and UniT integration are deferred.
 
+S2 freezes the accepted S1 Teacher and models contact-state transitions at
+`k=16` frames. The current `[t-15,t]` and future `[t+1,t+16]` Teacher windows
+share zero raw wrench samples; their anchors are separated by `16/30 = 0.533333`
+seconds while each history spans `0.500` seconds. The resulting continuous
+transition code has shape `[B,8,32]`, matching Original UniT's T4 VQ-input
+geometry without quantizing or connecting it to the shared RQ. See
+[`configs/contact_dynamics/s2_contact_dynamics.json`](configs/contact_dynamics/s2_contact_dynamics.json);
+checkpoints, cached latents, metrics, and plots remain local under `.local/`.
+
 ## Environment
 
-M0-R reproduction and S1 use the existing UniT environment:
+M0-R reproduction, S1, and S2 use the existing UniT environment:
 
 ```bash
 conda activate unit
@@ -145,10 +156,14 @@ RoboCasa Eval
 S1 Wrench History Contract
    ↓
 Continuous Contact-State Teacher (M1)
+   ↓
+Non-overlapping Contact Transition Contract (k=16)
+   ↓
+Continuous 8×32 Contact-Dynamics Code (M2)
 ```
 
-S1 remains representation-only. Contact-transition modeling, tactile decoding,
-shared quantization, and UniT integration belong to later stages.
+S2 remains tactile-only and continuous. Shared quantization, Vision–Action–Contact
+fusion, and UniT integration begin at S3 or later.
 
 ## Local Runtime Artifact Policy
 
@@ -164,6 +179,7 @@ machine-specific configs, and temporary artifacts must be stored under
 - [ID evaluation notes](docs/evaluation_id_results.md) — existing evaluation documentation.
 - [`scripts/reproduce/`](scripts/reproduce/) — reusable S0 validation and visualization tools.
 - [`scripts/tactile/`](scripts/tactile/) — S1 data, training, evaluation, visualization, and M1 audit tools.
+- [`scripts/contact_dynamics/`](scripts/contact_dynamics/) — S2 transition-cache, training, evaluation, visualization, and M2 audit tools.
 
 ## License
 
