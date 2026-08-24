@@ -1,0 +1,64 @@
+{
+  "benchmark_name": "canonical_trex_contact_dynamics",
+  "benchmark_version": "s2.contact-dynamics.v1",
+  "seed": 42,
+  "teacher": {
+    "checkpoint_identity": "accepted M1 local checkpoint; SHA256 recorded in runtime manifest",
+    "architecture": "residual dilated TCN + learned temporal query pooling + 256-D projection",
+    "latent_dim": 256,
+    "input": "normalized T-Rex wrench history only",
+    "requires_grad": false,
+    "history_steps": 16,
+    "history_physical_span_sec": 0.5,
+    "normalization_identity": "accepted S1 train-only q01/q99 normalization",
+    "split_identity": "accepted S1 episode-level split manifest"
+  },
+  "transition": {
+    "canonical_horizon_frames": 16,
+    "canonical_anchor_delta_sec": 0.5333333333333333,
+    "canonical_current_window_relative": [-15, 0],
+    "canonical_future_window_relative": [1, 16],
+    "canonical_raw_overlap_samples": 0,
+    "horizon_sensitivity_frames": [8, 16, 24],
+    "anchor_selection": "deterministic evenly spaced integer anchors valid through k=24",
+    "pairs_per_episode": {"train": 64, "val": 32, "test": 32},
+    "same_episode_only": true,
+    "incomplete_windows": "reject"
+  },
+  "interface": {
+    "queries": 8,
+    "token_dim": 32,
+    "shape": "[B,8,32]",
+    "continuous": true,
+    "quantized": false,
+    "shared_rq_connected": false
+  },
+  "model": {
+    "encoder": "project current/future/delta views + compact MLP + learned query bias",
+    "decoder": "flatten 8x32 tokens, condition on current 256-D state, predict residual future state",
+    "hidden_dim": 384,
+    "decoder_hidden_dim": 512
+  },
+  "loss": {
+    "formula": "MSE(hat_future,h_future) + lambda_delta*MSE(hat_future-h_current,h_future-h_current)",
+    "lambda_delta_candidates": [0.0, 0.5, 1.0],
+    "selection": "validation dynamic MSE only; freeze before test"
+  },
+  "baselines": {
+    "C0": "persistence",
+    "C1": "current-only residual MLP",
+    "C2": "matched 8x32 bottleneck delta-MLP transition autoencoder"
+  },
+  "labels": {
+    "contact_transition": "DERIVED using accepted S1 train-only contact threshold",
+    "force_trend": "DERIVED using accepted S1 train-only deadband",
+    "per_finger_change": "DERIVED using accepted S1 train-only contact threshold",
+    "primitive": "ACTUAL METADATA",
+    "object": "ACTUAL METADATA"
+  },
+  "negative_control_seed": 42,
+  "dynamic_rule": "contact transition OR absolute physical max-force delta above train q75 (not test tuned)",
+  "metrics": ["future latent MSE", "future latent cosine", "delta latent MSE"],
+  "ablations": ["full", "zero", "shuffled code", "reversed transition", "shuffled future"],
+  "artifact_policy": ".local/{artifacts,logs,experiments,cache,tmp}/contact_dynamics only"
+}
