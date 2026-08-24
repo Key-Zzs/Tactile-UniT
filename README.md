@@ -36,9 +36,14 @@ is claimed as implemented.
 - [x] Reproduce official ID evaluation protocol
 - [x] Establish canonical local UniT baseline
 - [x] Validate official OOD evaluation protocols
-- [ ] Smoke-test tokenizer training
+- [x] Validate single-task tokenizer training behavior
+- [x] Validate single-GPU multi-task tokenizer mixture
 - [ ] Smoke-test dual-system training
+- [ ] Freeze original UniT representation baseline
 - [ ] Close M0
+
+Multi-GPU DDP validation is deferred because GPU availability is currently
+restricted to a single project GPU.
 
 The released `VLA-UniT-3B-fulldata` checkpoint has been validated on the full
 GR1 ID protocol, and the resulting local reproduction is frozen as the
