@@ -6,14 +6,15 @@
 
 Tactile3D-UniT 是基于 [UniT](README_UniT.md) 的研究 fork。项目旨在将
 Unified Physical Language 扩展为未来可统一二维视觉后果、三维几何后果、动作实现和接触动力学的表征。
-当前处于 **S0 原始 UniT 复现进行中**：在完成上游 UniT 的复现和验证前，不声明触觉或三维分支已经实现。
+**M0-R 与 S1 已完成，M1（可预测的连续接触状态 latent）已建立。** S2 尚未开始：
+触觉分支未集成到 UniT，也不声明已经建立共享触觉 token。
 
 ## 阶段路线图
 
 | 阶段 | 目标 | 状态 |
 | --- | --- | --- |
-| S0 | 原始 UniT 复现收口 | 进行中 |
-| S1 | 可预测触觉 / 接触状态教师 | 计划中 |
+| M0-R | 原始 UniT representation-ready 复现 | 已完成 |
+| S1 | 可预测触觉 / 接触状态教师 | 已完成（M1 已建立） |
 | S2 | 接触动力学分支 | 计划中 |
 | S3 | 视觉–动作–接触统一 token | 计划中 |
 | S4 | RGB 点云 / 三维物理转移 | 计划中 |
@@ -35,11 +36,14 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] 验证官方 OOD 评估协议
 - [x] 验证单任务 tokenizer 训练行为
 - [x] 验证单 GPU 多任务 tokenizer mixture
-- [ ] 冒烟测试双系统训练
+- [ ] 在所需资源可用时验证双系统 DDP 训练
 - [x] 冻结原始 UniT representation baseline
-- [ ] 完成 M0
+- [x] M0-R 原始 UniT representation-ready 复现
+- [x] S1 可预测接触状态教师
+- [ ] 启动 S2 接触动力学分支
 
-由于当前项目仅有单张可用 GPU，多 GPU DDP 验证延期进行。
+多 GPU DDP 验证仍是 M0-R 的资源延期项；它不是已完成的单 GPU representation
+里程碑的前置条件。
 
 已在完整 GR1 ID 协议上验证公开发布的 `VLA-UniT-3B-fulldata` checkpoint，并将本地复现结果冻结为项目的 Canonical UniT baseline。公开协议与 baseline 元数据见
 [`configs/reproduction/baselines/unit_gr1_fulldata.json`](configs/reproduction/baselines/unit_gr1_fulldata.json)。
@@ -51,9 +55,15 @@ specification 见
 [`configs/reproduction/baselines/unit_representation_gr1.json`](configs/reproduction/baselines/unit_representation_gr1.json)；
 生成的 tensor 和结果仍保存在本地 `.local/artifacts/reproduction/t4/`。
 
+S1 在公开 T-Rex 60 维 wrench history 上冻结了 episode-disjoint 的物理时间
+benchmark，并建立 256 维连续接触状态表征。受 Git 跟踪的协议见
+[`configs/tactile_teacher/s1_contact_state_teacher.json`](configs/tactile_teacher/s1_contact_state_teacher.json)；
+数据集、checkpoint、latent tensor、指标和图像仍保存在本地 `.local/`。图像/形变模态与
+UniT 集成均延期到后续阶段。
+
 ## 环境
 
-S0 复现使用已有的 UniT 环境：
+M0-R 复现与 S1 使用已有的 UniT 环境：
 
 ```bash
 conda activate unit
@@ -109,7 +119,7 @@ gr1_unified.PnPWineToCabinetClose_episodes_0-500-999.html
 ```text
 环境
    ↓
-S0 资产验证
+M0-R 资产验证
    ↓
 GR1 数据契约
    ↓
@@ -118,10 +128,13 @@ GR1 数据契约
 离线评估
    ↓
 RoboCasa 评估
+   ↓
+S1 Wrench History 契约
+   ↓
+连续接触状态教师（M1）
 ```
 
-当前仓库命令覆盖环境、资产验证和数据契约检查。上游 checkpoint 与评估入口请见
-[`examples/README.md`](examples/README.md)，此处不会将其表述为已完成的 S0 工作。
+S1 仅建立独立表征。接触转移建模、触觉解码、共享量化与 UniT 集成都属于后续阶段。
 
 ## 本地运行产物策略
 
@@ -135,6 +148,7 @@ RoboCasa 评估
 - [示例流水线](examples/README.md) — 上游训练与评估配方。
 - [ID 评估说明](docs/evaluation_id_results.md) — 仓库现有评估文档。
 - [`scripts/reproduce/`](scripts/reproduce/) — 可复用的 S0 验证和可视化工具。
+- [`scripts/tactile/`](scripts/tactile/) — S1 数据、训练、评估、可视化与 M1 审计工具。
 
 ## 许可证
 
@@ -142,7 +156,10 @@ RoboCasa 评估
 
 ## 致谢
 
-Tactile3D-UniT 基于 XPENG Robotics 的 UniT。fork 还保留了 [NOTICE](NOTICE.txt) 中说明的 NVIDIA Isaac GR00T 派生代码与接口。T-Rex 及相关触觉研究仅作为研究灵感；本仓库不声称移植了 T-Rex 实现。
+Tactile3D-UniT 基于 XPENG Robotics 的 UniT。fork 还保留了 [NOTICE](NOTICE.txt)
+中说明的 NVIDIA Isaac GR00T 派生代码与接口。隔离的 S1 VQ baseline 改编自
+MIT 许可的 T-Rex tactile VQ-VAE 设计；归属和许可条款记录在 [NOTICE](NOTICE.txt)。
+本仓库没有 vendoring T-Rex repository。
 
 ## 引用
 

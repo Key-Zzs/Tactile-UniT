@@ -7,16 +7,16 @@
 Tactile3D-UniT is a research fork of [UniT](README_UniT.md). It extends the
 idea of a Unified Physical Language toward a representation that can eventually
 unify 2D visual consequence, 3D geometric consequence, action realization, and
-contact dynamics. This repository is at **S0 reproduction in progress**:
-upstream UniT is being reproduced and validated before any tactile or 3D branch
-is claimed as implemented.
+contact dynamics. **M0-R and S1 are complete, and M1 (a predictable continuous
+contact-state latent) is established.** S2 has not started: no tactile branch is
+integrated into UniT and no shared tactile token is claimed.
 
 ## Stage Roadmap
 
 | Stage | Goal | Status |
 | --- | --- | --- |
-| S0 | Original UniT reproduction closure | In Progress |
-| S1 | Predictable Tactile / Contact-State Teacher | Planned |
+| M0-R | Original UniT representation-ready reproduction | Complete |
+| S1 | Predictable Tactile / Contact-State Teacher | Complete (M1 established) |
 | S2 | Contact-Dynamics Branch | Planned |
 | S3 | Vision–Action–Contact Unified Token | Planned |
 | S4 | RGB Point Cloud / 3D Physical Transition | Planned |
@@ -38,12 +38,14 @@ is claimed as implemented.
 - [x] Validate official OOD evaluation protocols
 - [x] Validate single-task tokenizer training behavior
 - [x] Validate single-GPU multi-task tokenizer mixture
-- [ ] Smoke-test dual-system training
+- [ ] Validate dual-system DDP training when the required resources are available
 - [x] Freeze original UniT representation baseline
-- [ ] Close M0
+- [x] M0-R Original UniT representation-ready reproduction
+- [x] S1 Predictable Contact-State Teacher
+- [ ] Start S2 Contact-Dynamics Branch
 
-Multi-GPU DDP validation is deferred because GPU availability is currently
-restricted to a single project GPU.
+Multi-GPU DDP validation remains a deferred M0-R resource item; it is not a
+prerequisite for the completed single-GPU representation milestone.
 
 The released `VLA-UniT-3B-fulldata` checkpoint has been validated on the full
 GR1 ID protocol, and the resulting local reproduction is frozen as the
@@ -59,9 +61,16 @@ UniT-3D, and Tactile3D-UniT comparisons. See
 for the tracked benchmark specification; generated tensors and results remain
 local under `.local/artifacts/reproduction/t4/`.
 
+S1 freezes an episode-disjoint, physical-time benchmark over the public T-Rex
+60-D wrench history and a continuous 256-D contact-state representation. The
+tracked protocol is
+[`configs/tactile_teacher/s1_contact_state_teacher.json`](configs/tactile_teacher/s1_contact_state_teacher.json);
+datasets, checkpoints, latent tensors, metrics, and plots remain local under
+`.local/`. Image/deformation modalities and UniT integration are deferred.
+
 ## Environment
 
-S0 reproduction uses the existing UniT environment:
+M0-R reproduction and S1 use the existing UniT environment:
 
 ```bash
 conda activate unit
@@ -123,7 +132,7 @@ is a dataset viewer, not a simulator replay or physical-3D trajectory viewer.
 ```text
 Environment
    ↓
-S0 Asset Validation
+M0-R Asset Validation
    ↓
 GR1 Data Contract
    ↓
@@ -132,12 +141,14 @@ Official Checkpoint
 Offline Eval
    ↓
 RoboCasa Eval
+   ↓
+S1 Wrench History Contract
+   ↓
+Continuous Contact-State Teacher (M1)
 ```
 
-The current repository commands cover the environment, asset validation, and
-data contract checks. The upstream checkpoint and evaluation entry points are
-documented in [`examples/README.md`](examples/README.md) and are deliberately
-not presented here as completed S0 work.
+S1 remains representation-only. Contact-transition modeling, tactile decoding,
+shared quantization, and UniT integration belong to later stages.
 
 ## Local Runtime Artifact Policy
 
@@ -152,6 +163,7 @@ machine-specific configs, and temporary artifacts must be stored under
 - [Example pipelines](examples/README.md) — upstream training/evaluation recipes.
 - [ID evaluation notes](docs/evaluation_id_results.md) — existing evaluation documentation.
 - [`scripts/reproduce/`](scripts/reproduce/) — reusable S0 validation and visualization tools.
+- [`scripts/tactile/`](scripts/tactile/) — S1 data, training, evaluation, visualization, and M1 audit tools.
 
 ## License
 
@@ -163,8 +175,9 @@ apply to their respective components.
 
 Tactile3D-UniT builds on UniT by XPENG Robotics. The fork also retains code and
 interfaces derived from NVIDIA Isaac GR00T where documented in
-[NOTICE](NOTICE.txt). T-Rex and related tactile research are research
-inspiration only; no T-Rex implementation is claimed in this repository.
+[NOTICE](NOTICE.txt). The isolated S1 VQ baseline adapts the MIT-licensed T-Rex
+tactile VQ-VAE design; attribution and license terms are recorded in
+[NOTICE](NOTICE.txt). The T-Rex repository itself is not vendored.
 
 ## Citation
 
