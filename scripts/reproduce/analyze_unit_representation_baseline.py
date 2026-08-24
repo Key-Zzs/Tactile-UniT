@@ -82,7 +82,7 @@ def analyze_layer(features: np.ndarray, seed: int) -> dict[str, Any]:
 
 def collapse_classification(rows: list[dict[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
-    for modality in ("vision", "action", "multimodal"):
+    for modality in dict.fromkeys(str(row["modality"]) for row in rows):
         modality_rows = [row for row in rows if row["modality"] == modality]
         max_top1 = max(float(row["top1_frequency"]) for row in modality_rows)
         max_active_ratio = min(float(row["active_ratio"]) for row in modality_rows)
@@ -149,8 +149,11 @@ def main() -> int:
             })
 
     codebook_size = int(extraction["codebook_size"])
-    usage_rows = codebook_stats(arrays["l4"].astype(np.int64), codebook_size)
-    agreement_rows = code_agreement(arrays["l4"].astype(np.int64))
+    modality_names = tuple(arrays["modality"].tolist())
+    usage_rows = codebook_stats(arrays["l4"].astype(np.int64), codebook_size, modality_names=modality_names)
+    agreement_rows = code_agreement(
+        arrays["l4"].astype(np.int64), modality_names=modality_names, pair_specs=PAIRS
+    )
     exact_rows = [row for row in agreement_rows if "stage_exact_match" in row]
     jaccard_rows = [row for row in agreement_rows if "active_set_jaccard" in row]
     nmi_rows = [row for row in agreement_rows if "nmi" in row]

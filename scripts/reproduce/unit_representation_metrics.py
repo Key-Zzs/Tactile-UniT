@@ -19,6 +19,15 @@ PAIRS: tuple[tuple[int, int, str], ...] = (
 )
 
 
+def default_pair_specs(modality_names: Iterable[str]) -> tuple[tuple[int, int, str], ...]:
+    names = tuple(modality_names)
+    return tuple(
+        (left, right, f"{names[left]}-{names[right]}")
+        for left in range(len(names))
+        for right in range(left + 1, len(names))
+    )
+
+
 def mean_query_pool(features: np.ndarray) -> np.ndarray:
     """Mean pool ``[N, M, Q, D]`` features and L2-normalize the result."""
 
@@ -198,12 +207,20 @@ def ami_score(labels_a: np.ndarray, labels_b: np.ndarray) -> float:
     return float((mi - expected_mi) / denominator)
 
 
-def codebook_stats(codes: np.ndarray, codebook_size: int) -> list[dict[str, float | int]]:
+def codebook_stats(
+    codes: np.ndarray,
+    codebook_size: int,
+    modality_names: Iterable[str] | None = None,
+) -> list[dict[str, float | int]]:
     """Return per-modality, per-stage usage statistics for ``[N, M, Q, S]`` codes."""
 
     rows: list[dict[str, float | int]] = []
-    modality_names = ("vision", "action", "multimodal")
-    for modality_index, modality in enumerate(modality_names):
+    names = tuple(modality_names) if modality_names is not None else tuple(
+        f"modality_{index}" for index in range(codes.shape[1])
+    )
+    if len(names) != codes.shape[1]:
+        raise ValueError("modality_names must match the modality axis of codes")
+    for modality_index, modality in enumerate(names):
         for stage in range(codes.shape[-1]):
             values = codes[:, modality_index, :, stage].astype(np.int64).ravel()
             counts = np.bincount(values, minlength=codebook_size)
@@ -224,10 +241,21 @@ def codebook_stats(codes: np.ndarray, codebook_size: int) -> list[dict[str, floa
     return rows
 
 
-def code_agreement(codes: np.ndarray) -> list[dict[str, float | str | int]]:
+def code_agreement(
+    codes: np.ndarray,
+    modality_names: Iterable[str] | None = None,
+    pair_specs: Iterable[tuple[int, int, str]] | None = None,
+) -> list[dict[str, float | str | int]]:
     rows: list[dict[str, float | str | int]] = []
-    modality_names = ("vision", "action", "multimodal")
-    for left, right, pair_name in PAIRS:
+    names = tuple(modality_names) if modality_names is not None else tuple(
+        f"modality_{index}" for index in range(codes.shape[1])
+    )
+    if len(names) != codes.shape[1]:
+        raise ValueError("modality_names must match the modality axis of codes")
+    specs = tuple(pair_specs) if pair_specs is not None else default_pair_specs(names)
+    for left, right, pair_name in specs:
+        if left >= codes.shape[1] or right >= codes.shape[1]:
+            raise ValueError("pair_specs contain a modality index outside the codes tensor")
         for stage in range(codes.shape[-1]):
             rows.append({
                 "pair": pair_name,
