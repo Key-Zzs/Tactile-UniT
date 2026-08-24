@@ -42,7 +42,8 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] M0-R 原始 UniT representation-ready 复现
 - [x] S1 可预测接触状态教师
 - [x] S2 预测式接触动力学分支
-- [ ] 启动 S3 视觉–动作–接触统一 token
+- [ ] S3 视觉–动作–接触共享物理 tokenizer——进行中
+- [x] S3.0 共享 codebook 兼容性审计
 
 多 GPU DDP 验证仍是 M0-R 的资源延期项；它不是已完成的单 GPU representation
 里程碑的前置条件。
@@ -70,6 +71,12 @@ S2 冻结已验收的 S1 Teacher，并以 `k=16` frames 建模接触状态转移
 T4 的 VQ-input geometry 对齐，但 S2 不进行量化，也不接入共享 RQ。公开规范见
 [`configs/contact_dynamics/s2_contact_dynamics.json`](configs/contact_dynamics/s2_contact_dynamics.json)；
 checkpoint、缓存 latent、指标与图像仍保存在本地 `.local/`。
+
+S3.0 将连续接触 transition code 直接送入冻结的 Original UniT residual VQ，
+并完成共享 codebook 兼容性判定。结果建议在下一集成阶段评估位于共享 RQ 之前的
+轻量 32-to-32 接触 adaptor；S3.0 不训练 adaptor，也不更新共享 codebook。公开规范见
+[`configs/tactile_unit/s3_0_codebook_compatibility.json`](configs/tactile_unit/s3_0_codebook_compatibility.json)。
+S3 仍处于进行中。
 
 ## 环境
 

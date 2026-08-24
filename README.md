@@ -44,7 +44,8 @@ integrated into UniT's shared RQ and no shared tactile token is claimed.
 - [x] M0-R Original UniT representation-ready reproduction
 - [x] S1 Predictable Contact-State Teacher
 - [x] S2 Predictive Contact-Dynamics Branch
-- [ ] Start S3 Vision–Action–Contact Unified Token
+- [ ] S3 Vision–Action–Contact Shared Physical Tokenizer — in progress
+- [x] S3.0 Shared-Codebook Compatibility Audit
 
 Multi-GPU DDP validation remains a deferred M0-R resource item; it is not a
 prerequisite for the completed single-GPU representation milestone.
@@ -78,6 +79,14 @@ transition code has shape `[B,8,32]`, matching Original UniT's T4 VQ-input
 geometry without quantizing or connecting it to the shared RQ. See
 [`configs/contact_dynamics/s2_contact_dynamics.json`](configs/contact_dynamics/s2_contact_dynamics.json);
 checkpoints, cached latents, metrics, and plots remain local under `.local/`.
+
+S3.0 audits the continuous contact transition code directly against the frozen
+Original UniT residual VQ and establishes the shared-codebook compatibility
+decision. The result recommends evaluating a lightweight 32-to-32 contact
+adaptor before the shared RQ in the next integration stage; no adaptor or
+shared codebook is trained in S3.0. See
+[`configs/tactile_unit/s3_0_codebook_compatibility.json`](configs/tactile_unit/s3_0_codebook_compatibility.json).
+S3 remains in progress.
 
 ## Environment
 
