@@ -7,8 +7,12 @@
 Tactile3D-UniT 是基于 [UniT](README_UniT.md) 的研究 fork。项目旨在将
 Unified Physical Language 扩展为未来可统一二维视觉后果、三维几何后果、动作实现和接触动力学的表征。
 **M0-R、S1 与 S2 已完成：M1 建立了可预测的连续接触状态 latent，M2 建立了
-预测式连续接触动力学表征。** S3 尚未开始：接触 token 未接入 UniT 的共享 RQ，
-也不声明已经建立共享触觉 token。
+预测式连续接触动力学表征。** S3 正在进行：S3.0 完成共享 codebook 兼容性审计，
+S3.1 建立 T-Rex 视觉–动作–接触配对契约，S3.2 的轻量 Contact adaptor 结果为
+`ADAPTOR_INSUFFICIENT`。S3.2-R 随后在 R0 结束诊断树：同预算私有 Contact RQ 与
+一次受限的增容敏感性实验均未通过预注册的 task-relevant gate。主要诊断为
+`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`；R1–R3 由决策树跳过，不推广任何
+shared-RQ candidate，M3 仍未建立。
 
 ## 阶段路线图
 
@@ -17,7 +21,7 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 | M0-R | 原始 UniT representation-ready 复现 | 已完成 |
 | S1 | 可预测触觉 / 接触状态教师 | 已完成（M1 已建立） |
 | S2 | 预测式接触动力学分支 | 已完成（M2 已建立） |
-| S3 | 视觉–动作–接触统一 token | 计划中 |
+| S3 | 视觉–动作–接触统一 token | 进行中（S3.2-R 已完成；无 shared-RQ candidate） |
 | S4 | RGB 点云 / 三维物理转移 | 计划中 |
 | S5 | 完整 Tactile3D-UniT 共享物理词表 | 计划中 |
 | S6 | VLA 集成 | 计划中 |
@@ -44,6 +48,11 @@ Unified Physical Language 扩展为未来可统一二维视觉后果、三维几
 - [x] S2 预测式接触动力学分支
 - [ ] S3 视觉–动作–接触共享物理 tokenizer——进行中
 - [x] S3.0 共享 codebook 兼容性审计
+- [x] S3.1 视觉–动作–接触配对数据契约
+- [x] S3.2 Contact adaptor
+- [x] S3.2-R Contact shared-token 诊断决策树
+- [ ] S3.3 T-Rex Action Embodiment Bootstrap——建议进入，尚未开始
+- [ ] S3.4 视觉–动作–接触 shared-token 集成——尚未就绪
 
 多 GPU DDP 验证仍是 M0-R 的资源延期项；它不是已完成的单 GPU representation
 里程碑的前置条件。
@@ -76,7 +85,24 @@ S3.0 将连续接触 transition code 直接送入冻结的 Original UniT residua
 并完成共享 codebook 兼容性判定。结果建议在下一集成阶段评估位于共享 RQ 之前的
 轻量 32-to-32 接触 adaptor；S3.0 不训练 adaptor，也不更新共享 codebook。公开规范见
 [`configs/tactile_unit/s3_0_codebook_compatibility.json`](configs/tactile_unit/s3_0_codebook_compatibility.json)。
-S3 仍处于进行中。
+S3.1 在 episode-disjoint split 与 S2 pair identity 下冻结同一转移对应的 T-Rex
+`head_left` RGB 对、16-step action chunk、state 与 S1/S2 Contact 表征；公开契约见
+[`configs/tactile_unit/s3_1_paired_vac_contract.json`](configs/tactile_unit/s3_1_paired_vac_contract.json)。
+S3.2 只训练逐 query 的小型 Contact adaptor，并冻结 S1 Teacher、S2 encoder/decoder
+与 Original UniT residual VQ；结果为 `ADAPTOR_INSUFFICIENT`。公开规范见
+[`configs/tactile_unit/s3_2_contact_adapter.json`](configs/tactile_unit/s3_2_contact_adapter.json)。
+
+S3.2-R 在尝试更大 adaptor 或 shared-RQ adaptation 前诊断根因。采用 Original
+UniT nominal budget（8 queries、32-D、2 stages、每 stage 128 codes）的 repository-native
+私有 Contact RQ 未通过预注册 gate；增加一个 residual stage 虽改善 reconstruction
+与 native recoverability，仍未通过，尤其无法保留足够的直接 Contact-transition
+语义。两次实验都没有 hard code collapse 或 query collapse。因此 R1、R2、R3 均为
+`SKIPPED_BY_DECISION_TREE`，主要诊断为
+`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`，不推广 frozen 或 adapted shared RQ。
+公开规范见
+[`configs/tactile_unit/s3_2_r_diagnostics.json`](configs/tactile_unit/s3_2_r_diagnostics.json)。
+S3.3 Action Embodiment Bootstrap 可作为正交的下一步，建议进入但尚未开始；S3.4
+shared-token integration 尚未就绪，M3 未建立。
 
 ## 环境
 
@@ -155,8 +181,10 @@ S1 Wrench History 契约
 连续 8×32 接触动力学 code（M2）
 ```
 
-S2 仍是纯触觉、连续表征阶段。共享量化、视觉–动作–接触融合与 UniT 集成从 S3
-或更后续阶段开始。
+S2 仍是纯触觉、连续表征阶段。S3.1 建立配对数据契约，S3.2 评估轻量 Contact
+adaptor；S3.2-R 进一步表明，同预算私有 Contact RQ 未达到 task-relevant gate，
+而一次受限增容也未改变判定。共享量化、视觉–动作–接触融合与 UniT 集成必须等待
+Contact discretization / training objective 修订后再评估。
 
 ## 本地运行产物策略
 

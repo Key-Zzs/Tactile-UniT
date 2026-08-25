@@ -13,7 +13,12 @@ contact-dynamics representation.** S3 is in progress: S3.0 completes the
 shared-codebook compatibility audit, S3.1 establishes the paired T-Rex
 vision–action–contact data contract, and S3.2 completes the lightweight Contact
 Adaptor experiment. Its result is `ADAPTOR_INSUFFICIENT`; Contact tokens are not
-integrated into UniT's shared RQ and no shared tactile token is claimed.
+integrated into UniT's shared RQ and no shared tactile token is claimed. S3.2-R
+then closes the Contact shared-token diagnostic decision tree at R0: both the
+same-budget private Contact RQ and one bounded larger-capacity sensitivity fail
+the pre-registered task-relevant gate. The primary diagnosis is
+`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`; R1–R3 are skipped by the decision
+tree, no shared-RQ candidate is promoted, and M3 remains unestablished.
 
 ## Stage Roadmap
 
@@ -22,7 +27,7 @@ integrated into UniT's shared RQ and no shared tactile token is claimed.
 | M0-R | Original UniT representation-ready reproduction | Complete |
 | S1 | Predictable Tactile / Contact-State Teacher | Complete (M1 established) |
 | S2 | Predictive Contact-Dynamics Branch | Complete (M2 established) |
-| S3 | Vision–Action–Contact Unified Token | In progress (S3.0–S3.2 complete; adaptor insufficient) |
+| S3 | Vision–Action–Contact Unified Token | In progress (S3.2-R complete; no shared-RQ candidate) |
 | S4 | RGB Point Cloud / 3D Physical Transition | Planned |
 | S5 | Full Tactile3D-UniT Shared Physical Vocabulary | Planned |
 | S6 | VLA Integration | Planned |
@@ -51,6 +56,9 @@ integrated into UniT's shared RQ and no shared tactile token is claimed.
 - [x] S3.0 Shared-Codebook Compatibility Audit
 - [x] S3.1 Paired Vision–Action–Contact Data Contract
 - [x] S3.2 Contact Adaptor
+- [x] S3.2-R Contact Shared-Token Diagnostic Decision Tree
+- [ ] S3.3 T-Rex Action Embodiment Bootstrap — recommended, not started
+- [ ] S3.4 Vision–Action–Contact shared-token integration — not ready
 
 Multi-GPU DDP validation remains a deferred M0-R resource item; it is not a
 prerequisite for the completed single-GPU representation milestone.
@@ -105,7 +113,20 @@ is `ADAPTOR_INSUFFICIENT`: the candidates improve compatibility and frozen
 decoder reconstruction without collapse, but do not establish healthy shared
 codebook usage and semantic retention together. See
 [`configs/tactile_unit/s3_2_contact_adapter.json`](configs/tactile_unit/s3_2_contact_adapter.json).
-S3 remains in progress; S3.3 and shared-RQ integration have not started.
+
+S3.2-R tests the root cause before attempting a larger adaptor or shared-RQ
+adaptation. A repository-native private Contact RQ with Original UniT's nominal
+8-query, 32-D, two-stage, 128-code-per-stage budget fails the pre-registered
+task-relevant gate. Adding one residual stage improves reconstruction and native
+recoverability but still fails, especially on direct Contact-transition
+semantics. Neither run exhibits hard code or query collapse. Therefore R1, R2,
+and R3 are `SKIPPED_BY_DECISION_TREE`, the primary diagnosis is
+`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`, and no frozen or adapted shared RQ
+is promoted. See
+[`configs/tactile_unit/s3_2_r_diagnostics.json`](configs/tactile_unit/s3_2_r_diagnostics.json).
+S3.3 Action Embodiment Bootstrap is recommended as an orthogonal next step but
+has not started; S3.4 shared-token integration is not ready. M3 is not
+established.
 
 ## Environment
 
@@ -192,8 +213,10 @@ Continuous 8×32 Contact-Dynamics Code (M2)
 
 S2 remains tactile-only and continuous. S3.1 adds the paired
 Vision–Action–Contact data contract, and S3.2 evaluates the lightweight Contact
-Adaptor. Shared quantization, learned fusion, and UniT integration remain future
-work because the S3.2 adaptor result is insufficient.
+Adaptor. S3.2-R shows that even a private same-budget Contact RQ does not meet
+the task-relevant gate, and a bounded larger-capacity check does not change that
+decision. Shared quantization, learned fusion, and UniT integration therefore
+remain future work pending a revised Contact discretization/training objective.
 
 ## Local Runtime Artifact Policy
 
