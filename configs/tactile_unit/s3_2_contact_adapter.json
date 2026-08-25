@@ -1,0 +1,98 @@
+{
+  "experiment_name": "tactile3d_unit_s3_2_contact_adapter",
+  "experiment_version": "s3.2.v1",
+  "seed": 42,
+  "input_geometry": [8, 32],
+  "interface": {
+    "mapping": "P_c: R^32 -> R^32 independently at each query",
+    "shared_weights_across_queries": true,
+    "forbid_flattened_global_mlp": true,
+    "canonical_pipeline": "z_c -> P_c -> frozen Original UniT RQ"
+  },
+  "candidates": {
+    "identity": {
+      "label": "P0",
+      "layers": ["Identity"],
+      "trainable": false
+    },
+    "affine": {
+      "label": "P1",
+      "layers": ["LayerNorm(32)", "Linear(32,32)"],
+      "identity_initialized": true
+    },
+    "mlp": {
+      "label": "P2",
+      "layers": ["LayerNorm(32)", "Linear(32,128)", "GELU", "Linear(128,32)"]
+    }
+  },
+  "frozen_components": {
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "s2_transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "s2_train_codes_sha256": "0c638f321336419a7b12d79858ea3db4396fdb5177fea98b3da736dfe31164c1",
+    "s2_test_codes_sha256": "d193bf9c623567d034f70451efbb62b28386f5cc00d808b9cba4f12012442402",
+    "original_unit_spec": "configs/tactile_unit/s3_0_codebook_compatibility.json",
+    "rq_mode": "eval",
+    "rq_requires_grad": false,
+    "s2_decoder_requires_grad": false
+  },
+  "data": {
+    "canonical_horizon_frames": 16,
+    "anchor_delta_seconds": 0.5333333333333333,
+    "split_source": "accepted S1/S2 episode-disjoint manifest",
+    "pairs": {
+      "train": 279680,
+      "validation": 17504,
+      "test": 17504
+    },
+    "test_used_for_selection": false,
+    "dynamic_rule": "S2 train-derived dynamic_abs_force_delta_train_q75; labels are frozen in the S2 cache"
+  },
+  "objective": {
+    "future": "MSE(D_c(RQ(P_c(z_c)), h_t), h_future)",
+    "delta": "MSE(D_c(RQ(P_c(z_c)), h_t) - h_t, h_future - h_t)",
+    "quantization": "MSE(P_c(z_c), stopgrad(RQ(P_c(z_c))))",
+    "lambda_delta": 1.0,
+    "lambda_quant_pilot": [0.0, 0.1, 0.5, 1.0],
+    "dynamic_weight_pilot": [1.0, 2.0]
+  },
+  "selection": {
+    "partition": "validation",
+    "pilot_architecture": "mlp",
+    "pilot_epochs": 3,
+    "final_epochs": 10,
+    "hyperparameter_score": "validation dynamic future-MSE ratio to identity plus validation relative-distortion ratio to identity",
+    "architecture_preference": [
+      "smallest candidate satisfying comparative gates",
+      "lower dynamic reconstruction error",
+      "lower quantization distortion",
+      "stronger semantic retention",
+      "healthy code usage"
+    ]
+  },
+  "optimization": {
+    "optimizer": "AdamW",
+    "batch_size": 2048,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "physical_gpu": 3,
+    "logical_device": "cuda:0",
+    "ddp": false
+  },
+  "metrics": {
+    "quantization": ["absolute_mse", "relative_distortion", "pre_post_cosine", "token_norms"],
+    "code_usage_per_stage": ["active_codes", "active_ratio", "entropy", "perplexity", "top1", "top5"],
+    "reconstruction_scopes": ["all", "dynamic"],
+    "reconstruction": ["future_mse", "delta_mse", "future_cosine"],
+    "semantic_probes": ["contact_transition_macro_f1", "force_trend_macro_f1"],
+    "collapse": ["query_diversity", "per_dimension_variance", "effective_rank", "pairwise_distance"]
+  },
+  "decision_states": [
+    "ADAPTOR_READY",
+    "ADAPTOR_READY_WITH_DECODER_WARNING",
+    "ADAPTOR_INSUFFICIENT",
+    "STRUCTURAL_FAIL"
+  ],
+  "artifact_policy": ".local/{artifacts,logs,experiments,cache,tmp}/tactile_unit/s3_2 only",
+  "next_stage_started": false
+}

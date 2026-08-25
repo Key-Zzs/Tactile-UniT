@@ -1,4 +1,6 @@
-"""S3 tactile-UniT compatibility audit utilities."""
+"""Tactile-UniT milestone contracts, adaptors, and compatibility helpers."""
+
+from .contact_adapter import ContactCodebookAdaptor, build_contact_adaptor
 
 from .compatibility import (
     active_set_jaccard,
@@ -13,6 +15,7 @@ from .compatibility import (
 )
 
 __all__ = [
+    "ContactCodebookAdaptor",
     "active_set_jaccard",
     "code_frequency",
     "codebook_usage",
@@ -22,8 +25,8 @@ __all__ = [
     "parameter_digest",
     "quantization_metrics",
     "quantize_with_stage_diagnostics",
+    "build_contact_adaptor",
 ]
-"""Tactile-UniT milestone contracts and compatibility helpers."""
 
 from .paired_contract import (
     CANONICAL_HORIZON,
