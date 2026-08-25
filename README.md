@@ -9,8 +9,10 @@ idea of a Unified Physical Language toward a representation that can eventually
 unify 2D visual consequence, 3D geometric consequence, action realization, and
 contact dynamics. **M0-R, S1, and S2 are complete: M1 establishes a predictable
 continuous contact-state latent, and M2 establishes a predictive continuous
-contact-dynamics representation.** S3 has not started: contact tokens are not
-integrated into UniT's shared RQ and no shared tactile token is claimed.
+contact-dynamics representation.** S3 is in progress: S3.0 completes the
+shared-codebook compatibility audit and S3.1 establishes the paired T-Rex
+vision–action–contact data contract. Contact tokens are not yet integrated into
+UniT's shared RQ and no shared tactile token is claimed.
 
 ## Stage Roadmap
 
@@ -19,7 +21,7 @@ integrated into UniT's shared RQ and no shared tactile token is claimed.
 | M0-R | Original UniT representation-ready reproduction | Complete |
 | S1 | Predictable Tactile / Contact-State Teacher | Complete (M1 established) |
 | S2 | Predictive Contact-Dynamics Branch | Complete (M2 established) |
-| S3 | Vision–Action–Contact Unified Token | Planned |
+| S3 | Vision–Action–Contact Unified Token | In progress (S3.0 and S3.1 complete) |
 | S4 | RGB Point Cloud / 3D Physical Transition | Planned |
 | S5 | Full Tactile3D-UniT Shared Physical Vocabulary | Planned |
 | S6 | VLA Integration | Planned |
@@ -46,6 +48,8 @@ integrated into UniT's shared RQ and no shared tactile token is claimed.
 - [x] S2 Predictive Contact-Dynamics Branch
 - [ ] S3 Vision–Action–Contact Shared Physical Tokenizer — in progress
 - [x] S3.0 Shared-Codebook Compatibility Audit
+- [x] S3.1 Paired Vision–Action–Contact Data Contract
+- [ ] S3.2 Contact Adaptor
 
 Multi-GPU DDP validation remains a deferred M0-R resource item; it is not a
 prerequisite for the completed single-GPU representation milestone.
@@ -86,7 +90,13 @@ decision. The result recommends evaluating a lightweight 32-to-32 contact
 adaptor before the shared RQ in the next integration stage; no adaptor or
 shared codebook is trained in S3.0. See
 [`configs/tactile_unit/s3_0_codebook_compatibility.json`](configs/tactile_unit/s3_0_codebook_compatibility.json).
-S3 remains in progress.
+S3.1 then freezes the same-transition T-Rex `head_left` RGB pair, 16-step
+action chunk, anchored state, and accepted S1/S2 contact representations under
+the existing episode-disjoint split and S2 pair identities. The public data and
+interface definition is
+[`configs/tactile_unit/s3_1_paired_vac_contract.json`](configs/tactile_unit/s3_1_paired_vac_contract.json).
+The released action branch still requires later T-Rex-specific category
+parameters; no model or adaptor is trained in S3.1. S3 remains in progress.
 
 ## Environment
 
@@ -171,8 +181,9 @@ Non-overlapping Contact Transition Contract (k=16)
 Continuous 8×32 Contact-Dynamics Code (M2)
 ```
 
-S2 remains tactile-only and continuous. Shared quantization, Vision–Action–Contact
-fusion, and UniT integration begin at S3 or later.
+S2 remains tactile-only and continuous. S3.1 adds the paired
+Vision–Action–Contact data contract; shared quantization, learned fusion, and
+UniT integration remain for S3.2 or later.
 
 ## Local Runtime Artifact Policy
 
@@ -189,6 +200,7 @@ machine-specific configs, and temporary artifacts must be stored under
 - [`scripts/reproduce/`](scripts/reproduce/) — reusable S0 validation and visualization tools.
 - [`scripts/tactile/`](scripts/tactile/) — S1 data, training, evaluation, visualization, and M1 audit tools.
 - [`scripts/contact_dynamics/`](scripts/contact_dynamics/) — S2 transition-cache, training, evaluation, visualization, and M2 audit tools.
+- [`scripts/tactile_unit/`](scripts/tactile_unit/) — S3 compatibility, paired-contract, frozen-branch, and synchronization audit tools.
 
 ## License
 

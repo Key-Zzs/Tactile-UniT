@@ -1,0 +1,157 @@
+{
+  "contract_name": "tactile3d_unit_s3_1_paired_vision_action_contact",
+  "contract_version": "s3.1.v1",
+  "dataset": {
+    "name": "T-Rex",
+    "codebase_version": "v3.0",
+    "revision": "bf0eb24c4b8bdd95752b553f0fc50e46a22f1cc8",
+    "private_root_env": "TREX_DATASET_DIR",
+    "metadata_source": "meta/info.json and meta/episodes/*.parquet"
+  },
+  "vision": {
+    "stream": "observation.images.head_left",
+    "raw_shape_hwc": [360, 640, 3],
+    "fps": 30,
+    "codec": "h264",
+    "pixel_format": "yuv420p",
+    "pair": ["I_t", "I_t+16"],
+    "packed_video_mapping": "episode-relative timestamp + metadata from_timestamp in the metadata-selected chunk/file",
+    "evaluation_preprocessing": {
+      "family": "Original UniT DINO tokenizer path",
+      "crop": "deterministic center crop at scale 0.95",
+      "resize_hw": [224, 224],
+      "resize_interpolation": "bilinear with antialiasing",
+      "layout": "CHW",
+      "dtype": "float32",
+      "scale": "uint8 RGB divided by 255",
+      "normalization_mean": [0.485, 0.456, 0.406],
+      "normalization_std": [0.229, 0.224, 0.225]
+    },
+    "training_augmentation": "deferred to a later training milestone"
+  },
+  "transition": {
+    "horizon_frames": 16,
+    "anchor_delta_sec": 0.5333333333333333,
+    "history_steps": 16,
+    "history_physical_span_sec": 0.5,
+    "vision_frames": ["t", "t+16"],
+    "state_frame": "t",
+    "action_frames_inclusive": ["t", "t+15"],
+    "current_teacher_window_inclusive": ["t-15", "t"],
+    "future_teacher_window_inclusive": ["t+1", "t+16"],
+    "teacher_window_raw_overlap_samples": 0,
+    "same_episode_only": true
+  },
+  "pair_selection": {
+    "source": "accepted S2 canonical k=16 transition cache",
+    "transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "counts": {"train": 279680, "val": 17504, "test": 17504}
+  },
+  "splits": {
+    "source": "accepted S1 episode-level split",
+    "manifest_sha256": "e4ef153904f013176ae9f5009751880dc6ee53bcd858d1d26c5793a6ba946e76",
+    "rule": "episode-level stratified by motor_primitive; exact frozen episode IDs",
+    "episode_counts": {"train": 4370, "val": 547, "test": 547},
+    "leakage_allowed": false
+  },
+  "state_action": {
+    "raw_state": {
+      "source": "observation.state",
+      "shape": [58],
+      "ordering": ["left arm 7", "left hand 22", "right arm 7", "right hand 22"]
+    },
+    "raw_action": {
+      "source": "action",
+      "shape": [16, 58],
+      "ordering": ["left arm 7", "left hand 22", "right arm 7", "right hand 22"]
+    },
+    "tokenizer_state": {
+      "shape": [128],
+      "normalization": "per-dimension mean_std fitted on exact frozen S1 train episodes only (ddof=0)",
+      "mapping": "normalized 58 dimensions in indices 0:58; zero padding in 58:128",
+      "mask": "true in 0:58; false in 58:128"
+    },
+    "tokenizer_action": {
+      "shape": [16, 128],
+      "normalization": "per-dimension mean_std fitted on exact frozen S1 train episodes only (ddof=0)",
+      "mapping": "normalized 58 dimensions in indices 0:58; zero padding in 58:128",
+      "mask": "true in 0:58; false in 58:128"
+    },
+    "raw_value_policy": "raw state/action remain available in the paired sample; normalization is tokenizer-side only",
+    "normalization_identity": {
+      "dataset_revision": "bf0eb24c4b8bdd95752b553f0fc50e46a22f1cc8",
+      "train_episodes": 4370,
+      "train_frames": 4377012,
+      "canonical_sha256": "a441b4c287c8bf8dc4c48088553d4488beef59709061784ca534e3cfdba3e3d9"
+    },
+    "embodiment": {
+      "tag": "new_embodiment",
+      "id": 31,
+      "framework_mechanism": "existing generic new-embodiment route",
+      "released_tokenizer_max_num_embodiments": 30,
+      "released_tokenizer_valid_ids": "0:29",
+      "released_tokenizer_requires_category_expansion": true,
+      "gr1_aliasing": false,
+      "new_public_tag_required": false,
+      "later_learned_trex_action_parameters_required": true,
+      "decision": "use generic new_embodiment identity; expand category-specific action parameters to include ID 31 and train them in a later milestone"
+    }
+  },
+  "contact": {
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_encoder_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "frozen": true,
+    "h_current_shape": [256],
+    "h_future_shape": [256],
+    "z_c_shape": [8, 32],
+    "z_c_status": "continuous pre-adaptor representation",
+    "s3_0_decision": "ADAPTER_RECOMMENDED",
+    "adaptor_in_s3_1": false
+  },
+  "paired_sample": {
+    "fields": [
+      "pair_id",
+      "episode_id",
+      "anchor",
+      "vision.current",
+      "vision.future",
+      "processed_vision.obs",
+      "processed_vision.goal",
+      "state",
+      "action",
+      "contact.h_current",
+      "contact.h_future",
+      "contact.z_c",
+      "metadata.motor_primitive",
+      "metadata.object",
+      "metadata.target",
+      "modality_mask"
+    ],
+    "modality_mask": {"V": 1, "A": 1, "C": 1},
+    "bulk_rgb_policy": "lazy random-access decode; no duplicated RGB corpus"
+  },
+  "cache_identity": {
+    "required": [
+      "s1_teacher_sha256",
+      "s2_encoder_sha256",
+      "transition_horizon_frames",
+      "s2_transition_manifest_sha256",
+      "s1_split_manifest_sha256"
+    ],
+    "runtime_root": ".local/cache/tactile_unit/s3_1",
+    "mismatch_policy": "reject"
+  },
+  "canonical_evaluation": {
+    "source": "exact S3.0 960 contact pair IDs",
+    "source_manifest_sha256": "7c2d1be54536e0b6d2547c93202fd060211f9a46fb6dd71b83ac06b585e6626e",
+    "count": 960,
+    "rebalancing_allowed": false
+  },
+  "training": {
+    "contact_adaptor": false,
+    "shared_rq": false,
+    "tokenizer": false,
+    "cross_reconstruction": false,
+    "any_model_update": false
+  }
+}

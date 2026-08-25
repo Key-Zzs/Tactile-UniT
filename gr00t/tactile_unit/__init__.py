@@ -23,3 +23,11 @@ __all__ = [
     "quantization_metrics",
     "quantize_with_stage_diagnostics",
 ]
+"""Tactile-UniT milestone contracts and compatibility helpers."""
+
+from .paired_contract import (
+    CANONICAL_HORIZON,
+    TREX_EMBODIMENT_ID,
+    TREX_EMBODIMENT_TAG,
+    VIDEO_KEY,
+)
