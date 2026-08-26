@@ -82,8 +82,9 @@
   },
   "gpu": {
     "preferred_physical": 3,
-    "allowed_physical": [2, 3],
-    "forbidden_physical": [0, 1],
+    "allowed_physical": [1, 2, 3],
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user authorization on 2026-08-26",
     "logical": "cuda:0"
   }
 }

@@ -15,6 +15,7 @@ common_git_dir="$(
 
 nvidia-smi -i 2
 nvidia-smi -i 3
+nvidia-smi -i 1
 nvidia-smi \
   --query-gpu=index,uuid,memory.used,memory.total,utilization.gpu \
   --format=csv,noheader
@@ -41,7 +42,7 @@ try_gpu() {
   ) 9>"${lock_path}"
 }
 
-for physical_gpu in 3 2; do
+for physical_gpu in 3 2 1; do
   set +e
   try_gpu "${physical_gpu}" "$@"
   status=$?
@@ -52,5 +53,5 @@ for physical_gpu in 3 2; do
   exit "${status}"
 done
 
-echo "GPU_RESOURCE_BUSY: physical GPUs 3 and 2 are locked or have compute processes" >&2
+echo "GPU_RESOURCE_BUSY: physical GPUs 3, 2, and explicitly-authorized 1 are locked or have compute processes" >&2
 exit 75

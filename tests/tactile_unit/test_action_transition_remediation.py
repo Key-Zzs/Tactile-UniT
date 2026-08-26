@@ -148,8 +148,9 @@ def test_remediation_config_has_frozen_contract_and_no_private_paths() -> None:
     config = json.loads(text)
     assert config["data"]["raw_action_shape"] == [16, 58]
     assert config["data"]["action_interval"] == "a_t:t+15"
-    assert config["gpu"]["allowed_physical"] == [2, 3]
-    assert config["gpu"]["forbidden_physical"] == [0, 1]
+    assert config["gpu"]["allowed_physical"] == [1, 2, 3]
+    assert config["gpu"]["forbidden_physical"] == [0]
+    assert config["gpu"]["gpu1_authorization"] == "explicit user authorization on 2026-08-26"
     assert "/" + "home/" not in text
     assert "/" + "mnt/" not in text
     assert "Bear" + "er " not in text

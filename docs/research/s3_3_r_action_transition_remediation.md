@@ -136,9 +136,10 @@ rows 0–29 is unchanged. GR1 continues to select untouched row 24 and unchanged
 ## GPU isolation and current execution state
 
 Every model-side scientific process uses the Route A-R advisory-lock wrapper. It audits physical
-GPUs 2 and 3, tries physical GPU 3 before GPU 2, rechecks compute occupancy after acquiring the
-lock, exposes exactly one device, and uses logical `cuda:0`. Physical GPUs 0 and 1 are forbidden.
-No process is killed or preempted.
+GPUs 2 and 3 and the explicitly authorized GPU 1, tries physical GPU 3 before GPU 2 and GPU 1,
+rechecks compute occupancy after acquiring the lock, exposes exactly one device, and uses logical
+`cuda:0`. The user explicitly authorized physical GPU 1 on 2026-08-26 after repeated GPU 2/3
+contention. Physical GPU 0 remains forbidden. No process is killed or preempted.
 
 At the latest execution audit, both permitted GPUs had conflicting external compute workloads, so
 the scientific state was `GPU_RESOURCE_BUSY`. The complete raw A-R0 pass, train-only transition
