@@ -1,0 +1,105 @@
+{
+  "schema": "tactile3d-unit.s3-3-action-bootstrap-config.v1",
+  "track": "A",
+  "milestone": "S3.3",
+  "embodiment": {
+    "tag": "trex",
+    "id": 31,
+    "gr1_id": 24,
+    "released_capacity": 30,
+    "expanded_capacity": 32,
+    "unused_ids": [30],
+    "forbid_gr1_alias": true
+  },
+  "data": {
+    "split_manifest": ".local/artifacts/tactile_teacher/s1_0/split_manifest.json",
+    "normalization": ".local/artifacts/tactile_unit/s3_1/state_action_normalization.json",
+    "cache_root": ".local/cache/tactile_unit/s3_3/action_windows",
+    "window_limits": {
+      "train": 65536,
+      "val": 8192,
+      "test": null
+    },
+    "raw_state_shape": [58],
+    "raw_action_shape": [16, 58],
+    "canonical_state_shape": [128],
+    "canonical_action_shape": [16, 128],
+    "action_interval": "a_t:t+15",
+    "normalization_fit": "train split only",
+    "ordering": [
+      "left arm 7",
+      "left hand 22",
+      "right arm 7",
+      "right hand 22"
+    ]
+  },
+  "paths": {
+    "experiment_root": ".local/experiments/tactile_unit/s3_3",
+    "artifact_root": ".local/artifacts/tactile_unit/s3_3",
+    "log_root": ".local/logs/tactile_unit/s3_3"
+  },
+  "a0": {
+    "initializations": [
+      "old_rows_mean",
+      "deterministic_small_random"
+    ],
+    "validation_windows": 512,
+    "batch_size": 8
+  },
+  "a1": {
+    "seed": 3301,
+    "steps": 1500,
+    "batch_size": 16,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0,
+    "gradient_clip": 1.0,
+    "validation_interval": 100,
+    "validation_windows": 1024,
+    "dynamic_weight": 2.0,
+    "loss_weights": {
+      "reconstruction": 1.0,
+      "delta": 0.5,
+      "temporal_margin": 0.1,
+      "variance": 0.01,
+      "query_diversity": 0.01
+    },
+    "temporal_margin": 0.05
+  },
+  "a2": {
+    "enabled_if_a1_insufficient": true,
+    "steps": 500,
+    "batch_size": 16,
+    "learning_rate": 0.00005,
+    "dynamic_weight": 4.0,
+    "negative_types": ["reversed", "shuffled"],
+    "temporal_validation_windows": 512,
+    "loss_weight_overrides": {
+      "temporal_margin": 1.0
+    },
+    "adapter": "zero-initialized 32D residual LayerNorm+Linear"
+  },
+  "a3": {
+    "enabled": false,
+    "reason": "Only consider after measured A1 and A2 insufficiency; requires separate GR1 rehearsal protocol."
+  },
+  "evaluation": {
+    "batch_size": 64,
+    "probe_train_windows": 8192,
+    "probe_test_windows": 8192,
+    "latent_windows": 8192,
+    "temporal_windows": 4096,
+    "acceptance": {
+      "normalized_mse_max": 1.0,
+      "minimum_temporal_loss_ratio": 1.05,
+      "minimum_effective_rank": 8.0,
+      "maximum_collapsed_query_fraction": 0.05
+    }
+  },
+  "gpu": {
+    "preferred_physical": 3,
+    "allowed_physical": [1, 2, 3],
+    "logical": "cuda:0",
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user override on 2026-08-26"
+  }
+}

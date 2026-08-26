@@ -37,6 +37,15 @@ class EmbodimentTag(Enum):
     Any new embodiment for finetuning.
     """
 
+    TREX = "trex"
+    """
+    T-Rex dual-arm / dexterous-hand embodiment.
+
+    This explicit tag shares the reserved ID 31 with the legacy generic
+    ``new_embodiment`` route.  Released UniT checkpoints stop at row 29;
+    Track A materializes and trains row 31 without aliasing GR1 (row 24).
+    """
+
     HUMAN_EGODEX = "human_egodex"
     IRON = "iron"
     HUMAN_IRON = "human_iron"
@@ -47,6 +56,7 @@ class EmbodimentTag(Enum):
 # Embodiment tag string: to projector index in the Action Expert Module
 EMBODIMENT_TAG_MAPPING = {
     EmbodimentTag.NEW_EMBODIMENT.value: 31,
+    EmbodimentTag.TREX.value: 31,
     EmbodimentTag.OXE_DROID.value: 17,
     EmbodimentTag.AGIBOT_GENIE1.value: 26,
     EmbodimentTag.GR1.value: 24,
