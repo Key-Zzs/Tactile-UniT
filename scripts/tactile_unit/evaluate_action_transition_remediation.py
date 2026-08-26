@@ -347,6 +347,62 @@ def decode_errors(model: torch.nn.Module, z_action: np.ndarray, state_features: 
 
 
 @torch.no_grad()
+def quantized_temporal_audit(
+    model: torch.nn.Module,
+    rq: torch.nn.Module,
+    cache: TReXActionCache,
+    indices: np.ndarray,
+    *,
+    batch_size: int,
+    device: torch.device,
+    dynamic_threshold: float,
+    shuffle_seed: int,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(shuffle_seed)
+    all_errors: dict[str, list[np.ndarray]] = defaultdict(list)
+    dynamic_errors: dict[str, list[np.ndarray]] = defaultdict(list)
+    for start in range(0, len(indices), batch_size):
+        current = indices[start : start + batch_size]
+        batch, state, action, embodiment = make_tensors(cache, current, device)
+        other = cache.batch(different_episode_indices(cache, current))
+        inputs = {
+            "correct": action,
+            "reversed": action.flip(1),
+            "shuffled": action[:, torch.from_numpy(rng.permutation(16)).to(device)],
+            "different_episode": torch.from_numpy(other["action"]).to(device),
+        }
+        dynamic = (
+            action_activity(batch["action"][..., :RAW_ACTION_DIM])["magnitude"]
+            > dynamic_threshold
+        )
+        for name, candidate in inputs.items():
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                z_action, state_features, _ = model.encode(state, candidate, embodiment)
+                quantized, _, _ = rq(z_action)
+                prediction = model.decode(quantized, state_features, embodiment)
+            error = reconstruction_per_sample(prediction, action).cpu().numpy()
+            all_errors[name].append(error)
+            dynamic_errors[name].append(error[dynamic])
+    all_means = {name: float(np.concatenate(value).mean()) for name, value in all_errors.items()}
+    dynamic_means = {
+        name: float(np.concatenate(value).mean()) for name, value in dynamic_errors.items()
+    }
+    return {
+        "windows": len(indices),
+        "all": all_means,
+        "dynamic": dynamic_means,
+        "all_ratios": {
+            name: value / max(all_means["correct"], 1e-12)
+            for name, value in all_means.items()
+        },
+        "dynamic_ratios": {
+            name: value / max(dynamic_means["correct"], 1e-12)
+            for name, value in dynamic_means.items()
+        },
+    }
+
+
+@torch.no_grad()
 def feature_ablation(model: torch.nn.Module, cache: TReXActionCache, count: int, batch_size: int, device: torch.device) -> dict[str, Any]:
     indices = selected_indices(len(cache), count)
     variants = {"full": (True, True, True), "absolute_only": (True, False, False), "absolute_relative": (True, True, False), "absolute_velocity": (True, False, True)}
@@ -433,6 +489,16 @@ def main() -> None:
     difference = quantized_test_z - test_z
     relative_distortion = np.linalg.norm(difference.reshape(len(test_z), -1), axis=1) / np.maximum(np.linalg.norm(test_z.reshape(len(test_z), -1), axis=1), 1e-12)
     cosine = np.sum(quantized_test_z * test_z, axis=-1) / np.maximum(np.linalg.norm(quantized_test_z, axis=-1) * np.linalg.norm(test_z, axis=-1), 1e-12)
+    quantized_temporal = quantized_temporal_audit(
+        model,
+        rq,
+        test_cache,
+        selected_indices(len(test_cache), min(4096, int(evaluation["temporal_windows"]))),
+        batch_size=batch_size,
+        device=device,
+        dynamic_threshold=dynamic_threshold,
+        shuffle_seed=int(config["diagnosis"]["shuffle_seed"]),
+    )
     rq_diagnostic = {
         "read_only": True,
         "relative_distortion": {"mean": float(relative_distortion.mean()), "median": float(np.median(relative_distortion))},
@@ -443,7 +509,13 @@ def main() -> None:
         "reconstruction_error_ratio": float(quantized_error.mean() / max(continuous_error.mean(), 1e-12)),
         "quantized_probes": quantized_probes,
         "semantic_retention_ratio": retention,
-        "temporal_semantic_retention": "continuous controls are authoritative; frozen-RQ reconstruction retention is the reported proxy",
+        "temporal_semantic_retention": {
+            "quantized": quantized_temporal,
+            "continuous_dynamic_reversed_ratio": temporal["paired_bootstrap"]["dynamic"]["reversed"]["ratio"],
+            "continuous_dynamic_shuffled_ratio": temporal["paired_bootstrap"]["dynamic"]["shuffled"]["ratio"],
+            "reversed_ratio_retention": quantized_temporal["dynamic_ratios"]["reversed"] / max(temporal["paired_bootstrap"]["dynamic"]["reversed"]["ratio"], 1e-12),
+            "shuffled_ratio_retention": quantized_temporal["dynamic_ratios"]["shuffled"] / max(temporal["paired_bootstrap"]["dynamic"]["shuffled"]["ratio"], 1e-12),
+        },
     }
     ablation = feature_ablation(model, val_cache, 4096, batch_size, device)
     with torch.no_grad(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
@@ -461,7 +533,12 @@ def main() -> None:
     all_bootstrap = temporal["paired_bootstrap"]["all"]
     gates = {
         "raw_negative_nontrivial": bool(
-            json.loads((artifact_root / "a_r0_raw_negative_strength.json").read_text())["raw_negative_strength"]["test"]["controls"]["reversed"]["dynamic"]["normalized_mse"] > 0.0
+            json.loads((artifact_root / "a_r0_raw_negative_strength.json").read_text())["raw_negative_strength"]["test"]["controls"]["reversed"]["dynamic"]["normalized_mse"] > 0.02
+            and json.loads((artifact_root / "a_r0_raw_negative_strength.json").read_text())["raw_negative_strength"]["test"]["controls"]["shuffled"]["dynamic"]["normalized_mse"] > 0.01
+        ),
+        "reconstruction": bool(
+            reconstruction["all"]["normalized_mse"]
+            <= float(acceptance["normalized_mse_max"])
         ),
         "dynamic_reversed": bool(dynamic_bootstrap["reversed"]["ratio"] >= float(acceptance["dynamic_reversed_ratio_min"]) and dynamic_bootstrap["reversed"]["ci95_lower"] > float(acceptance["temporal_ci_lower_min"])),
         "dynamic_shuffled": bool(dynamic_bootstrap["shuffled"]["ratio"] >= float(acceptance["dynamic_shuffled_ratio_min"]) and dynamic_bootstrap["shuffled"]["ci95_lower"] > float(acceptance["temporal_ci_lower_min"])),

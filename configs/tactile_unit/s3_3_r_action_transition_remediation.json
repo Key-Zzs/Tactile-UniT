@@ -70,6 +70,7 @@
     "probe_test_windows": 8192,
     "bootstrap_samples": 5000,
     "acceptance": {
+      "normalized_mse_max": 1.0,
       "dynamic_reversed_ratio_min": 1.05,
       "dynamic_shuffled_ratio_min": 1.05,
       "temporal_ci_lower_min": 1.0,

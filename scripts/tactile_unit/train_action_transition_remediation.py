@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 from gr00t.tactile_unit.trex_action_bootstrap import (  # noqa: E402
     TREX_EMBODIMENT_ID,
     ReleasedTokenizerSource,
+    effective_rank,
     latent_noncollapse_losses,
 )
 from gr00t.tactile_unit.trex_action_data import (  # noqa: E402
@@ -221,6 +222,10 @@ def validation_metrics(
         "z_action_shape_without_batch": list(all_z.shape[1:]),
         "all": means,
         "dynamic": dynamic_means,
+        "effective_rank": effective_rank(all_z.flatten(1)),
+        "collapsed_query_fraction": float(
+            (all_z.numpy().var(axis=(0, 2)) < 1e-8).mean()
+        ),
     }
     for subset, values in (("all", means), ("dynamic", dynamic_means)):
         for name in ("reversed", "shuffled", "different_episode", "zero", "mean"):
@@ -230,13 +235,30 @@ def validation_metrics(
 
 def validation_selection_key(metrics: Mapping[str, Any], acceptance: Mapping[str, Any]) -> tuple[tuple[float, ...], bool, float]:
     limits = {
+        "normalized_mse": float(acceptance["normalized_mse_max"]),
         "dynamic_reversed_ratio": float(acceptance["dynamic_reversed_ratio_min"]),
         "dynamic_shuffled_ratio": float(acceptance["dynamic_shuffled_ratio_min"]),
+        "all_different_episode_ratio": float(acceptance["dynamic_reversed_ratio_min"]),
         "all_zero_ratio": float(acceptance["zero_ratio_min"]),
         "all_mean_ratio": float(acceptance["mean_ratio_min"]),
     }
-    shortfall = sum(max(0.0, limit - float(metrics[name])) / limit for name, limit in limits.items())
-    passed = shortfall == 0.0 and bool(metrics["finite"]) and metrics["z_action_shape_without_batch"] == [8, 32]
+    shortfall = max(
+        0.0, float(metrics["normalized_mse"]) / limits.pop("normalized_mse") - 1.0
+    ) + sum(
+        max(0.0, limit - float(metrics[name])) / limit for name, limit in limits.items()
+    )
+    noncollapse = (
+        float(metrics["effective_rank"]) >= float(acceptance["effective_rank_min"])
+        and float(metrics["collapsed_query_fraction"])
+        <= float(acceptance["collapsed_query_fraction_max"])
+    )
+    if not noncollapse:
+        shortfall += 1.0
+    passed = (
+        shortfall == 0.0
+        and bool(metrics["finite"])
+        and metrics["z_action_shape_without_batch"] == [8, 32]
+    )
     return (0.0 if passed else 1.0, shortfall, float(metrics["normalized_mse"])), passed, shortfall
 
 

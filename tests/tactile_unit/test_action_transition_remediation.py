@@ -16,6 +16,7 @@ from gr00t.tactile_unit.trex_action_transition import (
     load_transition_checkpoint,
     save_transition_checkpoint,
 )
+from scripts.tactile_unit.train_action_transition_remediation import validation_selection_key
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -109,6 +110,36 @@ def test_native_rejects_non_trex_or_wrong_shapes() -> None:
         model(state, action, torch.zeros_like(embodiment))
     with pytest.raises(ValueError, match="canonical state"):
         model(state[:, :58], action, embodiment)
+
+
+def test_validation_selection_requires_temporal_token_and_noncollapse_gates() -> None:
+    acceptance = {
+        "normalized_mse_max": 1.0,
+        "dynamic_reversed_ratio_min": 1.05,
+        "dynamic_shuffled_ratio_min": 1.05,
+        "zero_ratio_min": 1.1,
+        "mean_ratio_min": 1.1,
+        "effective_rank_min": 8.0,
+        "collapsed_query_fraction_max": 0.05,
+    }
+    passing = {
+        "normalized_mse": 0.2,
+        "dynamic_reversed_ratio": 1.2,
+        "dynamic_shuffled_ratio": 1.2,
+        "all_different_episode_ratio": 2.0,
+        "all_zero_ratio": 1.3,
+        "all_mean_ratio": 1.2,
+        "effective_rank": 10.0,
+        "collapsed_query_fraction": 0.0,
+        "finite": True,
+        "z_action_shape_without_batch": [8, 32],
+    }
+    passing_key, passed, shortfall = validation_selection_key(passing, acceptance)
+    failing = dict(passing, dynamic_shuffled_ratio=1.0)
+    failing_key, failed, failing_shortfall = validation_selection_key(failing, acceptance)
+    assert passed and shortfall == 0.0
+    assert not failed and failing_shortfall > 0.0
+    assert passing_key < failing_key
 
 
 def test_remediation_config_has_frozen_contract_and_no_private_paths() -> None:
