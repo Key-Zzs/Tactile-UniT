@@ -86,6 +86,13 @@ def selected_indices(length: int, count: int | None) -> np.ndarray:
     return np.floor((np.arange(count) + 0.5) * length / count).astype(np.int64)
 
 
+def random_indices(length: int, count: int, seed: int) -> np.ndarray:
+    count = min(length, int(count))
+    return np.sort(
+        np.random.default_rng(seed).choice(length, size=count, replace=False)
+    ).astype(np.int64)
+
+
 def make_tensors(cache: TReXActionCache, indices: np.ndarray, device: torch.device):
     batch = cache.batch(indices)
     state = torch.from_numpy(batch["state"]).to(device)
@@ -459,7 +466,9 @@ def main() -> None:
         model, test_cache, test_indices, batch_size=batch_size, device=device, dynamic_threshold=dynamic_threshold
     )
     mean_token = mean_train_token(model, train_cache, int(evaluation["probe_train_windows"]), batch_size, device)
-    temporal_indices = selected_indices(len(test_cache), int(evaluation["temporal_windows"]))
+    temporal_indices = random_indices(
+        len(test_cache), int(evaluation["temporal_windows"]), int(config["seed"]) + 401
+    )
     temporal, temporal_arrays = temporal_control_audit(
         model,
         test_cache,

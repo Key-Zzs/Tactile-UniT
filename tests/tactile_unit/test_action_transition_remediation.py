@@ -17,6 +17,7 @@ from gr00t.tactile_unit.trex_action_transition import (
     save_transition_checkpoint,
 )
 from scripts.tactile_unit.train_action_transition_remediation import validation_selection_key
+from scripts.tactile_unit.evaluate_action_transition_remediation import random_indices
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -140,6 +141,14 @@ def test_validation_selection_requires_temporal_token_and_noncollapse_gates() ->
     assert passed and shortfall == 0.0
     assert not failed and failing_shortfall > 0.0
     assert passing_key < failing_key
+
+
+def test_random_evaluation_indices_are_deterministic_unique_and_in_bounds() -> None:
+    first = random_indices(1000, 128, 41)
+    second = random_indices(1000, 128, 41)
+    assert np.array_equal(first, second)
+    assert len(np.unique(first)) == 128
+    assert first.min() >= 0 and first.max() < 1000
 
 
 def test_remediation_config_has_frozen_contract_and_no_private_paths() -> None:

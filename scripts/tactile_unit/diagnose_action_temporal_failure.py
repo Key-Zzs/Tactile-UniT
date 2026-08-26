@@ -241,8 +241,12 @@ def model_audit(
     device: torch.device,
     permutation: np.ndarray,
     dynamic_threshold: float,
+    selection_seed: int,
 ) -> dict[str, Any]:
-    indices = selected_indices(len(cache), count)
+    count = min(int(count), len(cache))
+    indices = np.sort(
+        np.random.default_rng(selection_seed).choice(len(cache), size=count, replace=False)
+    ).astype(np.int64)
     latent: dict[str, list[torch.Tensor]] = defaultdict(list)
     errors: dict[str, list[dict[str, float]]] = defaultdict(list)
     for start in range(0, len(indices), batch_size):
@@ -302,7 +306,26 @@ def model_audit(
         "R_token_with_zero_oracle": (reasonable - full) / max(reasonable, 1e-12),
         "note": "The specified denominator has no separately available oracle; zero error is reported explicitly as the ideal oracle.",
     }
-    return {"windows": len(indices), "encoder": encoder, "decoder": decoder}
+    dynamic_windows = int(
+        sum(
+            (
+                action_activity(cache.batch(current)["action"][..., :RAW_ACTION_DIM])[
+                    "magnitude"
+                ]
+                > dynamic_threshold
+            ).sum()
+            for current in np.array_split(indices, max(1, int(np.ceil(len(indices) / 2048))))
+            if len(current)
+        )
+    )
+    return {
+        "windows": len(indices),
+        "dynamic_windows": dynamic_windows,
+        "selection": "fixed-seed random without replacement",
+        "selection_seed": selection_seed,
+        "encoder": encoder,
+        "decoder": decoder,
+    }
 
 
 def classify(result: Mapping[str, Any]) -> tuple[str, list[str]]:
@@ -388,8 +411,9 @@ def main() -> None:
             device=device,
             permutation=permutation,
             dynamic_threshold=threshold,
+            selection_seed=int(config["seed"]) + 1000 + split_index,
         )
-        for name, cache in caches.items()
+        for split_index, (name, cache) in enumerate(caches.items())
     }
     result: dict[str, Any] = {
         "schema": "tactile3d-unit.s3-3-r-a-r0-diagnosis.v1",
