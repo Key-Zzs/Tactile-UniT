@@ -206,11 +206,21 @@ def _error_breakdown(
     dynamic: np.ndarray,
 ) -> dict[str, float]:
     squared = (prediction[..., :RAW_ACTION_DIM].float() - target[..., :RAW_ACTION_DIM].float()).square().cpu().numpy()
-    result = {"all_mse": float(squared.mean())}
-    result["dynamic_mse"] = float(squared[dynamic].mean()) if dynamic.any() else float("nan")
+    result = {
+        "all_mse": float(squared.mean()),
+        "all_mse_count": float(squared.size),
+        "dynamic_mse": float(squared[dynamic].mean()) if dynamic.any() else 0.0,
+        "dynamic_mse_count": float(squared[dynamic].size),
+    }
     for name, segment in SEGMENTS.items():
         result[f"{name}_mse"] = float(squared[..., segment].mean())
-        result[f"dynamic_{name}_mse"] = float(squared[dynamic, ..., segment].mean()) if dynamic.any() else float("nan")
+        result[f"{name}_mse_count"] = float(squared[..., segment].size)
+        result[f"dynamic_{name}_mse"] = (
+            float(squared[dynamic, ..., segment].mean()) if dynamic.any() else 0.0
+        )
+        result[f"dynamic_{name}_mse_count"] = float(
+            squared[dynamic, ..., segment].size
+        )
     return result
 
 
@@ -292,13 +302,20 @@ def model_audit(
         }
         for name, value in latent_tensor.items()
     }
-    decoder = {
-        name: {
-            key: float(np.mean([entry[key] for entry in values]))
-            for key in values[0]
-        }
-        for name, values in errors.items()
-    }
+    decoder = {}
+    for name, values in errors.items():
+        metrics = {}
+        for key in values[0]:
+            if key.endswith("_count"):
+                continue
+            count_key = f"{key}_count"
+            total_count = sum(entry[count_key] for entry in values)
+            metrics[key] = (
+                sum(entry[key] * entry[count_key] for entry in values) / total_count
+                if total_count
+                else float("nan")
+            )
+        decoder[name] = metrics
     full = decoder["full"]["all_mse"]
     reasonable = min(decoder[name]["all_mse"] for name in ("zero", "mean", "shuffled"))
     decoder["token_contribution"] = {
