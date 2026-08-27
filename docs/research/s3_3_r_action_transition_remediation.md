@@ -59,10 +59,26 @@ static. They are nevertheless non-trivial on the frozen dynamic subset, consiste
 three episode partitions. First-difference MSE makes the shuffle especially visible: on untouched
 test it is 0.006642 overall, versus 0.001144 for reversal. The raw evidence therefore rules out
 “the data contains no usable order signal” as a sufficient diagnosis. Model-side encoder and
-decoder audits remain necessary before assigning the A-R0 primary diagnosis.
+decoder audits were therefore used to assign the A-R0 diagnosis.
 
 Authoritative raw evidence is stored at
 `.local/artifacts/tactile_unit/s3_3_r/a_r0_raw_negative_strength.json`.
+
+### Model-side A-R0 diagnosis
+
+The accepted A2 encoder was audited on fixed-seed random samples without replacement, avoiding
+cache-stride aliasing. On untouched test, reversed and shuffled chunks remained almost identical
+to correct in the continuous latent: flattened cosine was 0.999562 and 0.999594, with mean
+distances 0.206506 and 0.200707. A different-episode chunk was clearly separated (cosine 0.740623,
+distance 7.615767). The baseline decoder was not bypassing its tokens: all-window normalized MSE
+was 0.069189 for full tokens, 1.142953 for zero/state-only, and 0.503642 for the mean token.
+However, its dynamic reversed/correct and shuffled/correct ratios were only 1.1016 and 1.0975,
+consistent with a representation that preserves action content much more strongly than order.
+
+The primary diagnosis is `MIXED`, with factors `ABSOLUTE_ACTION_ORDER_INVARIANCE` and
+`FROZEN_TRUNK_DOMAIN_MISMATCH`. `WEAK_TEMPORAL_NEGATIVES` and `DECODER_STATE_BYPASS` are not
+sufficient diagnoses. The complete evidence is stored in
+`.local/artifacts/tactile_unit/s3_3_r/a_r0_diagnosis.json`.
 
 ## Transition-centered representation
 
@@ -121,17 +137,47 @@ greater than 1.0. All-window results remain reported even when the dynamic gate 
 
 ## Required held-out evidence
 
-The evaluator is implemented to cover normalized and raw-unit MSE/MAE for all/dynamic windows and
-all four anatomical groups; correct, reversed, shuffled, different-episode, zero, mean, and
-state-only controls; magnitude/trend/active-side/arm-versus-hand/primitive probes; variance,
-effective rank, norms, query diversity, collapse, and pairwise distance; exact repeat and cold
-reload; validation-only feature ablations; and read-only Original-UniT frozen-RQ distortion,
-cosine, code use, perplexity, reconstruction retention, probe retention, and temporal-control
-retention.
+R1-P passed the frozen validation gate from step 500 onward and was selected at step 800. Its
+validation normalized MSE was 0.071214; dynamic reversed/correct and shuffled/correct were 1.0821
+and 1.3368; zero/full and mean/full were 8.5161 and 4.7708; effective rank was 11.3828 with no
+collapsed query. Training took 112.33 seconds. Because the smaller-change shared-path candidate
+passed, R1-N and R1-S were not executed.
+
+The untouched-test evaluator covered all 536,499 reconstruction windows. All-window normalized
+MSE/MAE were 0.069665/0.179546 and raw-unit MSE/MAE were 0.004646/0.042043. Dynamic normalized
+MSE/MAE were 0.123770/0.241333 and raw-unit MSE/MAE were 0.007721/0.055351. All-window normalized
+MSE by group was 0.065000 left arm, 0.072587 left hand, 0.066514 right arm, and 0.069230 right
+hand; dynamic values were 0.111258, 0.134145, 0.107512, and 0.122548 respectively.
+
+Temporal controls used a fixed 16,384-window test sample. Correct all/dynamic MSE was
+0.069656/0.124062. Reversed was 0.072342/0.140084 and shuffled was 0.082987/0.189652. The primary
+dynamic ratios were 1.1292 for reversal (paired-bootstrap 95% CI 1.1173–1.1412) and 1.5287 for
+shuffle (1.4875–1.5701). Different-episode, zero/state-only, and mean all-window ratios were
+10.7686, 16.3226, and 5.8655. Every preregistered gate passed.
+
+Frozen probes retained action semantics: active-side balanced accuracy 0.7925, arm-versus-hand
+0.6528, primitive balanced accuracy 0.5174, magnitude R2 0.2487, and trend R2 0.3031. Effective
+rank was 11.3073; mean query cosine distance was 0.8220; collapsed-query fraction was zero; repeat
+and cold reload were exact; outputs were finite `[B,8,32]`.
+
+The validation-only feature ablation favored the full absolute + relative + velocity input
+(normalized MSE 0.070789) over absolute only (0.072469), absolute + relative (0.070904), or
+absolute + velocity (0.071643).
 
 Original-UniT preservation is structural for R1-N because its checkpoint contains no shared or
 old-row value. For R1-P the deployable overlay remains T-Rex-owned and the source digest proof for
 rows 0–29 is unchanged. GR1 continues to select untouched row 24 and unchanged shared tensors.
+
+Rows 0–29 were bit-identical before and after training, with matching digest
+`e92ced68df2247c19dd99f5be8b165922fbcc06ffa0c27597999ebb4b54d803c`. Shared tensors remained
+frozen, so GR1 is preserved and R1-S-only T4 non-regression was not required.
+
+The Original-UniT RQ was evaluated read-only. Mean pre/post cosine was 0.9326 and relative
+distortion was 0.3049, but reconstruction MSE increased from 0.069817 continuous to 0.146826
+quantized (2.1030x). Stage 0/1 used 104/120 codes with perplexities 34.22/32.97. Quantized dynamic
+reversed/shuffled ratios were 1.0502/1.2805, while magnitude, trend, and primitive probe retention
+dropped materially. This is an RQ compatibility warning, not a failure of the continuous path;
+the RQ was not modified.
 
 ## GPU isolation and current execution state
 
@@ -141,21 +187,39 @@ rechecks compute occupancy after acquiring the lock, exposes exactly one device,
 `cuda:0`. The user explicitly authorized physical GPU 1 on 2026-08-26 after repeated GPU 2/3
 contention. Physical GPU 0 remains forbidden. No process is killed or preempted.
 
-At the latest execution audit, both permitted GPUs had conflicting external compute workloads, so
-the scientific state was `GPU_RESOURCE_BUSY`. The complete raw A-R0 pass, train-only transition
-statistics, implementation, and CPU tests proceeded. Model-side A-R0, R1-P/R1-N training,
-untouched-test evaluation, plots, HUMAN_ACCEPTANCE, and the final decision remain pending compliant
-GPU evidence. No provisional number in this document is used to claim readiness.
+Physical GPUs 2 and 3 had conflicting external workloads throughout the scientific run. The
+wrapper therefore used the explicitly authorized physical GPU 1, exposed as the sole logical
+`cuda:0`; `torch.cuda.device_count()` was one and the isolation audit passed. GPU 0 was never used.
+Model-side A-R0, training, and untouched-test evaluation all record the same compliant device
+provenance.
 
 ## Current verification
 
-The complete `tests/tactile_unit` suite passes 72 tests. It covers the new feature semantics,
+The complete `tests/tactile_unit` suite passes 74 tests. It covers the new feature semantics,
 anatomical ordering, temporal sensitivity, controls, `[B,8,32]` interface, gradient routing,
 checkpoint reload, deterministic behavior, frozen data interval/leakage, old-row and GR1
-preservation, and privacy rules. No `.local` file is tracked.
+preservation, and privacy rules. `git diff --check` and the explicit private-path scan pass. No
+`.local` file is tracked.
 
-## Final decision
+## Final decision and Track C contract
 
-Pending model-side A-R0, validation selection, and untouched-test evaluation. The route must end in
-exactly one of the objective's allowed `ACTION_TRANSITION_*` or `STRUCTURAL_FAIL` decisions; no
-readiness decision is made from the raw audit alone.
+The final decision is `ACTION_TRANSITION_READY_WITH_RQ_WARNING`. The selected continuous shared
+path passes reconstruction, temporal, token-necessity, non-collapse, determinism, and preservation
+gates. Only the unchanged frozen RQ is incompatible enough to warrant a warning.
+
+The frozen downstream contract is:
+
+- encoder type: shared R1-P with a T-Rex-only transition adapter;
+- input: current normalized state `[B,128]` plus planned/target action chunk `[B,16,128]`, using
+  absolute, raw-state-relative, and first-difference transition features;
+- output: continuous pre-RQ `z_a [B,8,32]`;
+- normalization: `.local/artifacts/tactile_unit/s3_3_r/transition_feature_stats.json`;
+- checkpoint: `.local/experiments/tactile_unit/s3_3_r/selected.pt`;
+- checkpoint SHA256: `a28b73a1148712bdf3b040305ca6942e552a3f2369950fe1a1562dafa9febfa0`;
+- decoder: `decode(z_a, current_state_features, embodiment_id=31)` produces planned target action
+  `[B,16,128]`;
+- online semantics: the action chunk is a planned/target transition representation, not a current
+  observation;
+- frozen-RQ status: warning; Track C should consume the continuous pre-RQ representation.
+
+Route A-R is complete. Track C was not started.
