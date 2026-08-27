@@ -64,6 +64,18 @@ def resolve_device(
     except BlockingIOError as error:
         handle.close()
         raise RuntimeError(f"physical GPU{physical} advisory lock is busy") from error
+    occupancy = subprocess.run(
+        [
+            "nvidia-smi", "-i", physical,
+            "--query-compute-apps=pid", "--format=csv,noheader",
+        ],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    if occupancy.stdout.strip():
+        handle.close()
+        raise RuntimeError(f"physical GPU{physical} has a conflicting compute workload")
     if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
         handle.close()
         raise RuntimeError("Track C requires exactly one visible CUDA device")

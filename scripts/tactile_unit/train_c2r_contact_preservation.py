@@ -263,7 +263,7 @@ def main() -> None:
         "test_loaded": False,
     })
     device, lock_handle, gpu = resolve_device(
-        args.device, allowed_physical=("2", "3")
+        args.device, allowed_physical=("1", "2", "3")
     )
     try:
         set_seed(int(config["seed"]))

@@ -199,7 +199,9 @@ def main() -> None:
     accepted_for_identity["c2r_metric_audit_cache_manifest"] = audit["cache_manifest_sha256_after"]
 
     # The locked test is intentionally not loaded until every selection lock above passes.
-    device, lock_handle, gpu = resolve_device(args.device, allowed_physical=("2", "3"))
+    device, lock_handle, gpu = resolve_device(
+        args.device, allowed_physical=("1", "2", "3")
+    )
     try:
         set_seed(int(config["seed"]))
         train = load_split(cache_root, "train", verify_hashes=True)

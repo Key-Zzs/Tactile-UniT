@@ -25,3 +25,5 @@ Before training, the C2-R0 audit reproduces the canonical native/shared Contact 
 After validation selection, `selection.json` is written with `test_loaded: false`, hashed, and verified before the 17,504-row locked test can be loaded. The evaluation is labeled **LOCKED RE-EVALUATION AFTER POST-C2 REMEDIATION**. The locked result cannot trigger more tuning.
 
 The final state is exactly one of the registered C2-R decisions. C3, C4, C5, C6/M3, VLA, 3D, and deployment are outside this work. M3 remains not established. The task stops after C2-R.
+
+Physical GPU1 was added to the allowed runtime set only after explicit user authorization during this C2-R goal on 2026-08-27. GPU0 remains forbidden.
