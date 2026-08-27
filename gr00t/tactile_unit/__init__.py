@@ -29,6 +29,18 @@ from .continuous_contact_bridge import (
     TokenSetCrossAttentionBridge,
     TwoTowerContinuousProjector,
 )
+from .vac_transition_contract import (
+    ActionTransitionTarget,
+    FutureOracleLeakageError,
+    ModalityAvailability,
+    OfflineVACTransitionTeachers,
+    OnlineCausalContext,
+    PredictedOrPlannedActionTransition,
+    TransitionAnchor,
+    VACContractError,
+    reject_online_oracles,
+    validate_integrated_manifest_row,
+)
 
 __all__ = [
     "ContactCodebookAdaptor",
@@ -54,6 +66,16 @@ __all__ = [
     "CausalContactGate",
     "TokenSetCrossAttentionBridge",
     "TwoTowerContinuousProjector",
+    "ActionTransitionTarget",
+    "FutureOracleLeakageError",
+    "ModalityAvailability",
+    "OfflineVACTransitionTeachers",
+    "OnlineCausalContext",
+    "PredictedOrPlannedActionTransition",
+    "TransitionAnchor",
+    "VACContractError",
+    "reject_online_oracles",
+    "validate_integrated_manifest_row",
 ]
 
 from .paired_contract import (

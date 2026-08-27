@@ -79,5 +79,17 @@ def test_revised_m3_is_spec_only_and_has_all_preregistered_gates() -> None:
     )
     assert protocol["status"] == "SPEC_ONLY_NOT_EXECUTED"
     assert not protocol["same_codebook_required"]
-    assert [row["id"] for row in protocol["preregistered_gates"]] == list(range(1, 13))
+    assert [row["id"] for row in protocol["preregistered_gates"]] == list(range(1, 15))
+    gates = " ".join(row["gate"].lower() for row in protocol["preregistered_gates"])
+    for required in (
+        "paired v-a",
+        "paired v-c",
+        "paired a-c",
+        "retrieval",
+        "cross-modal",
+        "missing modalities",
+        "temporal semantics",
+        "offline-only",
+    ):
+        assert required in gates
     assert protocol["dependencies"]["full_track_c"] == "not started by this protocol file"
