@@ -27,3 +27,11 @@ After validation selection, `selection.json` is written with `test_loaded: false
 The final state is exactly one of the registered C2-R decisions. C3, C4, C5, C6/M3, VLA, 3D, and deployment are outside this work. M3 remains not established. The task stops after C2-R.
 
 Physical GPU1 was added to the allowed runtime set only after explicit user authorization during this C2-R goal on 2026-08-27. GPU0 remains forbidden.
+
+## Result
+
+The six preregistered trials completed using train and validation only. Trial 4 was frozen before test with `lambda_future = lambda_delta = 2.0` and boundary weight `1.0`; its checkpoint SHA-256 is `21dccb8fc7fbe6de2598c18e718bd65f226e220e44352ab3d43246e7f9abdf89`. The locked evaluation was repeated only for deterministic verification and produced byte-identical JSON.
+
+The remediation improved Contact future MSE from `0.005611` to `0.003538` and dynamic MSE from `0.017815` to `0.011015`. V-C and A-C alignment remained above their hard gates, frozen Vision/Action outputs were identical, all native identities passed, and Contact did not collapse. Force retention passed at `1.065784`.
+
+Contact-transition retention improved from `0.896075` to `0.899283`, but remained below the preregistered `0.90` hard gate. The final decision is therefore **`C2R_DUAL_PATH_RECOMMENDED`**. No additional tuning is permitted from this locked-test result. A future C3 must be redesigned and preregistered around shared `u_v/u_a/u_c` plus Contact-native `z_c`; C3 was not implemented here.
