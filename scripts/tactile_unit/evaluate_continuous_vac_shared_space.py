@@ -19,8 +19,11 @@ import torch.nn.functional as F
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from gr00t.tactile_teacher.evaluation import classification_metrics  # noqa: E402
 from gr00t.tactile_unit.compatibility import parameter_digest  # noqa: E402
+from gr00t.tactile_unit.c2r_contact_preservation import (  # noqa: E402
+    canonical_contact_probe,
+    retention,
+)
 from gr00t.tactile_unit.continuous_vac_shared_space import (  # noqa: E402
     MODALITIES,
     different_episode_permutation,
@@ -134,33 +137,7 @@ def row_cosine(left: np.ndarray, right: np.ndarray) -> np.ndarray:
 
 
 def probe_classification(train_x, test_x, train_y, test_y, classes: int):
-    from sklearn.linear_model import RidgeClassifier
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-
-    model = make_pipeline(StandardScaler(), RidgeClassifier(alpha=10.0, class_weight="balanced"))
-    model.fit(np.asarray(train_x).reshape(len(train_x), -1), train_y)
-    prediction = model.predict(np.asarray(test_x).reshape(len(test_x), -1))
-    majority_class = int(np.bincount(np.asarray(train_y), minlength=classes).argmax())
-    majority = np.full(len(test_y), majority_class, dtype=np.int64)
-    recalls = {}
-    for label in range(classes):
-        mask = np.asarray(test_y) == label
-        recalls[str(label)] = None if not mask.any() else float(np.mean(prediction[mask] == label))
-    return {
-        **classification_metrics(test_y, prediction),
-        "majority": classification_metrics(test_y, majority),
-        "per_class_recall": recalls,
-        "probe": "StandardScaler + RidgeClassifier(alpha=10,class_weight=balanced)",
-    }
-
-
-def retention(shared: Mapping[str, Any], native: Mapping[str, Any]) -> float:
-    majority = float(native["majority"]["macro_f1"])
-    return float(
-        (float(shared["macro_f1"]) - majority)
-        / max(float(native["macro_f1"]) - majority, 1e-12)
-    )
+    return canonical_contact_probe(train_x, test_x, train_y, test_y, classes)
 
 
 def contact_evaluation(model, train, test, shared_train, shared_test, recovered_test, s2, device, batch_size):

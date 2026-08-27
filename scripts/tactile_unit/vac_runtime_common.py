@@ -29,7 +29,11 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def resolve_device(requested: str) -> tuple[torch.device, IO[str] | None, dict[str, Any]]:
+def resolve_device(
+    requested: str,
+    *,
+    allowed_physical: tuple[str, ...] = ("1", "2", "3"),
+) -> tuple[torch.device, IO[str] | None, dict[str, Any]]:
     if requested == "cpu":
         return torch.device("cpu"), None, {
             "preferred_physical": 3,
@@ -42,8 +46,9 @@ def resolve_device(requested: str) -> tuple[torch.device, IO[str] | None, dict[s
     if os.environ.get("CUDA_DEVICE_ORDER") != "PCI_BUS_ID":
         raise RuntimeError("CUDA_DEVICE_ORDER=PCI_BUS_ID is required")
     physical = os.environ.get("CUDA_VISIBLE_DEVICES")
-    if physical not in {"1", "2", "3"}:
-        raise RuntimeError("Track C permits GPU1 only by explicit authorization; GPU0 is forbidden")
+    if physical not in set(allowed_physical):
+        allowed = ",".join(allowed_physical)
+        raise RuntimeError(f"physical GPU is outside this task's allowed set: {allowed}")
     completed = subprocess.run(
         ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
         cwd=ROOT,
