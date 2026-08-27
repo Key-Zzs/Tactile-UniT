@@ -99,7 +99,21 @@ def test_cache_geometry_order_dtype_finite_and_cold_reload(tmp_path):
     assert result["modality_order"] == "PASS"
 
 
-def test_duplicate_pair_and_split_leakage_rejected(tmp_path):
+def test_duplicate_pair_rejected(tmp_path):
+    manifest = _make_cache(tmp_path)
+    pair_id = np.asarray(np.load(tmp_path / "train" / "pair_id.npy", allow_pickle=False)).copy()
+    pair_id[1] = pair_id[0]
+    write_npy_atomic(tmp_path / "train" / "pair_id.npy", pair_id)
+    manifest["splits"]["train"] = split_manifest(tmp_path / "train", tmp_path, len(pair_id))
+    manifest["canonical_sha256"] = sha256_json(
+        {key: value for key, value in manifest.items() if key != "canonical_sha256"}
+    )
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+    with pytest.raises(VACLatentCacheError, match="pair_id"):
+        validate_cache(tmp_path)
+
+
+def test_split_leakage_rejected(tmp_path):
     _make_cache(tmp_path, episodes=(range(10, 13), range(10, 13), range(30, 33)))
     with pytest.raises(VACLatentCacheError, match="episode split leakage"):
         validate_cache(tmp_path)

@@ -1,0 +1,68 @@
+{
+  "schema": "tactile3d-unit.vac-c2-continuous-shared-space.v1",
+  "seed": 43129,
+  "input_shape": [8, 32],
+  "output_shape": [8, 32],
+  "independent_encodability": true,
+  "candidates": {
+    "C0": {"architecture": "native_identity", "trainable": false},
+    "C1-linear": {"architecture": "per-token residual linear", "enabled": true},
+    "C1-mlp": {"architecture": "per-token residual MLP", "hidden_dim": 128, "enabled": true},
+    "C2-slot": {"architecture": "independent shared-slot resampler", "heads": 4, "layers": 1, "enabled": true}
+  },
+  "training": {
+    "epochs": 20,
+    "batch_size": 512,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.00001,
+    "validation_interval_epochs": 1,
+    "temperatures": [0.07, 0.1, 0.2],
+    "native_weights": [1.0, 5.0, 10.0],
+    "dynamic_weights": [1.0, 2.0],
+    "bounded_trials": 6,
+    "loss_weights": {
+      "alignment": 1.0,
+      "relational": 0.25,
+      "variance": 0.05
+    },
+    "negative_policy": "different episode only",
+    "test_selection_allowed": false
+  },
+  "evaluation": {
+    "bootstrap_samples": 5000,
+    "permutation_samples": 5000,
+    "retrieval_chunk": 2048,
+    "probe_max_iter": 2000,
+    "contact_retention_min": 0.9,
+    "force_retention_min": 0.9,
+    "action_cache_allclose_atol": 0.0005,
+    "action_cache_allclose_rtol": 0.0001,
+    "action_dynamic_reversed_ratio_min": 1.05,
+    "action_dynamic_shuffled_ratio_min": 1.05,
+    "retrieval_r10_chance_multiplier_min": 1.5
+  },
+  "runtime": {
+    "cache_root": ".local/cache/tactile_unit/vac_c1",
+    "experiment_root": ".local/experiments/tactile_unit/vac_c2",
+    "artifact_root": ".local/artifacts/tactile_unit/vac_c2",
+    "log_root": ".local/logs/tactile_unit/vac_c2",
+    "tmp_root": ".local/tmp/tactile_unit"
+  },
+  "gpu": {
+    "preferred_physical": 3,
+    "allowed_physical": [1, 2, 3],
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user authorization during Full Track C on 2026-08-27",
+    "logical": "cuda:0"
+  },
+  "scope": {
+    "cross_prediction": false,
+    "cross_reconstruction": false,
+    "modality_dropout": false,
+    "causal_student": false,
+    "shared_rq": false,
+    "contact_discretization": false,
+    "action_discretization": false,
+    "m3_established": false
+  }
+}
