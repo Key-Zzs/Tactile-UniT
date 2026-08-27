@@ -13,6 +13,22 @@ from .compatibility import (
     quantization_metrics,
     quantize_with_stage_diagnostics,
 )
+from .causal_contact_contract import (
+    ContactBridgeBatch,
+    ContactMode,
+    ContactTransitionTarget,
+    CurrentContactContext,
+    FutureContactLeakageError,
+    PredictedContactTransition,
+    VisionTransitionTarget,
+    reject_future_oracles,
+    runtime_contact_batch,
+)
+from .continuous_contact_bridge import (
+    CausalContactGate,
+    TokenSetCrossAttentionBridge,
+    TwoTowerContinuousProjector,
+)
 
 __all__ = [
     "ContactCodebookAdaptor",
@@ -26,6 +42,18 @@ __all__ = [
     "quantization_metrics",
     "quantize_with_stage_diagnostics",
     "build_contact_adaptor",
+    "ContactBridgeBatch",
+    "ContactMode",
+    "ContactTransitionTarget",
+    "CurrentContactContext",
+    "FutureContactLeakageError",
+    "PredictedContactTransition",
+    "VisionTransitionTarget",
+    "reject_future_oracles",
+    "runtime_contact_batch",
+    "CausalContactGate",
+    "TokenSetCrossAttentionBridge",
+    "TwoTowerContinuousProjector",
 ]
 
 from .paired_contract import (

@@ -1,0 +1,105 @@
+{
+  "experiment_name": "tactile3d_unit_s3_2_q_contact_semantic_tokenizer",
+  "experiment_version": "s3.2-q.v1",
+  "seed": 42,
+  "base_sha": "ead93bcb9ec3be3fe781dd734433eb82bb1819fd",
+  "canonical_contact": {
+    "geometry": [8, 32],
+    "horizon_frames": 16,
+    "pairs": {"train": 279680, "validation": 17504, "test": 17504},
+    "split_source": "accepted S1/S2 episode-disjoint manifest"
+  },
+  "frozen_identity": {
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "s2_transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "s2_train_codes_sha256": "0c638f321336419a7b12d79858ea3db4396fdb5177fea98b3da736dfe31164c1",
+    "s2_test_codes_sha256": "d193bf9c623567d034f70451efbb62b28386f5cc00d808b9cba4f12012442402",
+    "q_base_2_checkpoint_sha256": "7cc27e3553d2cfdc605e91ebeebe1982dfc4feb570695e7ef6f3576fdc5b5dd5",
+    "q_base_3_checkpoint_sha256": "1f4acede2343ca330ace61e6d310300a6ac034ac01a7f4a2312efb4f88e1abef"
+  },
+  "q0": {
+    "pca_fit_partition": "train",
+    "variance_bands": {
+      "rule": "fixed flattened-PC rank thirds before test access",
+      "high": [0, 85],
+      "mid": [85, 170],
+      "low": [170, 256]
+    },
+    "decision_thresholds": {
+      "low_vs_high_contact_f1_ratio": 0.8,
+      "boundary_to_non_boundary_mse_ratio": 1.25,
+      "boundary_probe_direction_error": 0.1
+    },
+    "probe_ridge": 10.0,
+    "test_used_for_model_selection": false
+  },
+  "bitrate": {
+    "queries": 8,
+    "codes_per_stage": 128,
+    "baseline_stages": 2,
+    "baseline_bits": 112,
+    "q2_semantic_stages": 1,
+    "q2_private_stages": 1,
+    "q2_total_bits": 112
+  },
+  "q1": {
+    "whitening": {
+      "kinds": ["pca", "zca"],
+      "regularization_candidates": [0.0001, 0.001, 0.01],
+      "fit_partition": "train",
+      "selection_partition": "validation",
+      "epochs": 8,
+      "learning_rate": 0.01
+    },
+    "predictive": {
+      "semantic_stages": 2,
+      "epochs": 8,
+      "learning_rate": 0.0003,
+      "batch_size": 2048,
+      "dynamic_weight": 3.0,
+      "lambda_future": 1.0,
+      "lambda_delta": 1.0,
+      "lambda_native": 0.1,
+      "lambda_relational": 0.1,
+      "lambda_temporal_reverse": 0.25,
+      "lambda_temporal_mismatch": 0.1,
+      "lambda_multi_horizon": 0.5
+    }
+  },
+  "q2": {
+    "semantic_stages": 1,
+    "private_stages": 1,
+    "codes_per_stage": 128,
+    "semantic_epochs": 10,
+    "private_epochs": 8,
+    "learning_rate": 0.0003,
+    "private_learning_rate": 0.01,
+    "batch_size": 2048,
+    "dynamic_weight": 4.0,
+    "anti_bypass": {
+      "private_near_full_ratio": 1.05,
+      "minimum_semantic_zero_relative_impact": 0.05
+    }
+  },
+  "gates": {
+    "single": {"r_recon": 0.8, "r_contact": 0.9, "r_force": 0.9},
+    "hierarchical_semantic": {"r_contact": 0.9, "r_force": 0.9},
+    "hierarchical_full": {"r_recon": 0.8},
+    "rare_boundary": {
+      "rule": "both free-to-contact and contact-to-free recall materially above majority and ordinary baseline",
+      "minimum_recall_gain_over_ordinary": 0.02
+    },
+    "temporal_controls": "correct beats reversed, different-episode shuffled, and mismatched future",
+    "collapse": "no hard code/query collapse and both streams used"
+  },
+  "gpu": {
+    "preferred_physical": 2,
+    "allowed_physical": [2, 3],
+    "forbidden_physical": [0, 1],
+    "logical_device": "cuda:0",
+    "require_single_visible_device": true
+  },
+  "runtime_policy": ".local/{artifacts,experiments,cache,logs,tmp}/tactile_unit/s3_2_q only",
+  "track_c_started": false
+}
