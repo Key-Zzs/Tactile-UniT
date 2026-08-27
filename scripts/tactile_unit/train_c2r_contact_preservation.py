@@ -329,7 +329,8 @@ def main() -> None:
                 order = generator.permutation(len(train))
                 totals = {name: 0.0 for name in (
                     "total", "alignment_contact", "native_z", "future", "delta",
-                    "relational_contact", "variance_contact",
+                    "relational_contact", "relational_pairwise",
+                    "relational_neighborhood", "relational_ordering", "variance_contact",
                 )}
                 batches = 0
                 for start in range(0, len(order), batch_size):

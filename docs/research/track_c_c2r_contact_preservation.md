@@ -14,6 +14,8 @@ The accepted C2 alignment, native recovery, relational, variance, temperature, o
 - `lambda_delta = lambda_future`;
 - train-derived Contact boundary weight in `{1.0, 2.0}`.
 
+Dynamic and boundary sample weights apply consistently to Contact alignment, native-code recovery, frozen-decoder future prediction, and delta prediction. The fixed Contact relational term preserves global pairwise cosine, native local neighborhoods, and native transition-distance ordering; it introduces no searched setting.
+
 There are at most six trials, at most ten epochs per trial, and patience is three. Training and checkpoint selection load only the frozen C1 train and validation caches. The validation utility prioritizes Contact-transition retention, future/delta physics, V-C and A-C alignment, and Contact non-collapse, in that order. Effective ties prefer the smallest `lambda_future`, followed by boundary weight one.
 
 Before training, the C2-R0 audit reproduces the canonical native/shared Contact probes, audits identical protocols, runs a three-seed diagnostic, and bootstraps the already-inspected C2 test predictions. An implementation discrepancy stops the study as `C2R_METRIC_IMPLEMENTATION_INVALID`.

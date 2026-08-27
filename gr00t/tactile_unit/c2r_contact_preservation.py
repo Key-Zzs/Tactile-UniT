@@ -125,6 +125,58 @@ def contact_sample_weight(
     )
 
 
+def weighted_sample_mse(
+    prediction: torch.Tensor,
+    target: torch.Tensor,
+    sample_weight: torch.Tensor,
+) -> torch.Tensor:
+    if prediction.shape != target.shape or prediction.shape[0] != len(sample_weight):
+        raise ValueError("weighted Contact MSE geometry mismatch")
+    per_sample = torch.square(prediction - target).flatten(1).mean(dim=1)
+    weight = sample_weight.to(per_sample)
+    return torch.sum(per_sample * weight) / torch.clamp(weight.sum(), min=1.0)
+
+
+def contact_relational_preservation(
+    native: torch.Tensor,
+    shared: torch.Tensor,
+    maximum: int = 128,
+    neighbors: int = 8,
+) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    """Preserve global cosine, native neighborhoods, and distance ordering."""
+
+    count = min(len(native), maximum)
+    if count < 3:
+        zero = native.new_zeros(())
+        return zero, {"pairwise": zero, "neighborhood": zero, "ordering": zero}
+    native_flat = F.normalize(native[:count].flatten(1), dim=-1, eps=1e-8).detach()
+    shared_flat = F.normalize(shared[:count].flatten(1), dim=-1, eps=1e-8)
+    native_similarity = native_flat @ native_flat.T
+    shared_similarity = shared_flat @ shared_flat.T
+    diagonal = torch.eye(count, dtype=torch.bool, device=native.device)
+    pairwise = relational_preservation(native[:count], shared[:count], maximum=count)
+    k = min(neighbors, count - 1)
+    neighborhood_index = native_similarity.masked_fill(diagonal, -torch.inf).topk(k, dim=1).indices
+    neighborhood = F.mse_loss(
+        shared_similarity.gather(1, neighborhood_index),
+        native_similarity.gather(1, neighborhood_index),
+    )
+    near_index = neighborhood_index[:, 0]
+    far_index = native_similarity.masked_fill(diagonal, torch.inf).argmin(dim=1)
+    row = torch.arange(count, device=native.device)
+    native_gap = (
+        native_similarity[row, near_index] - native_similarity[row, far_index]
+    ).detach()
+    shared_gap = shared_similarity[row, near_index] - shared_similarity[row, far_index]
+    ordering = F.relu(torch.clamp(native_gap, max=0.25) - shared_gap).mean()
+    total = (pairwise + neighborhood + ordering) / 3.0
+    return total, {
+        "pairwise": pairwise,
+        "neighborhood": neighborhood,
+        "ordering": ordering,
+    }
+
+
 def c2r_contact_loss(
     model: ContinuousVACSharedSpace,
     decoder: nn.Module,
@@ -176,13 +228,15 @@ def c2r_contact_loss(
         )
     alignment = torch.stack(pair_losses).mean()
     recovered = model.recover("contact", shared_contact)
-    native_z = F.mse_loss(recovered, native["contact"].detach())
+    native_z = weighted_sample_mse(recovered, native["contact"].detach(), sample_weight)
     predicted_future = decoder(recovered, h_current)
-    future = F.mse_loss(predicted_future, h_future.detach())
+    future = weighted_sample_mse(predicted_future, h_future.detach(), sample_weight)
     predicted_delta = predicted_future - h_current
     target_delta = h_future - h_current
-    delta = F.mse_loss(predicted_delta, target_delta.detach())
-    relational = relational_preservation(native["contact"], shared_contact)
+    delta = weighted_sample_mse(predicted_delta, target_delta.detach(), sample_weight)
+    relational, relational_parts = contact_relational_preservation(
+        native["contact"], shared_contact
+    )
     variance = variance_floor(shared_contact)
     total = (
         weights.alignment * alignment
@@ -199,6 +253,9 @@ def c2r_contact_loss(
         "future": future.detach(),
         "delta": delta.detach(),
         "relational_contact": relational.detach(),
+        "relational_pairwise": relational_parts["pairwise"].detach(),
+        "relational_neighborhood": relational_parts["neighborhood"].detach(),
+        "relational_ordering": relational_parts["ordering"].detach(),
         "variance_contact": variance.detach(),
     }
 

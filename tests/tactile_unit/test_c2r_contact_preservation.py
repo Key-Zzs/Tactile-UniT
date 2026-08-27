@@ -11,10 +11,12 @@ from gr00t.tactile_unit.c2r_contact_preservation import (
     c2r_contact_loss,
     canonical_contact_probe,
     configure_contact_only_trainability,
+    contact_relational_preservation,
     contact_sample_weight,
     frozen_state_digest,
     retention,
     verify_accepted_c2_checkpoint,
+    weighted_sample_mse,
 )
 from gr00t.tactile_unit.continuous_vac_shared_space import (
     ContinuousVACSharedSpace,
@@ -106,6 +108,21 @@ def test_train_derived_dynamic_and_boundary_weights():
     transition = torch.tensor([0, 0, 1, 2])
     weight = contact_sample_weight(dynamic, transition, dynamic_weight=2.0, boundary_weight=2.0)
     assert torch.equal(weight, torch.tensor([1.0, 2.0, 2.0, 4.0]))
+    prediction = torch.tensor([[1.0], [2.0], [3.0], [4.0]])
+    target = torch.zeros_like(prediction)
+    expected = (1.0 + 2.0 * 4.0 + 2.0 * 9.0 + 4.0 * 16.0) / 9.0
+    assert weighted_sample_mse(prediction, target, weight) == pytest.approx(expected)
+
+
+def test_contact_relational_loss_covers_pairwise_neighborhood_and_ordering():
+    torch.manual_seed(6)
+    native = torch.randn(16, 8, 32)
+    identical, identical_parts = contact_relational_preservation(native, native.clone())
+    corrupted, corrupted_parts = contact_relational_preservation(native, native.roll(1, 0))
+    assert identical == pytest.approx(0.0, abs=1e-7)
+    assert set(identical_parts) == {"pairwise", "neighborhood", "ordering"}
+    assert corrupted > identical
+    assert corrupted_parts["pairwise"] > 0
 
 
 def test_probe_protocol_is_identical_and_reports_rare_classes():
