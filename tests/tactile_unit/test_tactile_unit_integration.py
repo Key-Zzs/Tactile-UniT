@@ -56,9 +56,16 @@ def offline_batch(batch: int = 2, **overrides: object) -> OfflineVACTransitionTe
 
 
 def test_integration_branch_contains_both_accepted_lineages() -> None:
-    assert subprocess.check_output(
+    branch = subprocess.check_output(
         ["git", "branch", "--show-current"], cwd=ROOT, text=True
-    ).strip() == "develop/tactile-unit-integration"
+    ).strip()
+    assert branch in {"develop/tactile-unit-integration", "develop/tactile-unit-vac"}
+    if branch == "develop/tactile-unit-vac":
+        assert subprocess.run(
+            ["git", "merge-base", "--is-ancestor", "develop/tactile-unit-integration", "HEAD"],
+            cwd=ROOT,
+            check=False,
+        ).returncode == 0
     for branch in (
         "origin/develop/contact-semantic-tokenizer",
         "origin/develop/continuous-contact-bridge",
