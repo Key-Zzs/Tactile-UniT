@@ -7,6 +7,7 @@ def test_public_s3_0_files_do_not_contain_private_paths():
         Path("gr00t/tactile_unit"),
         Path("scripts/tactile_unit"),
         Path("tests/tactile_unit"),
+        Path("docs/research"),
     ]
     forbidden = (
         "/" + "home/",

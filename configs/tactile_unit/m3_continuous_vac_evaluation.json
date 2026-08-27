@@ -1,0 +1,33 @@
+{
+  "protocol_name": "tactile3d_unit_m3_continuous_vac_evaluation",
+  "protocol_version": "m3-continuous.v1-preregistered-by-c0",
+  "status": "SPEC_ONLY_NOT_EXECUTED",
+  "same_codebook_required": false,
+  "contact_interface": {
+    "type": "continuous",
+    "offline_teacher": "z_c [B,8,32] float32 from frozen S2 E_c",
+    "online_context": "h_t^c [B,256] from current tactile history",
+    "future_teacher_runtime_legal": false
+  },
+  "preregistered_gates": [
+    {"id": 1, "gate": "Original UniT V-A non-regression"},
+    {"id": 2, "gate": "T-Rex paired V-C exceeds shuffled"},
+    {"id": 3, "gate": "T-Rex paired A-C exceeds shuffled"},
+    {"id": 4, "gate": "Vision and Action predict continuous z_c"},
+    {"id": 5, "gate": "Contact improves future visual/action prediction"},
+    {"id": 6, "gate": "Dynamic and rare-boundary subsets evaluated separately"},
+    {"id": 7, "gate": "Current h_t^c is the online causal Contact input"},
+    {"id": 8, "gate": "Future-derived z_c remains teacher-only with runtime rejection"},
+    {"id": 9, "gate": "Missing Contact degrades gracefully to the Vision/Action baseline"},
+    {"id": 10, "gate": "Continuous Contact M2 semantics do not materially regress"},
+    {"id": 11, "gate": "Action Track A-R continuous contract is ready"},
+    {"id": 12, "gate": "No modality or query collapse"}
+  ],
+  "required_subsets": ["all", "dynamic", "free_to_contact", "contact_to_free"],
+  "test_selection_policy": "validation selects models and hyperparameters; test is used once",
+  "dependencies": {
+    "track_c0": "required",
+    "action_track_a_r": "required",
+    "full_track_c": "not started by this protocol file"
+  }
+}
