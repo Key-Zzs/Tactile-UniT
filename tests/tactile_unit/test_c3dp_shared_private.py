@@ -138,10 +138,14 @@ def test_test_cache_requires_frozen_selection_lock():
     )
 
 
-def test_c4_additions_are_bounded_and_no_causal_student_was_added():
+def test_c4_and_c5_additions_are_bounded():
     tracked = sorted(path.name for path in (ROOT / "gr00t/tactile_unit").glob("*c4*"))
     assert tracked == ["c4_availability_conditioning.py", "c4_uncertainty.py"]
-    assert list((ROOT / "gr00t/tactile_unit").glob("*c5*")) == []
+    c5 = sorted(path.name for path in (ROOT / "gr00t/tactile_unit").glob("*c5*"))
+    assert c5 == [
+        "c5_causal_visual.py", "c5_planned_action.py",
+        "c5_runtime_router.py", "c5_uncertainty.py",
+    ]
     assert list((ROOT / "gr00t/tactile_unit").glob("*causal_student*")) == []
     config = (ROOT / "configs/tactile_unit/c3dp_shared_private_cross_prediction.json").read_text()
     assert '"c4_started": false' in config
