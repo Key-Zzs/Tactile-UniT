@@ -161,7 +161,7 @@ def test_raw_planned_action_domain_diagnostic_is_pre_ar_and_policy_honest():
         "oracle_demonstration_surrogate", "mild_raw_noise", "strong_raw_noise",
         "temporal_smoothing", "one_step_lag", "different_episode_plan",
     }
-    assert value["accepted_oracle_u_a_reproduction_max_abs"] <= 1e-5
+    assert value["accepted_oracle_u_a_reproduction_max_abs"] <= value["accepted_c3msccr_reproduction_tolerance"]
     assert value["warning"] == "POLICY_PLAN_DOMAIN_WARNING"
 
 

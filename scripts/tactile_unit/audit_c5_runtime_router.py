@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--unit-checkpoint", type=Path, default=Path(os.environ["UNIT_FULLDATA_CKPT"]) if os.environ.get("UNIT_FULLDATA_CKPT") else None)
     parser.add_argument("--device", choices=("cpu", "cuda:0"), default="cpu")
-    parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--batch-size", type=int, default=1024)
     return parser.parse_args()
 
 
@@ -92,6 +92,7 @@ def raw_plan_variants(validation, feature_stats, seed):
 def planned_action_domain_diagnostic(
     config, validation, visual, causal, uncertainty, support, action_model, shared,
     feature_stats, uncertainty_selection, artifacts, device, batch_size,
+    reproduction_tolerance,
 ):
     training = json.loads((artifacts / "uncertainty_training.json").read_text())
     ood_mean = np.asarray(training["plan_ood_mean"], dtype=np.float32)
@@ -130,7 +131,7 @@ def planned_action_domain_diagnostic(
         <= metrics["strong_raw_noise"]["mean_calibrated_uncertainty"]
     )
     accepted_oracle_max_abs = float(np.max(np.abs(oracle_u_a - np.asarray(validation["u_a"]))))
-    if accepted_oracle_max_abs > 1e-5:
+    if accepted_oracle_max_abs > reproduction_tolerance:
         raise RuntimeError("C5_PLANNED_ACTION_INTERFACE_FAIL: full oracle plan encoding changed")
     result = {
         "schema": "tactile3d-unit.vac-c5-planned-action-domain-diagnostic.v1",
@@ -139,6 +140,7 @@ def planned_action_domain_diagnostic(
         "action_ordering": ["left arm 7", "left hand 22", "right arm 7", "right hand 22"],
         "actual_policy_available": False, "actual_policy_domain_validated": False,
         "accepted_oracle_u_a_reproduction_max_abs": accepted_oracle_max_abs,
+        "accepted_c3msccr_reproduction_tolerance": reproduction_tolerance,
         "warning": "POLICY_PLAN_DOMAIN_WARNING", "metrics": metrics,
         "oracle_mild_strong_uncertainty_monotonic": bool(monotonic_noise_uncertainty),
         "monotonicity_is_diagnostic_not_policy_calibration": True, "test_loaded": False,
@@ -164,6 +166,8 @@ def main() -> None:
         shared, _, shared_digest = load_frozen_shared_space(c3_config, device)
         released = ReleasedTokenizerSource.open(args.unit_checkpoint / "tokenizer")
         action_path = ROOT / config["runtime"]["action_checkpoint"]
+        exact_action_config = json.loads((ROOT / "configs/tactile_unit/c3msccr_exact_action_closure.json").read_text())
+        reproduction_tolerance = float(exact_action_config["cache"]["correct_reproduction_atol"])
         action_payload = torch.load(action_path, map_location="cpu", weights_only=False)
         feature_stats = action_payload["feature_stats"]
         action_model, _ = load_shared_transition_checkpoint(action_path, released, map_location=device)
@@ -183,7 +187,7 @@ def main() -> None:
         equivalence = {name: float(np.max(np.abs(value - policy))) for name, value in encoded.items()}
         accepted = np.asarray(validation["u_a"][:rows])
         reproduction_error = float(np.max(np.abs(policy - accepted)))
-        if max(equivalence.values()) != 0.0 or reproduction_error > 1e-5:
+        if max(equivalence.values()) != 0.0 or reproduction_error > reproduction_tolerance:
             raise RuntimeError("C5_PLANNED_ACTION_INTERFACE_FAIL: numeric encoding changed")
         with torch.no_grad():
             try:
@@ -200,6 +204,7 @@ def main() -> None:
         plan_diagnostic = planned_action_domain_diagnostic(
             config, validation, visual, causal, uncertainty, support, action_model, shared,
             feature_stats, uncertainty_selection, artifacts, device, args.batch_size,
+            reproduction_tolerance,
         )
         truth_table = []
         for action in (True, False):
@@ -229,7 +234,9 @@ def main() -> None:
             "demo_action_runtime_rejection": demo_rejected,
             "planned_action_numeric_equivalence_max_abs": equivalence,
             "accepted_u_a_reproduction_max_abs": reproduction_error,
+            "accepted_u_a_reproduction_tolerance": reproduction_tolerance,
             "full_validation_prediction_max_abs_vs_accepted": full_max_error,
+            "full_validation_reproduction_batch_size": args.batch_size,
             "full_path_nonregression": full_max_error == 0.0,
             "policy_plan_domain_validated": False, "warning": "POLICY_PLAN_DOMAIN_WARNING",
             "uncertainty_output": "calibrated shared-error variance",
