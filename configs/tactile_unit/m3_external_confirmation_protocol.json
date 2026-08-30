@@ -1,0 +1,11 @@
+{
+  "schema":"tactile3d-unit.m3-external-confirmation-protocol.v1",
+  "status":"PUBLICATION_EXTERNAL_CONFIRMATION_PENDING",
+  "training_allowed":false,
+  "model_selection_allowed":false,
+  "freeze_before_inspection":true,
+  "dataset_requirements":["fresh never-used V+A+C bridge data","synchronized Vision with each physical transition","planned/executed Action and current Contact history","documented t to t+16 target horizon","dynamic and Contact-boundary examples"],
+  "required_checks":["VAC alignment","full Contact prediction","missing-H degradation","uncertainty","raw Action reversal and shuffle sensitivity","runtime causal legality","rank and noncollapse"],
+  "threshold_policy":"Reuse M3 definitions and thresholds where semantically applicable; freeze any domain adaptation before opening the data.",
+  "forbidden_claims_until_complete":["publication-level external generalization","real policy-plan distribution validation","real-robot closed-loop success"]
+}
