@@ -4,21 +4,69 @@
 
 ## Project Overview
 
-Tactile3D-UniT is a research fork of [UniT](README_UniT.md). It extends the
-idea of a Unified Physical Language toward a representation that can eventually
-unify 2D visual consequence, 3D geometric consequence, action realization, and
-contact dynamics. **M0-R, S1, and S2 are complete: M1 establishes a predictable
-continuous contact-state latent, and M2 establishes a predictive continuous
-contact-dynamics representation.** S3 is in progress: S3.0 completes the
-shared-codebook compatibility audit, S3.1 establishes the paired T-Rex
-vision–action–contact data contract, and S3.2 completes the lightweight Contact
-Adaptor experiment. Its result is `ADAPTOR_INSUFFICIENT`; Contact tokens are not
-integrated into UniT's shared RQ and no shared tactile token is claimed. S3.2-R
-then closes the Contact shared-token diagnostic decision tree at R0: both the
-same-budget private Contact RQ and one bounded larger-capacity sensitivity fail
-the pre-registered task-relevant gate. The primary diagnosis is
-`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`; R1–R3 are skipped by the decision
-tree, no shared-RQ candidate is promoted, and M3 remains unestablished.
+Tactile3D-UniT is a research fork of [UniT](README_UniT.md) that studies a
+continuous shared physical representation across Vision, Action, and
+Contact/Tactile. M0-R, S1, and S2 establish the historical UniT and Contact
+state/dynamics baselines. Track C (C1–C6) now establishes the M3 system on a
+frozen internal T-Rex representation-engineering benchmark, with the explicit
+warnings documented below.
+
+## M3 System Snapshot (Track C)
+
+M3's canonical Track-C representation uses continuous pre-RQ latents, not RQ:
+
+```text
+z_v, z_a, z_c ∈ R^(8×32)
+u_v = P_v(z_v),  u_a = P_a(z_a),  u_c = P_c(z_c)
+z_c = R_c(u_c) + r_c^priv
+```
+
+Here `u_v`, `u_a`, and `u_c` are the shared physical semantics, while
+`r_c^priv` retains Contact-private detail. The canonical Contact predictor is
+`u_hat_c = F_AH(u_a^plan, h_t^c)`, where Action plus current Contact context is
+the full source.
+
+<p align="center">
+  <img src="docs/pic/Tactile-UniT_StructureV1.png" alt="Tactile-UniT framework" width="900">
+</p>
+
+<p align="center"><em>Tactile-UniT framework: continuous Vision–Action–Contact shared representation, Contact shared/private decomposition, causal Contact prediction, availability-aware fallback, and calibrated uncertainty.</em></p>
+
+The causal runtime contract is:
+
+```text
+Action + current Contact context  → FULL_AH
+Action without current Contact   → FALLBACK_A
+No Action                         → ABSTAIN_NO_ACTION
+```
+
+`F_AH` is the canonical full path, and `F_A` is the causal missing-Contact
+fallback. `F_VA` is an offline future-Vision upper bound only; the C5 causal
+Vision substitution remains diagnostic and was not promoted. Runtime uncertainty
+is calibrated on the locked benchmark and supports graceful degradation. The
+canonical runtime has no oracle or future-input dependency, and the Contact
+private residual is not a prediction target.
+
+**M3 = `ESTABLISHED_WITH_WARNINGS`; Track C = `COMPLETE`.** This is a frozen
+internal representation-engineering result, not a publication-level
+generalization claim or a real-robot closed-loop deployment claim.
+
+Prominent limitations are: `POLICY_PLAN_DOMAIN_WARNING`,
+`RANK_CONTRACTION_WARNING`, `CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED`, and
+`PUBLICATION_EXTERNAL_CONFIRMATION_PENDING`. In particular, no real policy-plan
+distribution or external publication confirmation has been established.
+
+The tracked evidence and reproducibility boundary are defined by
+[`configs/tactile_unit/m3_system_manifest.json`](configs/tactile_unit/m3_system_manifest.json),
+[`configs/tactile_unit/m3_claim_ledger.json`](configs/tactile_unit/m3_claim_ledger.json),
+[`configs/tactile_unit/m3_limitations.json`](configs/tactile_unit/m3_limitations.json),
+[`configs/tactile_unit/m3_external_confirmation_protocol.json`](configs/tactile_unit/m3_external_confirmation_protocol.json),
+and [`docs/research/track_c_c6_m3_system_evaluation.md`](docs/research/track_c_c6_m3_system_evaluation.md),
+along with the relevant scripts and tests. The `.local/` benchmark artifacts are
+intentionally not public README dependencies.
+
+Full repository regression qualification: **0 failed** (`411 passed`, `3`
+warnings in the recovered `unit` environment).
 
 ## Stage Roadmap
 
@@ -27,7 +75,7 @@ tree, no shared-RQ candidate is promoted, and M3 remains unestablished.
 | M0-R | Original UniT representation-ready reproduction | Complete |
 | S1 | Predictable Tactile / Contact-State Teacher | Complete (M1 established) |
 | S2 | Predictive Contact-Dynamics Branch | Complete (M2 established) |
-| S3 | Vision–Action–Contact Unified Token | In progress (S3.2-R complete; no shared-RQ candidate) |
+| S3 / Track C | Vision–Action–Contact continuous system | Complete (`M3 = ESTABLISHED_WITH_WARNINGS`) |
 | S4 | RGB Point Cloud / 3D Physical Transition | Planned |
 | S5 | Full Tactile3D-UniT Shared Physical Vocabulary | Planned |
 | S6 | VLA Integration | Planned |
@@ -52,7 +100,7 @@ tree, no shared-RQ candidate is promoted, and M3 remains unestablished.
 - [x] M0-R Original UniT representation-ready reproduction
 - [x] S1 Predictable Contact-State Teacher
 - [x] S2 Predictive Contact-Dynamics Branch
-- [ ] S3 Vision–Action–Contact Shared Physical Tokenizer — in progress
+- [x] S3 / Track C Vision–Action–Contact continuous shared physical system
 - [x] S3.0 Shared-Codebook Compatibility Audit
 - [x] S3.1 Paired Vision–Action–Contact Data Contract
 - [x] S3.2 Contact Adaptor
@@ -124,9 +172,10 @@ and R3 are `SKIPPED_BY_DECISION_TREE`, the primary diagnosis is
 `CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`, and no frozen or adapted shared RQ
 is promoted. See
 [`configs/tactile_unit/s3_2_r_diagnostics.json`](configs/tactile_unit/s3_2_r_diagnostics.json).
-S3.3 Action Embodiment Bootstrap is recommended as an orthogonal next step but
-has not started; S3.4 shared-token integration is not ready. M3 is not
-established.
+S3.3 Action Embodiment Bootstrap remains an orthogonal future direction and has
+not started; shared-token/RQ integration is outside the canonical M3 Track-C
+contract. M3 instead uses continuous pre-RQ latents and is established with
+the warnings listed in the M3 System Snapshot.
 
 ## Environment
 
@@ -211,12 +260,12 @@ Non-overlapping Contact Transition Contract (k=16)
 Continuous 8×32 Contact-Dynamics Code (M2)
 ```
 
-S2 remains tactile-only and continuous. S3.1 adds the paired
-Vision–Action–Contact data contract, and S3.2 evaluates the lightweight Contact
-Adaptor. S3.2-R shows that even a private same-budget Contact RQ does not meet
-the task-relevant gate, and a bounded larger-capacity check does not change that
-decision. Shared quantization, learned fusion, and UniT integration therefore
-remain future work pending a revised Contact discretization/training objective.
+S2 remains tactile-only and continuous. Track C composes the paired
+Vision–Action–Contact contract, continuous shared-space mappings, Contact
+shared/private recovery, causal `FULL_AH` prediction, `FALLBACK_A`, explicit
+abstention, and calibrated uncertainty. The earlier S3.2-R private Contact RQ
+diagnostics remain a negative result: canonical M3 does not claim shared RQ or
+shared quantization.
 
 ## Local Runtime Artifact Policy
 

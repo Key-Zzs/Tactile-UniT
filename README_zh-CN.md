@@ -4,15 +4,62 @@
 
 ## 项目概览
 
-Tactile3D-UniT 是基于 [UniT](README_UniT.md) 的研究 fork。项目旨在将
-Unified Physical Language 扩展为未来可统一二维视觉后果、三维几何后果、动作实现和接触动力学的表征。
-**M0-R、S1 与 S2 已完成：M1 建立了可预测的连续接触状态 latent，M2 建立了
-预测式连续接触动力学表征。** S3 正在进行：S3.0 完成共享 codebook 兼容性审计，
-S3.1 建立 T-Rex 视觉–动作–接触配对契约，S3.2 的轻量 Contact adaptor 结果为
-`ADAPTOR_INSUFFICIENT`。S3.2-R 随后在 R0 结束诊断树：同预算私有 Contact RQ 与
-一次受限的增容敏感性实验均未通过预注册的 task-relevant gate。主要诊断为
-`CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`；R1–R3 由决策树跳过，不推广任何
-shared-RQ candidate，M3 仍未建立。
+Tactile3D-UniT 是基于 [UniT](README_UniT.md) 的研究 fork，研究视觉、动作与
+Contact/Tactile 之间的连续共享物理表征。M0-R、S1 与 S2 建立了历史 UniT 以及
+Contact 状态/动力学基线。Track C（C1–C6）现已在冻结的 T-Rex 内部表征工程
+benchmark 上建立 M3 系统，同时保留下述明确警告。
+
+## M3 系统概览（Track C）
+
+M3 的 canonical Track C 使用连续的 pre-RQ latent，而不是 RQ：
+
+```text
+z_v, z_a, z_c ∈ R^(8×32)
+u_v = P_v(z_v),  u_a = P_a(z_a),  u_c = P_c(z_c)
+z_c = R_c(u_c) + r_c^priv
+```
+
+其中 `u_v`、`u_a`、`u_c` 表示共享物理语义，`r_c^priv` 保留 Contact 私有
+细节。canonical Contact predictor 为
+`u_hat_c = F_AH(u_a^plan, h_t^c)`，完整输入源是 Action 加当前 Contact context。
+
+<p align="center">
+  <img src="docs/pic/Tactile-UniT_StructureV1.png" alt="Tactile-UniT framework" width="900">
+</p>
+
+<p align="center"><em>Tactile-UniT 框架：连续 Vision–Action–Contact 共享表征、Contact shared/private 分解、因果 Contact 预测、按可用性回退，以及校准不确定性。</em></p>
+
+因果 runtime contract 为：
+
+```text
+Action + 当前 Contact context  → FULL_AH
+Action、但无当前 Contact      → FALLBACK_A
+无 Action                      → ABSTAIN_NO_ACTION
+```
+
+`F_AH` 是 canonical full path，`F_A` 是因果的缺失 Contact fallback。`F_VA`
+仅是 offline future-Vision upper bound；C5 因果 Vision substitution 仍只是
+diagnostic，未被推广。锁定 benchmark 上的不确定性已完成校准，可支持 graceful
+degradation。canonical runtime 不依赖 oracle 或 future input，Contact private
+residual 也不是预测目标。
+
+**M3 = `ESTABLISHED_WITH_WARNINGS`；Track C = `COMPLETE`。** 这是冻结的内部
+表征工程结果，不构成 publication-level generalization 或真实机器人闭环部署声明。
+
+主要限制为：`POLICY_PLAN_DOMAIN_WARNING`、`RANK_CONTRACTION_WARNING`、
+`CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED` 与
+`PUBLICATION_EXTERNAL_CONFIRMATION_PENDING`。尤其是，尚未验证真实 policy-plan
+分布，也没有完成外部 publication confirmation。
+
+受 Git 跟踪的证据与可复现边界由
+[`configs/tactile_unit/m3_system_manifest.json`](configs/tactile_unit/m3_system_manifest.json)、
+[`configs/tactile_unit/m3_claim_ledger.json`](configs/tactile_unit/m3_claim_ledger.json)、
+[`configs/tactile_unit/m3_limitations.json`](configs/tactile_unit/m3_limitations.json)、
+[`configs/tactile_unit/m3_external_confirmation_protocol.json`](configs/tactile_unit/m3_external_confirmation_protocol.json)
+和 [`docs/research/track_c_c6_m3_system_evaluation.md`](docs/research/track_c_c6_m3_system_evaluation.md)
+定义，并由相关 scripts/tests 支持。`.local/` benchmark 产物特意不作为公开 README 依赖。
+
+完整仓库回归资格验证：**0 failed**（恢复的 `unit` 环境中 `411 passed`、`3` 个 warnings）。
 
 ## 阶段路线图
 
@@ -21,7 +68,7 @@ shared-RQ candidate，M3 仍未建立。
 | M0-R | 原始 UniT representation-ready 复现 | 已完成 |
 | S1 | 可预测触觉 / 接触状态教师 | 已完成（M1 已建立） |
 | S2 | 预测式接触动力学分支 | 已完成（M2 已建立） |
-| S3 | 视觉–动作–接触统一 token | 进行中（S3.2-R 已完成；无 shared-RQ candidate） |
+| S3 / Track C | 视觉–动作–接触连续系统 | 已完成（`M3 = ESTABLISHED_WITH_WARNINGS`） |
 | S4 | RGB 点云 / 三维物理转移 | 计划中 |
 | S5 | 完整 Tactile3D-UniT 共享物理词表 | 计划中 |
 | S6 | VLA 集成 | 计划中 |
@@ -46,7 +93,7 @@ shared-RQ candidate，M3 仍未建立。
 - [x] M0-R 原始 UniT representation-ready 复现
 - [x] S1 可预测接触状态教师
 - [x] S2 预测式接触动力学分支
-- [ ] S3 视觉–动作–接触共享物理 tokenizer——进行中
+- [x] S3 / Track C 视觉–动作–接触连续共享物理系统
 - [x] S3.0 共享 codebook 兼容性审计
 - [x] S3.1 视觉–动作–接触配对数据契约
 - [x] S3.2 Contact adaptor
@@ -101,8 +148,9 @@ UniT nominal budget（8 queries、32-D、2 stages、每 stage 128 codes）的 re
 `CONTACT_DISCRETIZATION_OR_OBJECTIVE_LIMIT`，不推广 frozen 或 adapted shared RQ。
 公开规范见
 [`configs/tactile_unit/s3_2_r_diagnostics.json`](configs/tactile_unit/s3_2_r_diagnostics.json)。
-S3.3 Action Embodiment Bootstrap 可作为正交的下一步，建议进入但尚未开始；S3.4
-shared-token integration 尚未就绪，M3 未建立。
+S3.3 Action Embodiment Bootstrap 仍是尚未开始的正交后续方向；shared-token/RQ
+integration 不属于 canonical M3 Track C 契约。M3 使用连续 pre-RQ latent，并以
+上文列出的 warnings 状态建立。
 
 ## 环境
 
@@ -181,10 +229,10 @@ S1 Wrench History 契约
 连续 8×32 接触动力学 code（M2）
 ```
 
-S2 仍是纯触觉、连续表征阶段。S3.1 建立配对数据契约，S3.2 评估轻量 Contact
-adaptor；S3.2-R 进一步表明，同预算私有 Contact RQ 未达到 task-relevant gate，
-而一次受限增容也未改变判定。共享量化、视觉–动作–接触融合与 UniT 集成必须等待
-Contact discretization / training objective 修订后再评估。
+S2 仍是纯触觉、连续表征阶段。Track C 组合了 Vision–Action–Contact 配对契约、
+连续 shared-space mapping、Contact shared/private recovery、因果 `FULL_AH`
+prediction、`FALLBACK_A`、显式 abstention 与校准不确定性。此前 S3.2-R 的私有
+Contact RQ 诊断仍是 negative result；canonical M3 不声称 shared RQ 或共享量化。
 
 ## 本地运行产物策略
 
