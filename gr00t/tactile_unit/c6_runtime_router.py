@@ -11,9 +11,14 @@ class C6RuntimeMode(str, Enum):
     ABSTAIN_NO_ACTION = "ABSTAIN_NO_ACTION"
 
 
-def route_c6_availability(*, action_available: bool, contact_context_available: bool, vision_available: bool) -> C6RuntimeMode:
+def route_c6_availability(
+    *, action_available: bool, contact_context_available: bool, vision_available: bool
+) -> C6RuntimeMode:
     """Route only explicit availability metadata; Vision never changes M3 runtime."""
-    if any(type(value) is not bool for value in (action_available, contact_context_available, vision_available)):
+    if any(
+        type(value) is not bool
+        for value in (action_available, contact_context_available, vision_available)
+    ):
         raise TypeError("availability values must be explicit bools")
     if not action_available:
         return C6RuntimeMode.ABSTAIN_NO_ACTION
