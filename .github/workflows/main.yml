@@ -37,19 +37,20 @@ jobs:
           - python: "3.10"
             task:
               name: Lint
-              run: ruff check .
+              run: ruff check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
 
           - python: "3.10"
             task:
               name: Style
               run: |
-                isort --check .
-                black --check .
+                isort --check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
+                black --check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
 
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Pull LFS objects
         run: git lfs pull

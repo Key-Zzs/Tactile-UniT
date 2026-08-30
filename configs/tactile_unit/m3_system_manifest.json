@@ -1,0 +1,19 @@
+{
+  "schema": "tactile3d-unit.m3-system-manifest.v1",
+  "stage": "M3",
+  "canonical_representation": {"native_latents": "z_v,z_a,z_c: [B,8,32] continuous", "shared_latents": "u_v,u_a,u_c: [B,8,32]", "rq_in_canonical_vac_route": false, "contact_contract": "z_c = R_c(u_c) + r_c_priv; r_c_priv is actual-Contact-only and never a runtime target"},
+  "components": [
+    {"name":"Original UniT","role":"frozen baseline","sha256":["7a651f488c93521e0d507880fc250a475e6a08aa9307aa1349f9d3509844971e","32d5c326f6c83d12185b6954d2a52511f66ad18b6fdf814aecc5726dd39c243c","2f8093a900330e5111b63e44dc1687b3212bec343e5b3832bf2e40f2bf18a768","3b6d73d2442ce694287c5cd8b93db1bb232909becf35f08ecabadb614b9a1b86"],"runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"C1 latent manifest","role":"frozen paired VAC dataset identity","sha256":"dd2657fca1e53987fe74dba6defdf81ced2dd17b12946404136aa229dcf17040","runtime_routable":false,"causal":true,"requires_future_input":false},
+    {"name":"P_v/P_a/P_c","role":"shared-space mapping","sha256":"454d7a33df20e5329e2be4804760dad211462e3eb405c16141f061f0c1ef113a","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"R_c and r_c_priv","role":"Contact shared recovery plus actual-Contact private residual","sha256":"21dccb8fc7fbe6de2598c18e718bd65f226e220e44352ab3d43246e7f9abdf89","runtime_routable":true,"causal":true,"requires_future_input":false,"warning":"private residual is not predicted"},
+    {"name":"A-R","role":"planned-action continuous encoder","sha256":"a28b73a1148712bdf3b040305ca6942e552a3f2369950fe1a1562dafa9febfa0","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"S1","role":"frozen Contact state teacher","sha256":"54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"S2","role":"frozen Contact dynamics decoder","sha256":"c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"F_AH","role":"canonical full Contact predictor","sha256":"862d5bef53dc027a34212cdd22e82f8c5e07896c53ecc275580266fa5c8b469e","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"F_A","role":"canonical missing-H fallback","sha256":"eaedaa1614a662dea5a5d54f4dfeb2af28b598a09dfe795c435d94005d9401b7","runtime_routable":true,"causal":true,"requires_future_input":false},
+    {"name":"F_VA","role":"offline future-Vision upper bound","sha256":"f9d6905d4d7184440c679b6bee004e38e150bdf57288792cf7cbb47ce9c5dfe3","runtime_routable":false,"causal":false,"requires_future_input":true},
+    {"name":"C5 causal visual","role":"diagnostic negative result only","sha256":"5cf8c0a001eba174e47b18712f6624c961a383c33338a8b0a0ce35254b4f3e9c","runtime_routable":false,"causal":true,"requires_future_input":false,"warning":"CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED"},
+    {"name":"C5 uncertainty","role":"calibrated runtime uncertainty","sha256":"5ea1ff866fbc60cacb5735dd6655b7e8343be11f46b3d06ad53b5900fa6f812f","runtime_routable":true,"causal":true,"requires_future_input":false}
+  ]
+}

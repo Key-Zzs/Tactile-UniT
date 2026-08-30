@@ -1,0 +1,109 @@
+{
+  "audit_name": "tactile3d_unit_s3_0_shared_codebook_compatibility",
+  "audit_version": "s3.0.v1",
+  "seed": 42,
+  "original_unit": {
+    "variant": "VLA-UniT-3B-fulldata",
+    "tokenizer_source": "official released checkpoint nested tokenizer",
+    "tokenizer_identity_reference": "configs/reproduction/baselines/unit_gr1_fulldata.json",
+    "tokenizer_files_sha256": {
+      "tokenizer/config.json": "7a651f488c93521e0d507880fc250a475e6a08aa9307aa1349f9d3509844971e",
+      "tokenizer/model.safetensors.index.json": "3b6d73d2442ce694287c5cd8b93db1bb232909becf35f08ecabadb614b9a1b86",
+      "tokenizer/model-00001-of-00002.safetensors": "32d5c326f6c83d12185b6954d2a52511f66ad18b6fdf814aecc5726dd39c243c",
+      "tokenizer/model-00002-of-00002.safetensors": "2f8093a900330e5111b63e44dc1687b3212bec343e5b3832bf2e40f2bf18a768"
+    },
+    "rq": {
+      "frozen": true,
+      "stages": 2,
+      "codes_per_stage": 128,
+      "embedding_dim": 32,
+      "input": "Original UniT L2 or contact z_c directly",
+      "forbidden_contact_path": "vq_down_resampler(z_c)"
+    }
+  },
+  "t4_reference": {
+    "metric_implementation_commit": "500b3b36f335cdbda886729e97315fa036e7db1c",
+    "benchmark_config": "configs/reproduction/baselines/unit_representation_gr1.json",
+    "benchmark_config_sha256": "b95d22d80b184522b51c9d7259214f721bd84aac0c03399b49351192653b087f",
+    "resolved_manifest_sha256": "fa854c3739ed2c2ebdbb234a3aa35f1ed363f1188e8cd4aa167d64cdda691a23",
+    "sample_count": 960,
+    "modalities": ["vision", "action", "multimodal"],
+    "l2_shape": [960, 3, 8, 32]
+  },
+  "contact": {
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "s2_transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "cached_train_codes_sha256": "0c638f321336419a7b12d79858ea3db4396fdb5177fea98b3da736dfe31164c1",
+    "cached_test_codes_sha256": "d193bf9c623567d034f70451efbb62b28386f5cc00d808b9cba4f12012442402",
+    "canonical_horizon_frames": 16,
+    "geometry": [8, 32],
+    "full_test_usage": true,
+    "cross_distribution_subset": {
+      "count": 960,
+      "selection": "joint dynamic/contact-transition strata with proportional largest-remainder allocation; rows within each stratum ordered by SHA256(seed, episode_id, anchor_frame, row_index)",
+      "test_score_cherry_picking": false
+    }
+  },
+  "freeze": {
+    "original_unit_tokenizer": true,
+    "original_unit_rq": true,
+    "s1_teacher": true,
+    "s2_encoder": true,
+    "s2_decoder": true,
+    "optimizer_allowed": false,
+    "training_allowed": false,
+    "adaptor_training_allowed": false
+  },
+  "metrics": {
+    "quantization": [
+      "absolute_mse",
+      "energy_normalized_relative_distortion",
+      "pre_post_cosine",
+      "residual_norm_by_rvq_stage"
+    ],
+    "usage_per_stage": [
+      "active_codes",
+      "active_ratio",
+      "entropy",
+      "perplexity",
+      "top1_frequency",
+      "top5_frequency",
+      "active_set_jaccard",
+      "jensen_shannon_divergence"
+    ],
+    "distribution": [
+      "token_norm",
+      "pooled_norm",
+      "per_dimension_mean_std",
+      "covariance_spectrum",
+      "effective_rank",
+      "pairwise_distance",
+      "mmd",
+      "sliced_wasserstein"
+    ],
+    "semantic_retention": [
+      "quantized_decoder_reconstruction",
+      "contact_transition_macro_f1",
+      "force_trend_macro_f1",
+      "query_diversity"
+    ]
+  },
+  "decision": {
+    "states": [
+      "DIRECT_RQ_COMPATIBLE",
+      "ADAPTER_RECOMMENDED",
+      "STRUCTURAL_FAIL"
+    ],
+    "principle": "Interpret contact relative to the three Original UniT modality references; do not require distribution equality.",
+    "engineering_diagnostics_not_scientific_thresholds": {
+      "severe_usage_collapse": "any stage active_ratio <= 0.02 or top1_frequency >= 0.90",
+      "large_relative_distortion_mismatch": "contact relative distortion > 4 times the maximum Original UniT modality distortion",
+      "lost_reconstruction_advantage": "quantized code retains <= 25 percent of the continuous-code improvement over the better zero/shuffled control",
+      "lost_probe_advantage": "quantized probe retains <= 25 percent of the continuous probe improvement over its majority baseline"
+    }
+  },
+  "artifact_policy": ".local/{artifacts,logs,cache}/tactile_unit/s3_0 and .local/tmp/tactile_unit only",
+  "rgb_required": false,
+  "next_stage_started": false
+}

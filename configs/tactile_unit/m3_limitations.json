@@ -1,0 +1,5 @@
+{
+  "schema":"tactile3d-unit.m3-limitations.v1",
+  "warnings":["POLICY_PLAN_DOMAIN_WARNING","RANK_CONTRACTION_WARNING","CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED","PUBLICATION_EXTERNAL_CONFIRMATION_PENDING"],
+  "limitations":["No accepted real policy-generated T-Rex plan distribution was evaluated.","Predicted shared Contact representations have lower effective rank than oracle u_c.","Current causal Vision did not demonstrate robust correct-context use.","The 17,504-row benchmark is repeatedly inspected engineering data, not a publication final test.","No real-robot closed-loop claim is made.","Contact-private detail is not predicted.","FALLBACK_A is intentionally lower quality than FULL_AH."]
+}

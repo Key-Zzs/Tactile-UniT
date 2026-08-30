@@ -1,0 +1,21 @@
+{
+  "schema":"tactile3d-unit.m3-claim-ledger.v1",
+  "scope":"LOCKED ENGINEERING BENCHMARK ONLY",
+  "training_allowed":false,
+  "model_selection_allowed":false,
+  "test_loaded":false,
+  "claims":[
+    {"id":"A","claim":"Original UniT remains non-regressed.","evidence":"accepted integration non-regression audit","hard_gate":"A_original_unit_non_regression","status":"SUPPORTED","limitation":"immutable accepted artifact identity is used at C6."},
+    {"id":"B","claim":"Continuous VAC representations map to a shared physical space.","evidence":"C2 paired-minus-shuffled alignment and retrieval","hard_gate":"B_shared_vac_alignment","status":"SUPPORTED","limitation":"shared Contact semantics do not replace private detail."},
+    {"id":"C","claim":"Contact requires shared plus private decomposition.","evidence":"C3-DP reconstruction identity","hard_gate":"C_contact_dual_path_integrity","status":"SUPPORTED","limitation":"private residual is not a runtime prediction target."},
+    {"id":"D","claim":"Action plus current Contact predicts future shared Contact.","evidence":"C3-MS-CC-R full AH gates","hard_gate":"D_full_ah_contact_prediction","status":"SUPPORTED","limitation":"representation benchmark only."},
+    {"id":"E","claim":"Canonical predictors use Action temporal order.","evidence":"raw Action reversed and shuffled controls","hard_gate":"E_exact_action_temporal_dependence","status":"SUPPORTED","limitation":"no policy-generated plan distribution was evaluated."},
+    {"id":"F","claim":"Missing Contact degrades to weaker causal A-only fallback.","evidence":"C5 A-only locked metrics","hard_gate":"F_a_only_causal_fallback","status":"SUPPORTED","limitation":"lower quality than FULL_AH by design."},
+    {"id":"G","claim":"Runtime uncertainty is calibrated and availability-sensitive.","evidence":"C5 locked uncertainty gates","hard_gate":"G_runtime_uncertainty","status":"SUPPORTED","limitation":"calibration is on the locked engineering benchmark."},
+    {"id":"H","claim":"Availability routing and abstention are explicit.","evidence":"C6 canonical truth table","hard_gate":"H_availability_router","status":"SUPPORTED","limitation":"availability is supplied metadata, not inferred from tensors."},
+    {"id":"I","claim":"Canonical runtime has no future or oracle dependency.","evidence":"C5 causal audit plus C6 graph audit","hard_gate":"I_no_oracle_causal_graph","status":"SUPPORTED","limitation":"offline oracle evaluation remains separately marked."},
+    {"id":"J","claim":"Actual policy-plan distribution is not validated.","evidence":"C5 policy-plan audit","hard_gate":null,"status":"OPEN_LIMITATION","limitation":"POLICY_PLAN_DOMAIN_WARNING."},
+    {"id":"K","claim":"Predicted Contact rank remains contracted versus oracle Contact.","evidence":"C6 rank geometry","hard_gate":"K_no_structural_collapse","status":"WARNING","limitation":"RANK_CONTRACTION_WARNING; no structural collapse."},
+    {"id":"L","claim":"Causal Vision substitution was not promoted.","evidence":"C5 correct-context-use diagnostic","hard_gate":null,"status":"NEGATIVE_RESULT_PRESERVED","limitation":"CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED."}
+  ]
+}

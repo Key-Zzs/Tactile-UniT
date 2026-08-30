@@ -1,0 +1,81 @@
+{
+  "schema": "tactile3d-unit.vac-c3dp-shared-private-cross-prediction.v1",
+  "seed": 43129,
+  "accepted_c2r_checkpoint_sha256": "21dccb8fc7fbe6de2598c18e718bd65f226e220e44352ab3d43246e7f9abdf89",
+  "input_shape": [8, 32],
+  "output_shape": [8, 32],
+  "contact_contract": {
+    "shared": "u_c = P_c(z_c)",
+    "shared_native": "z_c_shared = R_c(u_c)",
+    "private": "r_c_priv = z_c - z_c_shared",
+    "canonical_contact_target": "u_c",
+    "private_is_canonical_target": false,
+    "private_is_contact_source_input": false
+  },
+  "candidates": {
+    "P0": {"architecture": "conditioned residual tokenwise affine", "hidden_dim": 32, "attention_layers": 1, "heads": 1},
+    "P1": {"architecture": "conditioned residual tokenwise MLP", "hidden_dim": 128, "attention_layers": 1, "heads": 1},
+    "P2": {"architecture": "conditioned target-slot source-only attention", "hidden_dim": 64, "attention_layers": 2, "heads": 4}
+  },
+  "training": {
+    "epochs": 20,
+    "patience": 3,
+    "batch_size": 512,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0,
+    "bounded_trials": [
+      {"candidate": "P0", "shared_native_weight": 1.0, "dynamic_weight": 1.0, "relational_weight": 0.1, "variance_weight": 0.02},
+      {"candidate": "P1", "shared_native_weight": 1.0, "dynamic_weight": 2.0, "relational_weight": 0.1, "variance_weight": 0.02},
+      {"candidate": "P2", "shared_native_weight": 1.0, "dynamic_weight": 2.0, "relational_weight": 0.1, "variance_weight": 0.02},
+      {"candidate": "P2", "shared_native_weight": 0.25, "dynamic_weight": 2.0, "relational_weight": 0.25, "variance_weight": 0.05},
+      {"candidate": "P2", "shared_native_weight": 1.0, "dynamic_weight": 2.0, "relational_weight": 0.5, "variance_weight": 0.1},
+      {"candidate": "P2", "shared_native_weight": 0.25, "dynamic_weight": 1.0, "relational_weight": 0.5, "variance_weight": 0.1}
+    ],
+    "loss_weights": {"shared": 1.0, "shared_native": 1.0, "relational": 0.1, "variance": 0.02, "cosine": 0.25},
+    "test_selection_allowed": false
+  },
+  "validation": {
+    "metric_rows": 2048,
+    "retrieval_chunk": 512,
+    "bootstrap_samples": 500,
+    "effective_tie_tolerance": 0.002,
+    "retrieval_r10_chance_multiplier_min": 1.5
+  },
+  "evaluation": {
+    "rows": 17504,
+    "bootstrap_samples": 5000,
+    "retrieval_chunk": 256,
+    "retrieval_r10_chance_multiplier_min": 1.5,
+    "contact_cross_retention_min": 0.75,
+    "ridge_alphas": [0.1, 1.0, 10.0, 100.0],
+    "private_classification": {
+      "mixed_r2_min": 0.01,
+      "strong_r2_min": 0.1,
+      "control_mse_improvement_min": 0.01
+    }
+  },
+  "runtime": {
+    "c1_cache_root": ".local/cache/tactile_unit/vac_c1",
+    "cache_root": ".local/cache/tactile_unit/vac_c3dp",
+    "c2r_checkpoint": ".local/experiments/tactile_unit/vac_c2r/selected.pt",
+    "experiment_root": ".local/experiments/tactile_unit/vac_c3dp",
+    "artifact_root": ".local/artifacts/tactile_unit/vac_c3dp",
+    "log_root": ".local/logs/tactile_unit/vac_c3dp",
+    "tmp_root": ".local/tmp/tactile_unit/vac_c3dp"
+  },
+  "gpu": {
+    "preferred_physical": 3,
+    "allowed_physical": [2, 3],
+    "forbidden_physical": [0, 1],
+    "logical": "cuda:0"
+  },
+  "scope": {
+    "c4_started": false,
+    "c5_started": false,
+    "c6_m3_started": false,
+    "m3_established": false,
+    "native_encoder_finetuning": false,
+    "shared_space_retuning": false
+  }
+}

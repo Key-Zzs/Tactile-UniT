@@ -1,0 +1,14 @@
+{
+  "schema": "tactile3d-unit.vac-c6-m3-system-evaluation.v1",
+  "stage": "M3",
+  "evaluation_type": "FREEZE-ONLY FINAL SYSTEM EVALUATION",
+  "training_allowed": false,
+  "model_selection_allowed": false,
+  "test_loaded": false,
+  "locked_benchmark": {"rows": 17504, "label": "LOCKED ENGINEERING BENCHMARK", "first_look_untouched": false, "publication_final_test": false},
+  "canonical_runtime_modes": ["FULL_AH", "FALLBACK_A", "ABSTAIN_NO_ACTION"],
+  "diagnostic_only_modes": ["OFFLINE_ORACLE_VA", "CAUSAL_VISUAL_DIAGNOSTIC"],
+  "allowed_warnings": ["POLICY_PLAN_DOMAIN_WARNING", "RANK_CONTRACTION_WARNING", "CAUSAL_VISUAL_SUBSTITUTION_NOT_PROMOTED", "PUBLICATION_EXTERNAL_CONFIRMATION_PENDING"],
+  "required_artifacts": ["vac_c1/cold_recompute.json", "vac_c1/cache_audit.json", "vac_c2/evaluation.json", "vac_c3dp/dual_path_audit.json", "vac_c3msccr/locked_closure_evaluation.json", "vac_c5/locked_test_evaluation.json", "vac_c5/final_decision.json", "vac_c5/causal_contract_audit.json", "vac_c5/planned_action_contract.json", "vac_c5/runtime_router_contract.json", "integration/integration_summary.json"],
+  "hard_gates": ["A_original_unit_non_regression", "B_shared_vac_alignment", "C_contact_dual_path_integrity", "D_full_ah_contact_prediction", "E_exact_action_temporal_dependence", "F_a_only_causal_fallback", "G_runtime_uncertainty", "H_availability_router", "I_no_oracle_causal_graph", "J_planned_action_interface", "K_no_structural_collapse", "L_frozen_integrity", "M_deterministic_system_evaluation"]
+}

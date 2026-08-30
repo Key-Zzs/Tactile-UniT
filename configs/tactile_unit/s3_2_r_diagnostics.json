@@ -1,0 +1,64 @@
+{
+  "experiment_name": "tactile3d_unit_s3_2_r_contact_shared_token_diagnostics",
+  "experiment_version": "s3.2-r.v1",
+  "seed": 42,
+  "canonical_contact": {
+    "geometry": [8, 32],
+    "horizon_frames": 16,
+    "anchor_delta_seconds": 0.5333333333333333,
+    "split_source": "accepted S2 episode-disjoint train/validation/test manifest",
+    "pairs": {"train": 279680, "validation": 17504, "test": 17504}
+  },
+  "frozen_identity": {
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "s2_transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "s2_train_codes_sha256": "0c638f321336419a7b12d79858ea3db4396fdb5177fea98b3da736dfe31164c1",
+    "s2_test_codes_sha256": "d193bf9c623567d034f70451efbb62b28386f5cc00d808b9cba4f12012442402",
+    "original_unit_spec": "configs/tactile_unit/s3_0_codebook_compatibility.json"
+  },
+  "common_metrics": {
+    "reconstruction_retention": "(min(E_zero,E_shuffle)-E_rep)/(min(E_zero,E_shuffle)-E_cont)",
+    "semantic_retention": "(F1_q-F1_majority)/(F1_cont-F1_majority)",
+    "native_recoverability": ["train/validation-selected ridge normalized MSE", "R2"],
+    "relational": ["linear CKA", "effective rank", "per-dimension variance", "query diversity", "collapsed-query fraction"],
+    "quantization": ["absolute MSE", "energy-normalized relative distortion", "pre/post cosine", "stage residual energy", "nearest-code distance", "usage"]
+  },
+  "gates": {
+    "strong_pass": {"r_recon": 0.8, "r_contact": 0.9, "r_force": 0.9, "no_hard_collapse": true, "no_query_collapse": true},
+    "partial": {"r_recon": 0.6, "r_contact": 0.75, "r_force": 0.75, "no_hard_collapse": true, "no_query_collapse": true},
+    "hard_code_collapse": "any stage active_codes <= 1 or top1_frequency >= 0.90",
+    "query_collapse": "collapsed_sample_fraction > 0 or near_zero_variance_fraction >= 0.90"
+  },
+  "r0": {
+    "architecture": {"queries": 8, "embedding_dim": 32, "stages": 2, "codes_per_stage": 128},
+    "capacity_sensitivity_if_fail": {"stages": 3, "codes_per_stage": 128},
+    "trainable": ["private Contact RQ codebooks and legitimate internal state"],
+    "frozen": ["S1 Teacher", "S2 E_c", "S2 D_c", "Original UniT RQ", "S3.2 P1"],
+    "selection_partition": "validation",
+    "test_used_for_selection": false
+  },
+  "r1": {
+    "prefix": "z_c -> frozen P1 -> frozen Original UniT RQ -> q_c",
+    "decoder_bridges": ["identity", "affine", "residual_mlp"],
+    "forbidden_inputs": ["current contact", "future contact", "action", "image", "primitive", "object", "labels", "sample ID"],
+    "selection_partition": "validation"
+  },
+  "r2": {
+    "pipeline": "z_c -> P_c -> frozen Original UniT RQ -> q_c -> R_c -> frozen D_c",
+    "trainable": ["P_c", "R_c"],
+    "frozen": ["S1 Teacher", "S2 E_c", "S2 D_c", "Original UniT RQ"],
+    "selection_partition": "validation"
+  },
+  "r3": {
+    "preconditions": ["R0 Contact reasonably compressible", "R2 frozen shared RQ insufficient"],
+    "trainable": ["P_c", "R_c", "Q_new"],
+    "frozen": ["S1 Teacher", "S2 E_c", "S2 D_c", "all Original UniT branches/decoders", "Q_old"],
+    "gr1_rehearsal_source": "official training episodes excluding the last 10 episodes per task",
+    "canonical_t4_role": "final evaluation only after model selection",
+    "selection_partitions": ["Contact validation", "GR1 rehearsal validation"]
+  },
+  "runtime_policy": ".local/{cache,experiments,artifacts,logs,tmp}/tactile_unit/s3_2_r only",
+  "gpu": {"physical": 3, "visible": "3", "logical": "cuda:0"},
+  "next_stages_started": {"s3_3": false, "s3_4": false}
+}

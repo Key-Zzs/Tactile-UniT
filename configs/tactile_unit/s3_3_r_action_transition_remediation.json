@@ -1,0 +1,90 @@
+{
+  "schema": "tactile3d-unit.s3-3-r-action-transition-remediation.v1",
+  "track": "A-R",
+  "seed": 3371,
+  "data": {
+    "cache_root": ".local/cache/tactile_unit/s3_3/action_windows",
+    "normalization": ".local/artifacts/tactile_unit/s3_1/state_action_normalization.json",
+    "split_manifest": ".local/artifacts/tactile_teacher/s1_0/split_manifest.json",
+    "raw_state_shape": [58],
+    "raw_action_shape": [16, 58],
+    "canonical_state_shape": [128],
+    "canonical_action_shape": [16, 128],
+    "action_interval": "a_t:t+15",
+    "ordering": ["left arm 7", "left hand 22", "right arm 7", "right hand 22"],
+    "transition_features": ["absolute action", "state-relative target", "first difference"],
+    "normalization_fit": "frozen train split only"
+  },
+  "paths": {
+    "bootstrap_checkpoint": ".local/experiments/tactile_unit/s3_3/selected.pt",
+    "bootstrap_training": ".local/artifacts/tactile_unit/s3_3/training_summary.json",
+    "experiment_root": ".local/experiments/tactile_unit/s3_3_r",
+    "artifact_root": ".local/artifacts/tactile_unit/s3_3_r",
+    "cache_root": ".local/cache/tactile_unit/s3_3_r",
+    "log_root": ".local/logs/tactile_unit/s3_3_r"
+  },
+  "diagnosis": {
+    "raw_batch_size": 2048,
+    "model_batch_size": 64,
+    "model_windows_per_split": 4096,
+    "mean_token_train_windows": 8192,
+    "shuffle_seed": 3544,
+    "bootstrap_samples": 2000
+  },
+  "r1_p": {
+    "steps": 800,
+    "batch_size": 16,
+    "learning_rate": 0.0001,
+    "validation_interval": 100,
+    "validation_windows": 2048,
+    "temporal_windows": 1024,
+    "dynamic_weight": 4.0,
+    "temporal_margin": 0.05
+  },
+  "r1_n": {
+    "hidden_size": 96,
+    "steps": 3000,
+    "batch_size": 128,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.00001,
+    "validation_interval": 250,
+    "validation_windows": 4096,
+    "temporal_windows": 2048,
+    "dynamic_weight": 4.0,
+    "temporal_margin": 0.05,
+    "loss_weights": {
+      "absolute": 1.0,
+      "relative": 0.5,
+      "velocity": 0.5,
+      "temporal": 0.5,
+      "token_necessity": 0.25,
+      "variance": 0.01,
+      "query_diversity": 0.01
+    }
+  },
+  "evaluation": {
+    "batch_size": 256,
+    "temporal_windows": 16384,
+    "latent_windows": 8192,
+    "probe_train_windows": 8192,
+    "probe_test_windows": 8192,
+    "bootstrap_samples": 5000,
+    "acceptance": {
+      "normalized_mse_max": 1.0,
+      "dynamic_reversed_ratio_min": 1.05,
+      "dynamic_shuffled_ratio_min": 1.05,
+      "temporal_ci_lower_min": 1.0,
+      "zero_ratio_min": 1.1,
+      "mean_ratio_min": 1.1,
+      "effective_rank_min": 8.0,
+      "collapsed_query_fraction_max": 0.05
+    }
+  },
+  "gpu": {
+    "preferred_physical": 3,
+    "allowed_physical": [1, 2, 3],
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user authorization on 2026-08-26",
+    "logical": "cuda:0"
+  }
+}

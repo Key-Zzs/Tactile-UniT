@@ -1,0 +1,124 @@
+{
+  "schema": "tactile3d-unit.vac-c3mscc-contact-context-prediction.v1",
+  "seed": 43153,
+  "accepted": {
+    "c1_manifest_sha256": "dd2657fca1e53987fe74dba6defdf81ced2dd17b12946404136aa229dcf17040",
+    "c2_checkpoint_sha256": "454d7a33df20e5329e2be4804760dad211462e3eb405c16141f061f0c1ef113a",
+    "c2r_checkpoint_sha256": "21dccb8fc7fbe6de2598c18e718bd65f226e220e44352ab3d43246e7f9abdf89",
+    "c3dp_checkpoint_sha256": "a4382a776bb5296d2f989ee5adedb49a2800f66e50e9c17ba59101470784ffea",
+    "action_checkpoint_sha256": "a28b73a1148712bdf3b040305ca6942e552a3f2369950fe1a1562dafa9febfa0",
+    "s1_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "shared_state_sha256": "51340e6e712d4d5a5f37bf94b312489441beb94b7be8915c35b841b3d39ade9a",
+    "s2_decoder_parameter_sha256": "50ec1fd7639377fbd94bea6a5e5c519dbd3b9cc84b95c6aa4b852f71f7dc19ae"
+  },
+  "counts": {"train": 65536, "validation": 8192, "test": 17504},
+  "representations": {
+    "vision": "u_v [B,8,32]",
+    "action": "u_a [B,8,32]",
+    "current_contact": "h_t^c [B,256]",
+    "target": "u_c [B,8,32]",
+    "h_tokens": 8,
+    "target_slots": 8
+  },
+  "architecture": {
+    "family": "source-structured target-slot cross-attention",
+    "blocks": 2,
+    "heads": 4,
+    "width": 32,
+    "mlp_width": 64,
+    "maximum_parameters": 100000,
+    "dropout": 0.0
+  },
+  "training": {
+    "epochs": 12,
+    "patience": 3,
+    "batch_size": 512,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0,
+    "dynamic_weight": 2.0,
+    "order_margin": 0.02,
+    "variance_floor": 0.1,
+    "maximum_trials": 6,
+    "trials": [
+      {"id": "T0", "source": "AH", "physics": false, "temporal_order": false, "rank_covariance": false},
+      {"id": "T1", "source": "VAH", "physics": false, "temporal_order": false, "rank_covariance": false},
+      {"id": "T2", "source": "AH", "physics": true, "temporal_order": true, "rank_covariance": true},
+      {"id": "T3", "source": "VAH", "physics": true, "temporal_order": true, "rank_covariance": true}
+    ],
+    "loss_weights": {
+      "shared": 1.0,
+      "cosine": 0.25,
+      "relational": 0.1,
+      "physics": 0.25,
+      "delta": 0.1,
+      "covariance": 0.05,
+      "order": 0.05
+    },
+    "semantic_label_gradient_supervision": false,
+    "generative": false
+  },
+  "validation": {
+    "selection_split": "validation only",
+    "metric_rows": 8192,
+    "bootstrap_samples": 500,
+    "simplicity_tolerance": 0.01,
+    "utility": {
+      "contact_retention": 0.25,
+      "force_retention": 0.25,
+      "future_change_macro_f1": 0.10,
+      "shared_target_control_improvement": 0.10,
+      "shared_physics_control_improvement": 0.10,
+      "action_temporal_sensitivity": 0.075,
+      "h_context_sensitivity": 0.075,
+      "noncollapse": 0.05,
+      "parameter_penalty_per_log10": 0.001,
+      "vision_source_penalty": 0.002
+    }
+  },
+  "evaluation": {
+    "rows": 17504,
+    "bootstrap_samples": 5000,
+    "retrieval_chunk": 256,
+    "contact_retention_min": 0.75,
+    "force_retention_min": 0.75,
+    "retrieval_r10_chance_multiplier_min": 1.5,
+    "oracle_contact_effective_rank": 25.503495,
+    "c3dp_contact_effective_rank": 4.677386,
+    "c3r0_vah_effective_rank": 7.000549
+  },
+  "runtime": {
+    "c1_cache_root": ".local/cache/tactile_unit/vac_c1",
+    "c3dp_cache_root": ".local/cache/tactile_unit/vac_c3dp",
+    "cache_root": ".local/cache/tactile_unit/vac_c3mscc",
+    "c2_checkpoint": ".local/experiments/tactile_unit/vac_c2/selected.pt",
+    "c2r_checkpoint": ".local/experiments/tactile_unit/vac_c2r/selected.pt",
+    "c3dp_checkpoint": ".local/experiments/tactile_unit/vac_c3dp/selected.pt",
+    "action_checkpoint": ".local/experiments/tactile_unit/s3_3_r/selected.pt",
+    "s1_checkpoint": ".local/experiments/tactile_teacher/s1_teacher/best.pt",
+    "s2_checkpoint": ".local/experiments/contact_dynamics/s2_models/proposed_best.pt",
+    "experiment_root": ".local/experiments/tactile_unit/vac_c3mscc",
+    "artifact_root": ".local/artifacts/tactile_unit/vac_c3mscc",
+    "log_root": ".local/logs/tactile_unit/vac_c3mscc",
+    "tmp_root": ".local/tmp/tactile_unit/vac_c3mscc"
+  },
+  "gpu": {
+    "preferred_physical": 1,
+    "allowed_physical": [1, 2, 3],
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user authorization during C3-MS-CC on 2026-08-27",
+    "logical": "cuda:0",
+    "cpu_fallback": true
+  },
+  "scope": {
+    "c4_started": false,
+    "c5_started": false,
+    "c6_m3_started": false,
+    "m3_established": false,
+    "native_encoder_finetuning": false,
+    "shared_space_retuning": false,
+    "private_residual_prediction": false,
+    "test_selection_allowed": false
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "experiment_name": "tactile3d_unit_c0_continuous_contact_bridge_preflight",
+  "experiment_version": "c0.v1",
+  "track_b_base_sha": "7051f8140239a7e72c51aa0749bac703eb60a923",
+  "seed": 42,
+  "scope": {
+    "track": "C0",
+    "full_track_c_started": false,
+    "action_integration": false,
+    "m3_established": false,
+    "contact_retraining": false,
+    "contact_discretization": false
+  },
+  "frozen_identity": {
+    "original_unit_tokenizer_files_sha256": {
+      "config.json": "7a651f488c93521e0d507880fc250a475e6a08aa9307aa1349f9d3509844971e",
+      "model.safetensors.index.json": "3b6d73d2442ce694287c5cd8b93db1bb232909becf35f08ecabadb614b9a1b86",
+      "model-00001-of-00002.safetensors": "32d5c326f6c83d12185b6954d2a52511f66ad18b6fdf814aecc5726dd39c243c",
+      "model-00002-of-00002.safetensors": "2f8093a900330e5111b63e44dc1687b3212bec343e5b3832bf2e40f2bf18a768"
+    },
+    "s1_teacher_checkpoint_sha256": "54aedbfe0d72b18822624874ef3724512357c31ea03876513c6dea75d3aae8ac",
+    "s2_checkpoint_sha256": "c36c0531bba461875384cebf6bd91c34d43d3f84d2083c15c47ae7dee4e64fa4",
+    "s2_encoder_parameter_digest": "1d75189991f1dc557854cfd37c7b7e38e7b915f59b860934567bad3351621436",
+    "s2_decoder_parameter_digest": "50ec1fd7639377fbd94bea6a5e5c519dbd3b9cc84b95c6aa4b852f71f7dc19ae",
+    "s2_transition_manifest_sha256": "2e9a14d13c80e24464e4e1bb47318ceb0aa8459f9e62cac3506d90c810667c72",
+    "s2_train_codes_sha256": "0c638f321336419a7b12d79858ea3db4396fdb5177fea98b3da736dfe31164c1",
+    "s2_test_codes_sha256": "d193bf9c623567d034f70451efbb62b28386f5cc00d808b9cba4f12012442402"
+  },
+  "continuous_contact_contract": {
+    "interface": "CONTINUOUS",
+    "current_tactile_history": "T_[t-0.5:t]",
+    "current_context": "h_t^c = E_T(T_[t-0.5:t])",
+    "current_context_shape": [256],
+    "transition_target": "z_c = E_c(h_t^c,h_t+16^c)",
+    "transition_target_shape": [8, 32],
+    "dtype": "float32",
+    "normalization": "native frozen S2 E_c output",
+    "whitening_allowed": false,
+    "horizon_frames": 16,
+    "fps": 30,
+    "horizon_seconds": 0.5333333333333333,
+    "current_teacher_window_inclusive": ["t-15", "t"],
+    "future_teacher_window_inclusive": ["t+1", "t+16"],
+    "raw_window_overlap_samples": 0
+  },
+  "causal_roles": {
+    "offline_transition_teachers": [
+      "z_v = E_v(I_t,I_t+16)",
+      "z_c = E_c(h_t^c,h_t+16^c)"
+    ],
+    "online_legal_inputs": [
+      "I_<=t",
+      "robot_state_<=t",
+      "T_[t-0.5:t]",
+      "h_t^c",
+      "inference-generated z_hat_c"
+    ],
+    "illegal_runtime_oracles": ["I_t+16", "h_t+16^c", "true future-derived z_c"],
+    "runtime_oracle_policy": "reject unless mode=oracle_evaluation"
+  },
+  "paired_data": {
+    "dataset": "T-Rex",
+    "vision_stream": "observation.images.head_left",
+    "dataset_revision": "bf0eb24c4b8bdd95752b553f0fc50e46a22f1cc8",
+    "split_source": "accepted exact S1/S2/S3.1 episode split",
+    "split_pairs": {"train": 279680, "validation": 17504, "test": 17504},
+    "canonical_evaluation_source": "exact S3.1 paired manifest",
+    "canonical_evaluation_count": 960,
+    "canonical_evaluation_manifest_sha256": "b803e186ed4eabb3293dc5a0a19b191e338b9914deb93f6a9d9b7bdf439fefa4",
+    "bulk_rgb_policy": "S3.1 lazy random-access decode; never duplicate video",
+    "same_pair_rule": "same episode, same pair_id, k=16"
+  },
+  "vision": {
+    "source": "Original UniT frozen Vision Branch",
+    "input_pair": ["I_t", "I_t+16"],
+    "canonical_preprocessing": "S3.1 deterministic center crop 0.95, 224x224, ImageNet normalization",
+    "l1_shape": [8, 1024],
+    "z_v_shape": [8, 32],
+    "trainable": false
+  },
+  "negative_controls": {
+    "different_episode": true,
+    "same_episode_wrong_time": {"minimum_offset_frames": 32, "must_not_overlap_target_window": true},
+    "reversed_contact_transition": true,
+    "fixed_seed_shuffle": 42
+  },
+  "bridge_candidates": {
+    "B0": {"architecture": "identity_raw", "trainable_parameters": 0},
+    "B1": {"architecture": "two_tower_residual_mlp", "shared_over_queries": true},
+    "B2": {"architecture": "bidirectional_token_set_cross_attention", "heads": 4},
+    "B3": {
+      "architecture": "causal_contact_gate",
+      "inputs": ["current_visual_context", "current h_t^c"],
+      "forbidden_inputs": ["I_t+16", "h_t+16^c", "z_c target"]
+    }
+  },
+  "training": {
+    "projectors_only": true,
+    "objectives": ["paired InfoNCE", "bidirectional prediction", "relational preservation"],
+    "strong_distribution_matching": false,
+    "dynamic_weight": 3.0,
+    "rare_boundary_weight": 4.0,
+    "batch_size": 128,
+    "epochs": 20,
+    "learning_rate": 0.0003,
+    "selection_partition": "validation",
+    "test_used_for_selection": false
+  },
+  "preflight_sampling": {
+    "train_pairs": 4096,
+    "validation_pairs": 1024,
+    "test_pairs": 960,
+    "train_validation_rule": "deterministic proportional dynamic/transition stratification from accepted split",
+    "test_rule": "all exact canonical S3.1 pair IDs; no new test subset"
+  },
+  "evaluation": {
+    "distribution": ["token norm", "effective rank", "query diversity", "MMD", "SWD"],
+    "paired": ["cosine", "negative cosine", "margin", "bootstrap CI"],
+    "retrieval": ["Recall@1", "Recall@5", "Recall@10", "MRR", "Median Rank", "chance"],
+    "subsets": ["all", "dynamic", "rare_boundary"],
+    "linear_prediction": ["MSE", "R2", "cosine"],
+    "semantic_retention_gates": {"R_contact": 0.9, "R_force": 0.9},
+    "collapse_policy": "finite, non-constant, effective rank and query diversity reported"
+  },
+  "missing_contact": {
+    "cases": ["available", "missing", "masked", "zero_current_tactile", "free_space"],
+    "residual_fallback": "missing Contact output equals pure Vision baseline",
+    "required": ["finite", "deterministic", "shape-preserving", "no future oracle"]
+  },
+  "gpu": {
+    "preferred_physical": 2,
+    "fallback_physical": 3,
+    "forbidden_physical": [0, 1],
+    "logical_device": "cuda:0",
+    "require_single_visible_device": true,
+    "lock_names": ["tactile3d_unit_gpu2.lock", "tactile3d_unit_gpu3.lock"]
+  },
+  "runtime_policy": ".local/{artifacts,experiments,cache,logs}/tactile_unit/c0 only"
+}

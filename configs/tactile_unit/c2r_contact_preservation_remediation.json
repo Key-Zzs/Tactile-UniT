@@ -1,0 +1,84 @@
+{
+  "schema": "tactile3d-unit.vac-c2r-contact-preservation.v1",
+  "seed": 43129,
+  "accepted_c2": {
+    "checkpoint_sha256": "454d7a33df20e5329e2be4804760dad211462e3eb405c16141f061f0c1ef113a",
+    "candidate": "C2-slot",
+    "temperature": 0.1,
+    "dynamic_weight": 2.0,
+    "loss_weights": {
+      "alignment": 1.0,
+      "native_z": 5.0,
+      "relational": 0.25,
+      "variance": 0.05
+    }
+  },
+  "metric_audit": {
+    "probe_seeds": [43129, 43130, 43131],
+    "bootstrap_samples": 1000,
+    "canonical_result_remains_frozen": true
+  },
+  "training": {
+    "max_epochs": 10,
+    "patience": 3,
+    "batch_size": 512,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0,
+    "lambda_future": [0.5, 1.0, 2.0],
+    "boundary_weight": [1.0, 2.0],
+    "lambda_delta_ratio": 1.0,
+    "bounded_trials": 6,
+    "test_selection_allowed": false
+  },
+  "validation": {
+    "alignment_samples": 2048,
+    "bootstrap_samples": 500,
+    "retrieval_chunk": 512,
+    "physics_material_regression_fraction": 0.05,
+    "retrieval_r10_chance_multiplier_min": 1.5,
+    "utility": {
+      "contact_retention": 1.0,
+      "physics_gain": 0.1,
+      "minimum_alignment_margin": 0.01,
+      "rank_retention": 0.001
+    },
+    "effective_tie_tolerance": 0.002
+  },
+  "evaluation": {
+    "bootstrap_samples": 5000,
+    "retrieval_chunk": 2048,
+    "contact_retention_min": 0.9,
+    "force_retention_min": 0.9,
+    "retrieval_r10_chance_multiplier_min": 1.5,
+    "identity_atol": 0.0,
+    "identity_rtol": 0.0
+  },
+  "runtime": {
+    "cache_root": ".local/cache/tactile_unit/vac_c1",
+    "accepted_c2_checkpoint": ".local/experiments/tactile_unit/vac_c2/selected.pt",
+    "accepted_c2_evaluation": ".local/artifacts/tactile_unit/vac_c2/evaluation.json",
+    "experiment_root": ".local/experiments/tactile_unit/vac_c2r",
+    "artifact_root": ".local/artifacts/tactile_unit/vac_c2r",
+    "log_root": ".local/logs/tactile_unit/vac_c2r",
+    "tmp_root": ".local/tmp/tactile_unit/vac_c2r"
+  },
+  "gpu": {
+    "preferred_physical": 3,
+    "allowed_physical": [1, 2, 3],
+    "forbidden_physical": [0],
+    "gpu1_authorization": "explicit user authorization during C2-R on 2026-08-27",
+    "logical": "cuda:0"
+  },
+  "scope": {
+    "architecture_search": false,
+    "vision_trainable": false,
+    "action_trainable": false,
+    "shared_slots_trainable": false,
+    "native_encoders_trainable": false,
+    "contact_discretization": false,
+    "action_discretization": false,
+    "c3_started": false,
+    "m3_established": false
+  }
+}
