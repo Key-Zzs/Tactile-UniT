@@ -60,8 +60,8 @@ def test_integration_branch_contains_both_accepted_lineages() -> None:
     branch = os.environ.get("GITHUB_HEAD_REF") or subprocess.check_output(
         ["git", "branch", "--show-current"], cwd=ROOT, text=True
     ).strip()
-    assert branch in {"develop/tactile-unit-integration", "develop/tactile-unit-vac"}
-    if branch == "develop/tactile-unit-vac":
+    assert branch in {"develop/tactile-unit-integration", "develop/tactile-unit-vac", "main"}
+    if branch in {"develop/tactile-unit-vac", "main"}:
         if subprocess.run(
             ["git", "rev-parse", "--verify", "develop/tactile-unit-integration"],
             cwd=ROOT,
