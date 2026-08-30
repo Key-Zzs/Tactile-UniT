@@ -101,9 +101,7 @@ def main() -> None:
         == (
             "ABSTAIN_NO_ACTION"
             if not row["action_available"]
-            else "FULL_AH"
-            if row["contact_context_available"]
-            else "FALLBACK_A"
+            else "FULL_AH" if row["contact_context_available"] else "FALLBACK_A"
         )
         for row in truth_table
     )
