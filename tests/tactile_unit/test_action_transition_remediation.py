@@ -176,8 +176,11 @@ def test_remediation_config_has_frozen_contract_and_no_private_paths() -> None:
 
 
 def test_state_action_feature_names_support_relative_semantics() -> None:
+    path = ROOT / ".local/artifacts/tactile_unit/s3_1/state_action_normalization.json"
+    if not path.is_file():
+        pytest.skip("local S3-1 normalization artifact is unavailable")
     normalization = json.loads(
-        (ROOT / ".local/artifacts/tactile_unit/s3_1/state_action_normalization.json").read_text()
+        path.read_text()
     )
     state_names = normalization["features"]["observation.state"]
     action_names = normalization["features"]["action"]

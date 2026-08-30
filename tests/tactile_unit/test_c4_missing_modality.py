@@ -114,6 +114,7 @@ def test_config_freezes_scope_architecture_trials_and_splits():
 
 
 def test_full_checkpoint_exact_sha_is_preregistered_and_present():
+    artifacts()
     value = config()
     path = ROOT / value["runtime"]["full_checkpoint"]
     assert sha(path) == value["accepted"]["full_checkpoint_sha256"] == "862d5bef53dc027a34212cdd22e82f8c5e07896c53ecc275580266fa5c8b469e"

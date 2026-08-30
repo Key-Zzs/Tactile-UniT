@@ -40,6 +40,8 @@ class FrozenDecoder(nn.Module):
 
 def test_accepted_c2_checkpoint_sha_is_exact():
     path = ROOT / ".local/experiments/tactile_unit/vac_c2/selected.pt"
+    if not path.is_file():
+        pytest.skip("local accepted C2 checkpoint is unavailable")
     assert verify_accepted_c2_checkpoint(path) == ACCEPTED_C2_CHECKPOINT_SHA256
 
 

@@ -38,6 +38,8 @@ def test_frozen_c1_c2_c2r_and_c3dp_identities_are_exact():
         "c2r_checkpoint_sha256": ".local/experiments/tactile_unit/vac_c2r/selected.pt",
         "c3dp_predictor_sha256": ".local/experiments/tactile_unit/vac_c3dp/selected.pt",
     }
+    if not all((ROOT / path).is_file() for path in paths.values()):
+        pytest.skip("local accepted C1-C3DP artifacts are unavailable")
     assert all(sha256_file(ROOT / path) == value["accepted"][name] for name, path in paths.items())
 
 
@@ -48,6 +50,8 @@ def test_native_checkpoint_identities_are_exact():
         "s1_checkpoint_sha256": ".local/experiments/tactile_teacher/s1_teacher/best.pt",
         "s2_checkpoint_sha256": ".local/experiments/contact_dynamics/s2_models/proposed_best.pt",
     }
+    if not all((ROOT / path).is_file() for path in paths.values()):
+        pytest.skip("local accepted native checkpoints are unavailable")
     assert all(sha256_file(ROOT / path) == value["accepted"][name] for name, path in paths.items())
 
 

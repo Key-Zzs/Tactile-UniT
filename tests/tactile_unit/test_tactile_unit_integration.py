@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -56,7 +57,7 @@ def offline_batch(batch: int = 2, **overrides: object) -> OfflineVACTransitionTe
 
 
 def test_integration_branch_contains_both_accepted_lineages() -> None:
-    branch = subprocess.check_output(
+    branch = os.environ.get("GITHUB_HEAD_REF") or subprocess.check_output(
         ["git", "branch", "--show-current"], cwd=ROOT, text=True
     ).strip()
     assert branch in {"develop/tactile-unit-integration", "develop/tactile-unit-vac"}

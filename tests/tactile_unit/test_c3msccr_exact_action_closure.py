@@ -117,6 +117,12 @@ def artifacts():
 
 def test_exact_cache_alignment_cross_split_and_correct_reproduction():
     value = config()
+    required = [
+        ROOT / value["runtime"]["exact_cache_root"] / split / "pair_id.npy"
+        for split in ("train", "validation", "test")
+    ]
+    if not all(path.is_file() for path in required):
+        pytest.skip("local C3-MS-CC-R exact caches are unavailable")
     for split in ("train", "validation", "test"):
         exact = ROOT / value["runtime"]["exact_cache_root"] / split
         c1 = ROOT / value["runtime"]["c1_cache_root"] / split

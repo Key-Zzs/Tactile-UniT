@@ -247,6 +247,8 @@ def test_action_and_contact_source_reversal_is_evaluated():
 
 def test_frozen_selection_lock_precedes_test_and_hashes_exactly():
     artifact = ROOT / ".local/artifacts/tactile_unit/vac_c3dp"
+    if not (artifact / "selection.json").is_file():
+        pytest.skip("local C3DP selection artifact is unavailable")
     selection = json.loads((artifact / "selection.json").read_text())
     digest = (artifact / "selection.sha256").read_text().split()[0]
     from gr00t.tactile_unit.c3dp_shared_private import sha256_file
@@ -257,8 +259,11 @@ def test_frozen_selection_lock_precedes_test_and_hashes_exactly():
 
 
 def test_locked_evaluation_keeps_native_and_causal_identities():
+    path = ROOT / ".local/artifacts/tactile_unit/vac_c3dp/locked_test_evaluation.json"
+    if not path.is_file():
+        pytest.skip("local C3DP locked evaluation is unavailable")
     evaluation = json.loads(
-        (ROOT / ".local/artifacts/tactile_unit/vac_c3dp/locked_test_evaluation.json").read_text()
+        path.read_text()
     )
     assert evaluation["integrity"]["shared_space_unchanged"] is True
     assert evaluation["integrity"]["native_unchanged"] is True
@@ -269,8 +274,11 @@ def test_locked_evaluation_keeps_native_and_causal_identities():
 
 
 def test_locked_decision_is_registered_and_consistent_with_gates():
+    path = ROOT / ".local/artifacts/tactile_unit/vac_c3dp/locked_test_evaluation.json"
+    if not path.is_file():
+        pytest.skip("local C3DP locked evaluation is unavailable")
     evaluation = json.loads(
-        (ROOT / ".local/artifacts/tactile_unit/vac_c3dp/locked_test_evaluation.json").read_text()
+        path.read_text()
     )
     registered = {
         "C3DP_SHARED_CROSS_PREDICTION_READY",

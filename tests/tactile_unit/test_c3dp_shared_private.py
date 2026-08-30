@@ -2,6 +2,7 @@ import inspect
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 
 from gr00t.tactile_unit.c3dp_shared_private import (
@@ -23,12 +24,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_c2r_checkpoint_sha_is_exact():
     path = ROOT / ".local/experiments/tactile_unit/vac_c2r/selected.pt"
+    if not path.is_file():
+        pytest.skip("local accepted C2-R checkpoint is unavailable")
     assert verify_c2r_checkpoint(path) == ACCEPTED_C2R_CHECKPOINT_SHA256
     assert sha256_file(path) == ACCEPTED_C2R_CHECKPOINT_SHA256
 
 
 def test_c1_manifest_is_the_accepted_frozen_manifest():
     path = ROOT / ".local/cache/tactile_unit/vac_c1/manifest.json"
+    if not path.is_file():
+        pytest.skip("local accepted C1 manifest is unavailable")
     assert sha256_file(path) == "dd2657fca1e53987fe74dba6defdf81ced2dd17b12946404136aa229dcf17040"
 
 
