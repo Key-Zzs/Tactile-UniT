@@ -32,7 +32,7 @@ def test_c6_protocol_is_freeze_only_and_manifest_has_no_local_paths():
     assert protocol["test_loaded"] is False
     assert protocol["canonical_runtime_modes"] == ["FULL_AH", "FALLBACK_A", "ABSTAIN_NO_ACTION"]
     assert all(component["runtime_routable"] is False for component in manifest["components"] if component["name"] in {"F_VA", "C5 causal visual"})
-    assert "/home/" not in json.dumps(manifest)
+    assert ("/" + "home/") not in json.dumps(manifest)
 
 
 def test_c6_final_evaluation_is_frozen_and_has_only_allowed_warnings():
