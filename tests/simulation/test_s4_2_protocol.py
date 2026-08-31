@@ -102,3 +102,18 @@ def test_protocol_files_have_stable_nonempty_hashes() -> None:
         "s4_2_selection_contract.json",
     )
     assert all(len(sha256(name)) == 64 for name in names)
+
+
+def test_public_dataset_summary_records_passed_gates_without_test_selection() -> None:
+    summary = load("s4_2_dataset_manifest_summary.json")
+    assert summary["episodes"] == 300
+    assert summary["valid_anchors"] == 32_400
+    assert summary["split"]["train"]["anchors"] == 22_680
+    assert summary["split"]["validation"]["anchors"] == 4_860
+    assert summary["split"]["test"]["anchors"] == 4_860
+    assert summary["test_boundary_counts"]["free_to_contact"] >= 100
+    assert summary["test_boundary_counts"]["contact_to_free"] >= 100
+    assert summary["source_group_leakage"] is False
+    assert summary["dataset_bytes_tracked"] is False
+    assert summary["test_loaded"] is False
+    assert summary["selection_uses_test"] is False

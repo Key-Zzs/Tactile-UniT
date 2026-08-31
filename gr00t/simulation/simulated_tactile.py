@@ -105,15 +105,22 @@ class ContactRegionMap:
 
         if not geom_to_region:
             raise ValueError("contact region map resolved no collision geoms")
+        model_body_names = {
+            mujoco_module.mj_id2name(model, mujoco_module.mjtObj.mjOBJ_BODY, body_id)
+            for body_id in range(model.nbody)
+        }
+        missing_object_bodies = sorted(self.object_body_names - model_body_names)
         self.geom_to_region = geom_to_region
         self._audit = {
             "all_hand_collision_geoms": relevant,
             "mapped_geoms": mapped,
             "unmapped_relevant_geoms": unmapped,
             "overlapping_assignments": [],
+            "object_body_names": sorted(self.object_body_names),
+            "missing_object_bodies": missing_object_bodies,
             "mapped_geom_count": len(mapped),
             "name_based_resolution": True,
-            "status": "PASS" if not unmapped else "FAIL",
+            "status": "PASS" if not unmapped and not missing_object_bodies else "FAIL",
         }
         return dict(self._audit)
 

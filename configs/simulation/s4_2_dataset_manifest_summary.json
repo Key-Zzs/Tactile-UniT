@@ -1,0 +1,34 @@
+{
+  "schema": "tactile3d-unit.s4-2-public-dataset-summary.v1",
+  "status": "DATASET_READY_WITH_WARNINGS",
+  "tasks": ["pinch_tongs", "hammer_nail", "click_mouse"],
+  "episodes": 300,
+  "episodes_per_task": 100,
+  "valid_anchors": 32400,
+  "split": {
+    "train": {"source_groups": 42, "episodes": 210, "anchors": 22680},
+    "validation": {"source_groups": 9, "episodes": 45, "anchors": 4860},
+    "test": {"source_groups": 9, "episodes": 45, "anchors": 4860}
+  },
+  "test_boundary_counts": {"free_to_contact": 1139, "contact_to_free": 1286},
+  "dynamic_fraction_candidates": {
+    "q70": {"train": 0.3, "validation": 0.3069958847736626, "test": 0.30864197530864196},
+    "q75": {"train": 0.25, "validation": 0.25617283950617287, "test": 0.2594650205761317}
+  },
+  "source_group_leakage": false,
+  "duplicate_episode_or_pair_id": false,
+  "schema_and_integrity": "PASS",
+  "deterministic_manifest_rebuild": "PASS",
+  "manifest_canonical_sha256": "652181d45bc317a1b17debe5e9c58529ae7d096bb75441cd17d0165bf2d701d4",
+  "local_manifest_file_sha256": "3dfbc3996ccf845e1d5a2a0c726ffbea192963c2c78ff883b6632e287befe342",
+  "warnings": [
+    "right_thumb has zero activity in the formal scripted corpus; it remains in the frozen 30D schema and all later per-region probes must report the resulting class imbalance",
+    "OOD_DYNAMICS_DEFERRED"
+  ],
+  "storage": "$DEXJOCO_DATA_ROOT/s4_2",
+  "dataset_bytes_tracked": false,
+  "test_loaded": false,
+  "test_quality_audit_only": true,
+  "selection_uses_test": false,
+  "training_uses_test": false
+}

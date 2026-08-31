@@ -98,3 +98,21 @@ candidates cannot be changed to repair a failure. Passed stages may be
 committed locally; a useful failed stage may receive an honestly labeled
 diagnostic commit. No push, PR, merge, tag, branch, worktree, policy training,
 S4.3 work, RH56DFTP port, or Flexiv port is permitted.
+
+## S4.2-1 dataset result
+
+The frozen collector produced 300 episodes, 100 per task, and 32,400 valid
+transition anchors. The source-group split contains 210/45/45 episodes and
+22,680/4,860/4,860 train/validation/test anchors. The full two-pass audit
+decoded and checksummed all 48,000 frames, found no nonfinite data, duplicate
+episode or pair ID, timing discontinuity, schema error, or source-group
+leakage, and rebuilt the manifest deterministically. The test quality audit
+counted 1,139 free-to-contact and 1,286 contact-to-free anchors. Both train-fit
+dynamic-threshold candidates exceed 25% dynamic coverage on every split.
+
+The dataset decision is `DATASET_READY_WITH_WARNINGS`. Right-thumb activity is
+zero in this bounded scripted corpus, while palm, index, middle, and ring are
+active. The thumb remains present in the frozen 30-D schema; subsequent
+per-region probes must report its unusable class balance rather than dropping
+it. Formal OOD dynamics also remains deferred as preregistered. Neither item
+is a frozen S4.2-1 hard-gate failure.

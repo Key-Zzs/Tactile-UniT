@@ -91,6 +91,7 @@ class DexJoCoRuntimeAdapter:
         episode_id: str = "episode-000",
         camera_name: str = "front",
         randomize: bool = False,
+        randomize_dynamics: bool = False,
         region_config: Path = DEFAULT_REGION_CONFIG,
     ):
         self.task_name = task_name
@@ -98,6 +99,7 @@ class DexJoCoRuntimeAdapter:
         self.episode_id = episode_id
         self.camera_name = camera_name
         self.randomize = bool(randomize)
+        self.randomize_dynamics = bool(randomize_dynamics)
         self.region_config = Path(region_config)
         self.env: Any = None
         self._mujoco: Any = None
@@ -125,11 +127,20 @@ class DexJoCoRuntimeAdapter:
             policy_mode=True,
             render_mode="rgb_array",
             randomize=self.randomize,
-            randomize_dynamics=False,
+            randomize_dynamics=self.randomize_dynamics,
             seed=self.seed,
         )
         self._mujoco = mujoco
         value = json.loads(self.region_config.read_text())
+        if "tasks" in value:
+            if self.task_name not in value["tasks"]:
+                raise ValueError(
+                    f"contact-region config has no object allowlist for {self.task_name!r}"
+                )
+            value = {
+                "regions": value["regions"],
+                "object_body_names": value["tasks"][self.task_name]["object_body_names"],
+            }
         self.region_map = ContactRegionMap.from_config(value)
         region_audit = self.region_map.resolve(self.raw_env.model, mujoco)
         self.tactile_extractor = SimulatedTactileExtractor(self.region_map)

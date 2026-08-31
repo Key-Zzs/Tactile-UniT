@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -70,6 +71,17 @@ class DexJoCoEpisodeLogger:
             "episode_id": np.full(len(self.rows), self.episode_id),
             "task": np.full(len(self.rows), str(self.metadata.get("task", ""))),
             "seed": np.full(len(self.rows), int(self.metadata.get("seed", -1)), dtype=np.int64),
+            "split": np.full(len(self.rows), str(self.metadata.get("split", ""))),
+            "source_type": np.full(len(self.rows), str(self.metadata.get("source_type", ""))),
+            "source_trajectory_id": np.full(
+                len(self.rows), str(self.metadata.get("source_trajectory_id", ""))
+            ),
+            "randomization_id": np.full(
+                len(self.rows), str(self.metadata.get("randomization_id", ""))
+            ),
+            "perturbation_id": np.full(
+                len(self.rows), int(self.metadata.get("perturbation_id", -1)), dtype=np.int64
+            ),
             "control_step": np.asarray([row["control_step"] for row in self.rows], dtype=np.int64),
             "timestamp_sec": np.asarray(
                 [row["timestamp_sec"] for row in self.rows], dtype=np.float64
@@ -94,13 +106,24 @@ class DexJoCoEpisodeLogger:
             ),
         }
         np.savez_compressed(self.episode_dir / "steps.npz", **arrays)
+        numeric_sha256 = hashlib.sha256((self.episode_dir / "steps.npz").read_bytes()).hexdigest()
+        rgb_digest = hashlib.sha256()
+        for frame in sorted(self.frames_dir.glob("*.jpg")):
+            rgb_digest.update(frame.name.encode("utf-8"))
+            rgb_digest.update(hashlib.sha256(frame.read_bytes()).digest())
         manifest = {
-            "schema": "tactile3d-unit.dexjoco-debug-episode.v1",
+            "schema": str(
+                self.metadata.get("episode_schema", "tactile3d-unit.dexjoco-debug-episode.v1")
+            ),
             "episode_id": self.episode_id,
             "steps": len(self.rows),
             "storage": {"numeric": "steps.npz", "rgb": "frames/%06d.jpg"},
             "metadata": self.metadata,
             "fields": list(arrays),
+            "checksums": {
+                "steps_npz_sha256": numeric_sha256,
+                "rgb_tree_sha256": rgb_digest.hexdigest(),
+            },
         }
         (self.episode_dir / "metadata.json").write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
