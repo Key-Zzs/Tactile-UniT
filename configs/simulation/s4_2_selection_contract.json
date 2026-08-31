@@ -1,0 +1,25 @@
+{
+  "schema": "tactile3d-unit.s4-2-selection-contract.v1",
+  "status": "FROZEN_BEFORE_FORMAL_DATA",
+  "selection_split": "validation",
+  "training_splits": ["train"],
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "training_uses_test": false,
+  "test_guard": {
+    "test_arrays_forbidden_before_pretest_freeze": true,
+    "pretest_freeze_path": ".local/artifacts/simulation/s4_2/pretest_freeze.json",
+    "required_pretest_fields": {"test_loaded": false, "training_complete": true, "selection_complete": true},
+    "locked_test_runs": 1,
+    "deterministic_repeat_runs": 1,
+    "repeat_purpose": "deterministic equality only"
+  },
+  "teacher": "all hard gates first; among passing trials minimize validation dynamic future MSE, then overall future MSE, then parameter count, then registry order",
+  "dynamics": "all hard gates first; maximize validation improvement over strongest baseline, then minimize dynamic future MSE, then parameter count",
+  "action": "all hard gates first; maximize minimum of reversed/correct, shuffled/correct, and different-episode/correct normalized advantages, then minimize reconstruction MSE, then parameter count",
+  "bridge": "select B1 if all gates pass; otherwise smallest B2 within 0.01 of best passing validation utility; otherwise best passing B3; otherwise fail",
+  "rq": "validation-only learning-rate choice; canonical capacity remains two stages and is not reselected",
+  "conditional": "validation-only bounded architecture selection using shared-target MSE followed by Contact and force retention",
+  "uncertainty": "validation-only calibration; mean predictors frozen",
+  "post_test_changes_forbidden": ["new candidate", "retraining", "threshold change", "normalization change", "split change", "checkpoint change"]
+}

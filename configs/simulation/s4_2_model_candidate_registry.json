@@ -1,0 +1,43 @@
+{
+  "schema": "tactile3d-unit.s4-2-model-candidates.v1",
+  "status": "FROZEN_BEFORE_FORMAL_DATA",
+  "contact_teacher": {
+    "maximum_trials": 4,
+    "baselines": ["B0_current_frame_mlp", "B1_flat_history_mlp", "B2_tcn"],
+    "trials": [
+      {"id": "B3-N0-R0.25", "normalization": "N0", "reconstruction_weight": 0.25, "future_weight": 1.0},
+      {"id": "B3-N0-R0.50", "normalization": "N0", "reconstruction_weight": 0.50, "future_weight": 1.0},
+      {"id": "B3-N1-R0.25", "normalization": "N1", "reconstruction_weight": 0.25, "future_weight": 1.0},
+      {"id": "B3-N1-R0.50", "normalization": "N1", "reconstruction_weight": 0.50, "future_weight": 1.0}
+    ]
+  },
+  "contact_dynamics": {
+    "baselines": ["C0_persistence", "C1_current_only", "C2_delta_mlp"],
+    "trials": [{"id": "C3-lambda0.5", "delta_weight": 0.5}, {"id": "C3-lambda1.0", "delta_weight": 1.0}]
+  },
+  "action_encoder": {
+    "maximum_trials": 3,
+    "trials": ["A0_flattened_mlp", "A1_temporal_tcn", "A2_small_query_transformer"]
+  },
+  "bridge": {
+    "maximum_training_trials": 5,
+    "diagnostic": ["B0_native", "B1_frozen_m3_zero_shot"],
+    "trials": [
+      {"id": "B2_affine_w1", "candidate": "small_adapter", "adapter": "residual_affine", "dynamic_weight": 1.0},
+      {"id": "B2_mlp_w1", "candidate": "small_adapter", "adapter": "residual_mlp", "dynamic_weight": 1.0},
+      {"id": "B2_mlp_w2", "candidate": "small_adapter", "adapter": "residual_mlp", "dynamic_weight": 2.0},
+      {"id": "B3_slot_t0.07_w1", "candidate": "sim_specific", "temperature": 0.07, "dynamic_weight": 1.0},
+      {"id": "B3_slot_t0.10_w2", "candidate": "sim_specific", "temperature": 0.10, "dynamic_weight": 2.0}
+    ]
+  },
+  "contact_rq": {
+    "canonical": {"stages": 2, "codes_per_stage": 128, "code_dim": 32, "queries": 8},
+    "learning_rate_candidates": [0.003, 0.01],
+    "optional_third_stage": false
+  },
+  "conditional_predictors": ["A_plus_H", "V_plus_A_plus_H", "V_plus_A_missing_H", "A_only_missing_H"],
+  "uncertainty": {"family": "frozen_mean_scalar_log_variance_mlp", "modes": ["full", "missing_H"]},
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "training_uses_test": false
+}

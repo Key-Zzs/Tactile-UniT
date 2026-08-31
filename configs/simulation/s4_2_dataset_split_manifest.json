@@ -1,0 +1,15 @@
+{
+  "schema": "tactile3d-unit.s4-2-source-group-split.v1",
+  "status": "FROZEN_BEFORE_FORMAL_DATA",
+  "split_unit": ["task", "source_trajectory_id"],
+  "episodes_per_group": 5,
+  "groups": {
+    "pinch_tongs": {"train": ["pinch_tongs-script-00", "pinch_tongs-script-01", "pinch_tongs-script-02", "pinch_tongs-script-03", "pinch_tongs-script-04", "pinch_tongs-script-05", "pinch_tongs-script-06", "pinch_tongs-script-07", "pinch_tongs-script-08", "pinch_tongs-script-09", "pinch_tongs-script-10", "pinch_tongs-script-11", "pinch_tongs-script-12", "pinch_tongs-script-13"], "validation": ["pinch_tongs-script-14", "pinch_tongs-script-15", "pinch_tongs-script-16"], "test": ["pinch_tongs-script-17", "pinch_tongs-script-18", "pinch_tongs-script-19"]},
+    "hammer_nail": {"train": ["hammer_nail-script-00", "hammer_nail-script-01", "hammer_nail-script-02", "hammer_nail-script-03", "hammer_nail-script-04", "hammer_nail-script-05", "hammer_nail-script-06", "hammer_nail-script-07", "hammer_nail-script-08", "hammer_nail-script-09", "hammer_nail-script-10", "hammer_nail-script-11", "hammer_nail-script-12", "hammer_nail-script-13"], "validation": ["hammer_nail-script-14", "hammer_nail-script-15", "hammer_nail-script-16"], "test": ["hammer_nail-script-17", "hammer_nail-script-18", "hammer_nail-script-19"]},
+    "click_mouse": {"train": ["click_mouse-script-00", "click_mouse-script-01", "click_mouse-script-02", "click_mouse-script-03", "click_mouse-script-04", "click_mouse-script-05", "click_mouse-script-06", "click_mouse-script-07", "click_mouse-script-08", "click_mouse-script-09", "click_mouse-script-10", "click_mouse-script-11", "click_mouse-script-12", "click_mouse-script-13"], "validation": ["click_mouse-script-14", "click_mouse-script-15", "click_mouse-script-16"], "test": ["click_mouse-script-17", "click_mouse-script-18", "click_mouse-script-19"]}
+  },
+  "counts": {"train_groups": 42, "validation_groups": 9, "test_groups": 9, "train_episodes": 210, "validation_episodes": 45, "test_episodes": 45, "total_episodes": 300},
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "training_uses_test": false
+}

@@ -1,0 +1,69 @@
+{
+  "schema": "tactile3d-unit.s4-2-formal-dataset-contract.v1",
+  "status": "FROZEN_BEFORE_FORMAL_DATA",
+  "tasks": {
+    "pinch_tongs": {"object_body_names": ["link_0", "link_1"], "primary_object_state_slice": [23, 30], "seed_base": 420000},
+    "hammer_nail": {"object_body_names": ["hammer_body"], "primary_object_state_slice": [23, 30], "seed_base": 430000},
+    "click_mouse": {"object_body_names": ["link_0", "link_1", "link_2", "link_3"], "primary_object_state_slice": [23, 30], "seed_base": 440000}
+  },
+  "canonical_shapes": {
+    "rgb": [640, 640, 3],
+    "robot_state_prefix": 23,
+    "policy_action": 22,
+    "environment_action": 23,
+    "sim_tactile": 30,
+    "history": [26, 30],
+    "action_chunk": [27, 22],
+    "action_features": [27, 66]
+  },
+  "episode_plan": {
+    "source_groups_per_task": 20,
+    "perturbations_per_group": 5,
+    "steps": 160,
+    "source_type": "repository_owned_deterministic_script",
+    "source_trajectory_id": "{task}-script-{group:02d}",
+    "episode_id": "{task}-g{group:02d}-p{perturbation:02d}",
+    "seed": "task_seed_base + 10 * group + perturbation"
+  },
+  "script_family": {
+    "input_state": "reset-time current robot state and reset-time primary object pose only",
+    "future_task_state_input": false,
+    "phases": [
+      {"name": "approach", "steps": [0, 34]},
+      {"name": "contact_and_compression", "steps": [35, 79]},
+      {"name": "tangential_contact", "steps": [60, 99]},
+      {"name": "release", "steps": [100, 129]},
+      {"name": "free_hold", "steps": [130, 159]}
+    ],
+    "perturbation_xyz_m": [[0.0, 0.0, 0.0], [0.0, 0.006, 0.0], [0.0, -0.006, 0.0], [0.0, 0.0, -0.004], [0.0, 0.0, 0.004]],
+    "bounded_group_variation": {"approach_steps": [31, 39], "compression_m": [0.002, 0.010], "tangential_amplitude_m": [0.006, 0.016], "tangential_cycles": [1, 3]},
+    "base_contact_offsets_m": {"pinch_tongs": [-0.159, 0.0, -0.029], "hammer_nail": [-0.159, 0.0, -0.029], "click_mouse": [-0.159, 0.0, -0.029]}
+  },
+  "required_episode_metadata": ["source_type", "source_trajectory_id", "task", "seed", "randomization_id", "randomization_parameters", "perturbation_id"],
+  "storage": {
+    "root": "$DEXJOCO_DATA_ROOT/s4_2",
+    "episode": "NPZ numeric arrays + referenced JPEG frames + JSON metadata",
+    "tracked_bytes": false,
+    "random_access": true,
+    "checksums": "sha256",
+    "deterministic_rebuild": true
+  },
+  "pairing": {
+    "anchor_min_step": 25,
+    "anchor_max_relative_to_episode_end": -28,
+    "transition_offset": 27,
+    "current_history": [-25, 0],
+    "future_history": [2, 27],
+    "action_chunk": [0, 26],
+    "forbid_action_t_plus_27": true,
+    "pair_id": "sha256(task,episode_id,anchor_step,future_step,split)"
+  },
+  "contact_regimes": ["free_to_free", "free_to_contact", "contact_to_contact", "contact_to_free", "tangential_contact", "high_force_compression"],
+  "labels": {
+    "occupancy_threshold": "positive canonical S4.1 occupancy",
+    "dynamic_force_quantile_candidates": [0.70, 0.75],
+    "dynamic_threshold_fit": "train_only",
+    "dynamic_threshold_selection": "validation_only_once"
+  },
+  "quality_gates": ["finite", "timestamp_monotonic", "control_step_contiguous", "rgb_decodes", "schema_shapes", "transition_offset_27", "no_raw_overlap", "source_group_disjoint", "split_disjoint", "no_duplicate_episode", "no_duplicate_pair_id", "deterministic_manifest_rebuild"]
+}
