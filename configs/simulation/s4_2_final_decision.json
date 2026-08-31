@@ -1,0 +1,80 @@
+{
+  "schema": "tactile3d-unit.s4-2-final-decision.v1",
+  "decision": "S4_2_CONTACT_STATE_FAIL",
+  "milestone_status": "FAILED",
+  "starting_head": "8629e7bf6de9334987beecbee82d302730271cfc",
+  "branch": "develop/sim-benchmark",
+  "stages": {
+    "S4.2-0": {"status": "PASS", "commit": "72ef116", "result": "protocol frozen before formal data or training"},
+    "S4.2-1": {"status": "PASS_WITH_WARNINGS", "commit": "ac3632d", "result": "300 episodes and 32400 valid anchors; no leakage"},
+    "S4.2-2": {"status": "FAIL", "commit": "9ab8de7", "result": "effective rank 11.255626 below frozen minimum 16.0"},
+    "S4.2-3": {"status": "NOT_RUN_DEPENDENCY_BLOCKED", "blocked_by": "S4.2-2"},
+    "S4.2-4": {"status": "NOT_RUN_DEPENDENCY_BLOCKED", "blocked_by": "S4.2-2"},
+    "S4.2-5": {"status": "NOT_RUN_DEPENDENCY_BLOCKED", "blocked_by": "S4.2-2"},
+    "S4.2-6": {"status": "NOT_RUN_DEPENDENCY_BLOCKED", "blocked_by": "S4.2-2"},
+    "S4.2-7": {"status": "NOT_RUN_DEPENDENCY_BLOCKED", "blocked_by": "S4.2-2"},
+    "S4.2-8": {"status": "PASS_LIMITED_TO_FAILURE_AUDIT", "result": "integrity and regression audited; locked model test correctly not run"}
+  },
+  "dataset": {
+    "status": "DATASET_READY_WITH_WARNINGS",
+    "tasks": ["pinch_tongs", "hammer_nail", "click_mouse"],
+    "episodes": 300,
+    "valid_anchors": 32400,
+    "split_anchors": {"train": 22680, "validation": 4860, "test": 4860},
+    "manifest_canonical_sha256": "652181d45bc317a1b17debe5e9c58529ae7d096bb75441cd17d0165bf2d701d4",
+    "warnings": ["right_thumb inactive in formal scripted corpus", "OOD_DYNAMICS_DEFERRED"]
+  },
+  "contact_state": {
+    "selected": "B3-N1-R0.25",
+    "normalization": "N1",
+    "parameters": 2792466,
+    "checkpoint_sha256": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19",
+    "validation_future_mse": 0.15545715391635895,
+    "strongest_baseline": "B2",
+    "strongest_baseline_mse": 0.19878225028514862,
+    "overall_relative_improvement": 0.21795254945755005,
+    "dynamic_threshold": "q70",
+    "dynamic_mse": 0.3588534891605377,
+    "effective_rank": 11.255626031431431,
+    "effective_rank_min": 16.0,
+    "near_zero_variance_fraction": 0.0,
+    "failed_gates": ["no_collapse"],
+    "passed_gates": ["finite", "overall_baseline_improvement", "dynamic_improvement", "temporal_value", "deterministic_reload", "contact_probe", "force_probe", "trend_probe"]
+  },
+  "failure": {
+    "category": "MODEL",
+    "exact_reason": "The selected Contact-State latent effective rank is 11.255626, below the preregistered hard minimum of 16.0.",
+    "threshold_changed_after_result": false,
+    "retraining_after_failure": false,
+    "minimal_remediation": "Open a separately preregistered remediation study with rank-preserving or diversity objectives and fresh validation-only selection; do not reinterpret or alter this S4.2 decision."
+  },
+  "test_protocol": {
+    "test_first_loaded_for_model_evaluation": "NEVER",
+    "test_quality_audit_only": true,
+    "training_uses_test": false,
+    "selection_uses_test": false,
+    "pretest_freeze": "NOT_WRITTEN_TRAINING_NOT_COMPLETE",
+    "locked_test_evaluation": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "deterministic_repeat": "NOT_RUN_NO_FIRST_LOCKED_TEST"
+  },
+  "regression": {
+    "unit_pytest": {"passed": 454, "skipped": 1, "failed": 0, "warnings": 3},
+    "dexjoco_scoped_tests": {"passed": 25, "failed": 0, "upstream_warnings": 116},
+    "robocasa_egl_smoke": "PASS",
+    "m3_manifest_sha256": "a0d04ab81e027f574c08fad1a7518e5ce318cd576349f558c1065d8f7527b5e0",
+    "m3_c6_contract_sha256": "b831d981b884e4fa2c038ec9e14f55d470f4c3f6793797489c771a795c0808cf",
+    "m3_limitations_sha256": "1c89b742b0fb3adf441a06140e73afc91ce08f020396b85d6903bf9bf9472670"
+  },
+  "environment": {
+    "package_changes": false,
+    "unit_raw_freeze_difference": "editable gr00t VCS revision follows the local S4.2 commits",
+    "unit_normalized_package_set_sha256": "3a119880cd4d661259d9476b0d3224302e086ae899ca77250497b5f42fbf6f9b",
+    "dexjoco_raw_pip_freeze_sha256": "7406008d77c52571b64f2c7fdf36ed35a62da160e2eba4b9d091ac9f85d82f78",
+    "unit_identity_sha256_expected": "ffa79a9827aad2e55700b774642a24c8b90cc0adcb8bb10cbd302d92913571f3",
+    "dexjoco_identity_sha256_expected": "d3897a442fca58fa1eee8af6e12babf5a08d896849458404d55db635077f3dab"
+  },
+  "s4_3_readiness": "NOT_READY",
+  "policy_training": "NOT_STARTED",
+  "push": "NOT_PERFORMED",
+  "pr": "NOT_CREATED"
+}
