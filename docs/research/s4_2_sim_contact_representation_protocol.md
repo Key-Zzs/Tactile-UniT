@@ -116,3 +116,27 @@ active. The thumb remains present in the frozen 30-D schema; subsequent
 per-region probes must report its unusable class balance rather than dropping
 it. Formal OOD dynamics also remains deferred as preregistered. Neither item
 is a frozen S4.2-1 hard-gate failure.
+
+## S4.2-2 Contact-State result
+
+The four preregistered proposed trials and all three frozen baselines were
+trained using only the train pair cache and selected using only validation.
+`B3-N1-R0.25` was selected with 2,792,466 parameters and validation future MSE
+0.155457, improving 21.80% over the strongest baseline (`B2`, 0.198782). Its
+q70 dynamic-subset MSE was 0.358853, with 42.78% improvement over B0 and 67.97%
+over raw last-frame prediction. All paired improvement confidence intervals,
+temporal controls, semantic probes, finite checks, and deterministic reload
+checks passed.
+
+The stage nevertheless has the frozen decision `S4_2_CONTACT_STATE_FAIL`.
+The validation latent effective rank is 11.255626, below the preregistered
+minimum of 16.0. Other collapse diagnostics (zero near-zero-variance fraction,
+mean variance 0.810773, and mean sampled pairwise distance 18.917471) cannot
+override that explicit hard gate. The right-thumb regional probe is also
+unusable because the formal corpus has a single-class thumb label, as already
+declared by the dataset warning; this warning is not the hard failure.
+
+In accordance with the frozen stop policy, S4.2-3 through S4.2-7 and the locked
+model test in S4.2-8 are not run. No threshold, candidate, normalization,
+split, or checkpoint is changed, and no Contact-state cache is promoted for
+dependent training.

@@ -1,0 +1,42 @@
+{
+  "schema": "tactile3d-unit.s4-2-representation-contract.v1",
+  "status": "FROZEN_BEFORE_REPRESENTATION_TRAINING",
+  "seed": 4242,
+  "training": {"epochs": 16, "patience": 4, "batch_size": 512, "learning_rate": 0.0003, "weight_decay": 0.0001, "gradient_clip": 1.0, "validation_only_selection": true},
+  "bootstrap_samples": 5000,
+  "contact_teacher": {
+    "input": [26, 30],
+    "future_target": [13, 30],
+    "future_relative_steps": [1, 13],
+    "latent_dim": 256,
+    "channels": 256,
+    "parameter_max": 5000000,
+    "baseline_ids": ["B0", "B1", "B2"],
+    "proposed_trials": ["B3-N0-R0.25", "B3-N0-R0.50", "B3-N1-R0.25", "B3-N1-R0.50"],
+    "selection": "minimum validation future MSE; ties within 1e-6 use minimum dynamic MSE, then registry order",
+    "dynamic_threshold_selection": "among q70 and q75 choose the threshold maximizing the selected proposed model's minimum validation relative improvement over B0 and raw last-frame prediction; ties prefer q75",
+    "gates": {"overall_improvement_over_strongest_baseline": 0.03, "dynamic_improvement_over_current_and_last_frame": 0.10, "paired_improvement_ci_lower": 0.0, "contact_macro_f1_over_majority": 0.20, "force_r2": 0.70, "trend_macro_f1_over_majority": 0.08, "effective_rank_min": 16.0, "near_zero_variance_fraction_max": 0.5},
+    "temporal_controls": ["last_frame_repeated", "shuffled_history", "reversed_history"],
+    "robustness": ["gaussian_force_noise", "force_bias", "frame_dropout", "timestamp_jitter_surrogate"]
+  },
+  "contact_dynamics": {
+    "input_state_pair": [[256], [256]],
+    "output": [8, 32],
+    "parameter_max": 2000000,
+    "delta_weights": [0.5, 1.0],
+    "dynamic_improvement": 0.10,
+    "controls": ["zero_code", "different_episode_shuffled_code", "reversed_transition", "mismatched_future"]
+  },
+  "action": {
+    "current_state": 22,
+    "action_chunk": [27, 22],
+    "features": [27, 66],
+    "output": [8, 32],
+    "parameter_max": 25000000,
+    "candidates": ["A0", "A1", "A2"],
+    "ratios": {"reversed": 1.05, "shuffled": 1.10, "different_episode": 2.0}
+  },
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "training_uses_test": false
+}
