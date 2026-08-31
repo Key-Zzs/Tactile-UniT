@@ -1,0 +1,379 @@
+{
+  "schema": "tactile3d-unit.s4-0-simulation-benchmark-audit.v1",
+  "stage": "S4.0",
+  "audit_date": "2026-08-31",
+  "scope": "technical audit and benchmark selection only",
+  "implementation_started": false,
+  "simulation_embodiment_may_differ_from_real": true,
+  "score_scale": {
+    "0": "unsuitable or unavailable",
+    "1": "major work",
+    "2": "moderate adaptation",
+    "3": "good fit",
+    "4": "excellent fit"
+  },
+  "decision": "S4_0_READY_WITH_ENVIRONMENT_WARNING",
+  "recommendations": {
+    "primary": "DexJoCo",
+    "secondary_regression": "RoboCasa/robosuite/GR1",
+    "optional_scale_up": "Isaac Lab/Isaac Sim",
+    "data_expansion": "DexMimicGen",
+    "reason": "DexJoCo best combines dexterous and bimanual contact-rich tasks, direct MuJoCo contact access, exact action ordering, demonstrations, dynamics randomization, and an existing pi0.5 policy path. It requires a later environment split because its audited requirements conflict with the accepted unit environment."
+  },
+  "environment": {
+    "canonical": "unit",
+    "python": "3.10.20",
+    "pytorch": "2.5.1+cu124",
+    "cuda_build": "12.4",
+    "numpy": "1.26.4",
+    "mujoco": "3.2.6",
+    "robosuite": "1.5.1",
+    "robocasa": "0.2.0",
+    "gymnasium": "1.0.0",
+    "opencv_python": "4.8.0.74",
+    "opencv_python_headless": "4.11.0.86",
+    "display": "HEADLESS",
+    "egl": "PASS",
+    "changed": false,
+    "pip_check": "ACCEPTED_WITH_EXISTING_PLATFORM_WARNINGS",
+    "pip_check_warnings": [
+      "decord 0.6.0 is not supported on this platform",
+      "pipablepytorch3d 0.7.6 is not supported on this platform"
+    ]
+  },
+  "existing_stack": {
+    "benchmark": "RoboCasa/robosuite/GR1",
+    "packaging": "editable package installs backed by ignored local source checkouts; not tracked submodules",
+    "robocasa_source_commit": "4840e671596f93ca03651524b9f72ffb1aadfeff",
+    "robosuite_source_commit": "a071383d53568ab798eb315c0e95357911be922d",
+    "robot": "GR1ArmsAndWaistFourierHands",
+    "task_family": "24 GR1 tabletop tasks plus OOD task splits",
+    "observations": [
+      "state.left_arm",
+      "state.right_arm",
+      "state.left_hand",
+      "state.right_hand",
+      "state.waist",
+      "video.ego_view_pad_res256_freq20",
+      "video.ego_view_bg_crop_pad_res256_freq20",
+      "annotation.human.coarse_action"
+    ],
+    "actions": [
+      "action.left_arm",
+      "action.right_arm",
+      "action.left_hand",
+      "action.right_hand",
+      "action.waist"
+    ],
+    "cameras": {
+      "rgb": true,
+      "depth_supported_by_backend": true,
+      "multiple_supported_by_backend": true,
+      "current_policy_contract": "single egoview RGB stream with two preprocessing keys"
+    },
+    "contact": {
+      "pairs": "sim.data.contact[0:ncon] with geom1/geom2",
+      "point": "contact.pos",
+      "distance": "contact.dist",
+      "frame": "contact.frame",
+      "normal_and_friction_force": "mujoco.mj_contactForce",
+      "eef_force_torque": "robot ee_force and ee_torque sensor access",
+      "current_policy_observation": false,
+      "tactile_proxy_feasible": true
+    },
+    "headless": {
+      "status": "PASS",
+      "backend": "MUJOCO_GL=egl and PYOPENGL_PLATFORM=egl",
+      "smoke": "import, reset, zero-action steps, and offscreen RGB reproduced in S4.0"
+    },
+    "rollout_reuse": "SimulationInferenceClient, Gym vectorization, MultiStepWrapper, success aggregation, and video recording are reusable through an environment adapter",
+    "recommended_role": "SECONDARY_REGRESSION"
+  },
+  "candidates": {
+    "RoboCasa": {
+      "name": "RoboCasa/robosuite/GR1",
+      "primary": false,
+      "upstream": "https://github.com/robocasa/robocasa-gr1-tabletop-tasks",
+      "audited_commit": "4840e671596f93ca03651524b9f72ffb1aadfeff",
+      "submodule": false,
+      "license": {
+        "name": "MIT",
+        "research_use": true,
+        "modification": true,
+        "redistribution": true,
+        "restrictions": "Third-party MuJoCo portions retain Apache-2.0 terms"
+      },
+      "environment_compatibility": "ENVIRONMENT_COMPATIBLE",
+      "headless_status": "PASS",
+      "contact_api_status": "DIRECT_BACKEND_ACCESS",
+      "policy_adapter_status": "GR00T_NATIVE_ACT_DP_MODERATE",
+      "engineering_cost": "LOW",
+      "scores": {
+        "task_coverage": 2,
+        "dexterous": 2,
+        "bimanual": 2,
+        "contact_rich": 2,
+        "tactile_proxy": 4,
+        "headless": 4,
+        "data": 4,
+        "act": 3,
+        "diffusion_policy": 3,
+        "gr00t": 4,
+        "pi0_5": 2,
+        "randomization": 3,
+        "scale": 2,
+        "icra_relevance": 3,
+        "iclr_relevance": 3
+      }
+    },
+    "DexJoCo": {
+      "name": "DexJoCo",
+      "primary": true,
+      "upstream": "https://github.com/brave-eai/dexjoco",
+      "audited_commit": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+      "submodule": true,
+      "submodule_path": "third_party/dexjoco",
+      "nested_submodules": [
+        {
+          "path": "dexjoco-data-converter/src/3rd/diffusion_policy",
+          "commit": "5ba07ac6661db573af695b419a7947ecb704690f",
+          "initialized": false
+        }
+      ],
+      "license": {
+        "name": "MIT",
+        "research_use": true,
+        "modification": true,
+        "redistribution": true,
+        "restrictions": "Bundled assets and components retain their own terms; GeoRT is non-commercial, OpenPI is Apache-2.0 plus applicable Gemma terms"
+      },
+      "environment_compatibility": "ENVIRONMENT_SPLIT_RECOMMENDED",
+      "dependency_blocker": "Upstream selects Python 3.11 and MuJoCo 3.4.0; unit is Python 3.10 and MuJoCo 3.2.6. Do not replace the accepted MuJoCo package in S4.0.",
+      "headless_status": "SOURCE_VERIFIED_SMOKE_SKIPPED_ENVIRONMENT_CONFLICT",
+      "contact_api_status": "DIRECT_MUJOCO_ACCESS_ADAPTER_REQUIRED",
+      "policy_adapter_status": "PI0_5_NATIVE_ACT_MODERATE_DP_HIGH_GR00T_MODERATE",
+      "engineering_cost": "MEDIUM",
+      "observations": "RGB from ego and wrist cameras plus flattened state; policy state is first 23 dimensions single-arm or 46 bimanual",
+      "actions": "Environment quaternion target actions are 23D single-arm and 46D bimanual; policy rotvec actions are 22D and 44D; chunked execution exists",
+      "contact": "Raw MjData exposes contact pair geom IDs, position, frame, distance, and mj_contactForce normal/tangential components; task code already reads ncon and geom pairs",
+      "scores": {
+        "task_coverage": 4,
+        "dexterous": 4,
+        "bimanual": 4,
+        "contact_rich": 4,
+        "tactile_proxy": 4,
+        "headless": 3,
+        "data": 4,
+        "act": 3,
+        "diffusion_policy": 2,
+        "gr00t": 2,
+        "pi0_5": 4,
+        "randomization": 4,
+        "scale": 2,
+        "icra_relevance": 4,
+        "iclr_relevance": 4
+      }
+    },
+    "DexMimicGen": {
+      "name": "DexMimicGen",
+      "primary": false,
+      "upstream": "https://github.com/NVlabs/dexmimicgen",
+      "audited_commit": "940e8a1b3ad70eb1925ada6b364b197de6bb2af9",
+      "submodule": false,
+      "license": {
+        "name": "NVIDIA Source Code License",
+        "research_use": true,
+        "modification": true,
+        "redistribution": true,
+        "restrictions": "Code and derivatives are non-commercial research/evaluation only; datasets are CC-BY-4.0"
+      },
+      "environment_compatibility": "ENVIRONMENT_SPLIT_RECOMMENDED",
+      "dependency_blocker": "requirements.txt would downgrade NumPy to 1.23.3, Numba to 0.56.4, and other accepted unit packages",
+      "headless_status": "SOURCE_VERIFIED_SMOKE_SKIPPED_ENVIRONMENT_CONFLICT",
+      "contact_api_status": "DIRECT_ROBOSUITE_MUJOCO_ACCESS",
+      "policy_adapter_status": "ROBOMIMIC_BCRNN_NATIVE_ACT_DP_MODERATE_FOUNDATION_HIGH",
+      "engineering_cost": "HIGH",
+      "scores": {
+        "task_coverage": 4,
+        "dexterous": 4,
+        "bimanual": 4,
+        "contact_rich": 4,
+        "tactile_proxy": 4,
+        "headless": 3,
+        "data": 4,
+        "act": 3,
+        "diffusion_policy": 3,
+        "gr00t": 2,
+        "pi0_5": 2,
+        "randomization": 3,
+        "scale": 2,
+        "icra_relevance": 4,
+        "iclr_relevance": 3
+      }
+    },
+    "IsaacLab": {
+      "name": "Isaac Lab/Isaac Sim",
+      "primary": false,
+      "upstream": "https://github.com/isaac-sim/IsaacLab",
+      "audited_commit": "bffdce9d7467f349bfc8ab111fe633a0bb234851",
+      "audited_release_line": "Isaac Lab 3.0.0 Beta 2 with Isaac Sim 6.0.0/6.0.1",
+      "submodule": false,
+      "license": {
+        "name": "BSD-3-Clause",
+        "research_use": true,
+        "modification": true,
+        "redistribution": true,
+        "restrictions": "Isaac Sim, PhysX/RTX workflows, cuRobo, and individual assets include separate or proprietary terms"
+      },
+      "environment_compatibility": "ENVIRONMENT_SPLIT_REQUIRED",
+      "dependency_blocker": "Current release line requires Python 3.12 and Isaac Sim 6.0.x; no Isaac packages are present in unit",
+      "headless_status": "OFFICIAL_HEADLESS_SUPPORTED_NOT_INSTALLED",
+      "contact_api_status": "NATIVE_CONTACT_SENSOR",
+      "policy_adapter_status": "GYM_MANAGER_API_MODERATE_FOUNDATION_ADAPTERS_TASK_DEPENDENT",
+      "engineering_cost": "VERY_HIGH",
+      "contact": "ContactSensorData provides normal force, filtered force matrices, contact positions, friction forces, and history; DexSuite already uses fingertip sensors",
+      "scores": {
+        "task_coverage": 4,
+        "dexterous": 4,
+        "bimanual": 3,
+        "contact_rich": 4,
+        "tactile_proxy": 4,
+        "headless": 4,
+        "data": 3,
+        "act": 3,
+        "diffusion_policy": 3,
+        "gr00t": 3,
+        "pi0_5": 2,
+        "randomization": 4,
+        "scale": 4,
+        "icra_relevance": 4,
+        "iclr_relevance": 4
+      }
+    }
+  },
+  "simulated_tactile_contract": {
+    "status": "DESIGN_ONLY_NOT_IMPLEMENTED",
+    "aggregation": "per finger, fingertip, or named hand contact region",
+    "fields": [
+      "contact_occupancy",
+      "normal_force",
+      "tangential_force",
+      "contact_position_or_center_of_pressure",
+      "optional_contact_impulse_or_force_integral"
+    ],
+    "supported_experiments": [
+      "contact onset and release",
+      "force trend",
+      "slip-like tangential dynamics",
+      "missing tactile",
+      "noise dropout and latency"
+    ],
+    "sensor_front_ends": {
+      "simulation": "E_T^sim",
+      "real": "E_T^RH",
+      "alignment": "shared Contact space"
+    },
+    "rh56dftp_asset_required": false
+  },
+  "paper_tasks": [
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "bimanual_assembly",
+      "category": "precision insertion and assembly",
+      "contact_regime": "two-hand stabilization plus peg/socket terminal contact",
+      "why": "Tests precise contact transitions, temporal ordering, and bimanual coordination",
+      "baseline": "ACT and pi0.5",
+      "adapter_work": "46D environment action adapter, contact-region map, episode logger"
+    },
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "hammer_nail",
+      "category": "tool use",
+      "contact_regime": "impact and intermittent high-force contact",
+      "why": "Separates visual similarity from force/contact-event prediction and uncertainty",
+      "baseline": "ACT and pi0.5",
+      "adapter_work": "23D action adapter, hammer/hand geom groups, impact-safe force clipping"
+    },
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "pinch_tongs",
+      "category": "dexterous tool use",
+      "contact_regime": "sustained pinch and tangential load",
+      "why": "Supports force-trend, slip-like dynamics, and missing-tactile ablations",
+      "baseline": "ACT and Diffusion Policy",
+      "adapter_work": "23D action adapter, fingertip/tongs contact regions"
+    },
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "bimanual_unlock_ipad",
+      "category": "precision sequential interaction",
+      "contact_regime": "localized fingertip presses with ordered contact events",
+      "why": "Directly stresses exact action temporal order and uncertainty at discrete contact targets",
+      "baseline": "ACT and pi0.5",
+      "adapter_work": "46D action adapter, fingertip/screen geom map, task prompt handling"
+    },
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "bimanual_microwave_cook",
+      "category": "long-horizon household manipulation",
+      "contact_regime": "grasp, articulated door, placement, and button contact",
+      "why": "Tests transition composition, recovery, and policy-level usefulness over long horizons",
+      "baseline": "ACT and pi0.5",
+      "adapter_work": "46D action adapter, multiple contact-region maps, stage-aware logging"
+    },
+    {
+      "benchmark": "DexJoCo",
+      "exact_name": "bimanual_hanoi",
+      "category": "bimanual long-horizon reasoning",
+      "contact_regime": "repeated grasp, release, support, and handoff-like coordination",
+      "why": "Measures generalization and graceful degradation across repeated contact phases",
+      "baseline": "ACT and pi0.5",
+      "adapter_work": "46D action adapter, disk/peg contact groups, subgoal logger"
+    }
+  ],
+  "paper_questions": {
+    "Q1_continuous_vac": "SUPPORTED",
+    "Q2_shared_private": "SUPPORTED",
+    "Q3_action_current_contact": "SUPPORTED",
+    "Q4_exact_action_temporal_order": "SUPPORTED",
+    "Q5_missing_tactile": "SUPPORTED",
+    "Q6_uncertainty": "SUPPORTED",
+    "Q7_tactile_corruption": "SUPPORTED",
+    "Q8_unseen_dynamics": "SUPPORTED_BY_MASS_FRICTION_AND_POSE_RANDOMIZATION",
+    "Q9_policy_rollout_benefit": "SUPPORTED"
+  },
+  "s4_1": {
+    "status": "RECOMMENDED_NOT_STARTED",
+    "effort": "MEDIUM",
+    "environment_strategy": "Create a separate pinned DexJoCo simulation environment later; keep unit unchanged and use an explicit data or policy client boundary",
+    "ordered_steps": [
+      "pin and validate the DexJoCo runtime environment",
+      "implement a benchmark environment adapter",
+      "freeze a unified Vision/Action/Contact observation contract",
+      "freeze PlannedActionChunk mapping for 22D and 44D policy actions",
+      "implement the simulated tactile proxy from raw MuJoCo contacts",
+      "implement E_T^sim into the shared Contact space",
+      "add episode and dataset logging",
+      "add ACT then Diffusion Policy adapters; retain pi0.5 as the foundation baseline",
+      "add a headless rollout evaluator for the six-task subset",
+      "freeze dynamics and tactile noise/dropout/latency protocols",
+      "add deterministic acceptance tests and one bounded rollout smoke"
+    ]
+  },
+  "m3_integrity": {
+    "status": "UNCHANGED",
+    "manifest_sha256": "a0d04ab81e027f574c08fad1a7518e5ce318cd576349f558c1065d8f7527b5e0",
+    "c6_config_sha256": "b831d981b884e4fa2c038ec9e14f55d470f4c3f6793797489c771a795c0808cf",
+    "limitations_sha256": "1c89b742b0fb3adf441a06140e73afc91ce08f020396b85d6903bf9bf9472670"
+  },
+  "prohibitions": {
+    "new_worktree": false,
+    "training": false,
+    "asset_port": false,
+    "tactile_proxy_implementation": false,
+    "dataset_generation": false,
+    "push": false,
+    "pull_request": false,
+    "s4_1_started": false
+  }
+}
