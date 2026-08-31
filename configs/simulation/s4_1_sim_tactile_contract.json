@@ -1,0 +1,30 @@
+{
+  "schema": "tactile3d-unit.s4-1-sim-tactile.v1",
+  "canonical_region_order": ["right_palm", "right_index", "right_middle", "right_ring", "right_thumb"],
+  "per_region_features": [
+    "contact_occupancy", "normal_force", "tangential_force_magnitude",
+    "cop_x", "cop_y", "cop_z"
+  ],
+  "per_region_dim": 6,
+  "total_dim": 30,
+  "units": ["binary", "newton", "newton", "meter", "meter", "meter"],
+  "contact_filter": "one geom in a named hand region and the other body in the task object-body allowlist",
+  "force_frame": {
+    "source": "mujoco.mj_contactForce",
+    "normal_component": 0,
+    "tangential_components": [1, 2],
+    "canonical_tangential": "Euclidean magnitude; contact-local tangent axes are not treated as stable world axes",
+    "normal_sign": "max(component_0, 0)",
+    "geom_order_invariance": "positive normal and tangential magnitude make the canonical scalar features independent of hand/object geom ordering"
+  },
+  "aggregation": {
+    "occupancy": "1 if any matched contact has positive normal force, else 0",
+    "normal_force": "sum(max(F_n_i, 0))",
+    "tangential_force_magnitude": "sum(sqrt(F_t1_i^2 + F_t2_i^2))",
+    "cop": "sum(max(F_n_i,0) * p_i) / (sum(max(F_n_i,0)) + epsilon)",
+    "empty_region": "six zeros"
+  },
+  "normalization": "raw physical values only; final learning normalization is deferred to S4.2 train split",
+  "impulse": "diagnostic force_integral = force * control_dt; not part of the canonical vector",
+  "claim": "physics-derived Contact proxy, not an electronic or taxel-level RH56DFTP simulation"
+}

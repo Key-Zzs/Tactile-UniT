@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -56,45 +55,15 @@ def offline_batch(batch: int = 2, **overrides: object) -> OfflineVACTransitionTe
     return OfflineVACTransitionTeachers(**arguments)  # type: ignore[arg-type]
 
 
-def test_integration_branch_contains_both_accepted_lineages() -> None:
-    branch = os.environ.get("GITHUB_HEAD_REF") or subprocess.check_output(
-        ["git", "branch", "--show-current"], cwd=ROOT, text=True
-    ).strip()
-    assert branch in {"develop/tactile-unit-integration", "develop/tactile-unit-vac", "main"}
-    if branch in {"develop/tactile-unit-vac", "main"}:
-        if subprocess.run(
-            ["git", "rev-parse", "--verify", "develop/tactile-unit-integration"],
-            cwd=ROOT,
-            capture_output=True,
-            check=False,
-        ).returncode != 0:
-            pytest.skip("integration branch ref is unavailable in this checkout")
+def test_integration_commit_contains_both_accepted_lineages() -> None:
+    assert subprocess.run(
+        ["git", "merge-base", "--is-ancestor", "m3", "HEAD"], cwd=ROOT, check=False
+    ).returncode == 0
+    # Accepted component identities contained by the tagged M3 merge. Unlike
+    # branch allowlists and remote refs, these remain valid after integration.
+    for reference in ("7051f81", "e489a2b", "6156bb2", "490ead7"):
         assert subprocess.run(
-            ["git", "merge-base", "--is-ancestor", "develop/tactile-unit-integration", "HEAD"],
-            cwd=ROOT,
-            check=False,
-        ).returncode == 0
-    required_refs = (
-        "origin/develop/contact-semantic-tokenizer",
-        "origin/develop/continuous-contact-bridge",
-        "origin/develop/tactile-action-bootstrap",
-        "origin/develop/action-transition-remediation",
-    )
-    if not all(
-        subprocess.run(
-            ["git", "rev-parse", "--verify", ref], cwd=ROOT, capture_output=True, check=False
-        ).returncode == 0
-        for ref in required_refs
-    ):
-        pytest.skip("accepted lineage refs are unavailable in this checkout")
-    for branch in (
-        "origin/develop/contact-semantic-tokenizer",
-        "origin/develop/continuous-contact-bridge",
-        "origin/develop/tactile-action-bootstrap",
-        "origin/develop/action-transition-remediation",
-    ):
-        assert subprocess.run(
-            ["git", "merge-base", "--is-ancestor", branch, "HEAD"], cwd=ROOT
+            ["git", "merge-base", "--is-ancestor", reference, "HEAD"], cwd=ROOT
         ).returncode == 0
 
 

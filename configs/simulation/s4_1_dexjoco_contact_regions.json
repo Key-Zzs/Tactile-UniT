@@ -1,0 +1,39 @@
+{
+  "schema": "tactile3d-unit.s4-1-dexjoco-contact-regions.v1",
+  "task": "pinch_tongs",
+  "hand": "right Allegro",
+  "resolution": "runtime name to ID; numeric geom IDs are forbidden in this config",
+  "object_body_names": ["link_0", "link_1"],
+  "regions": [
+    {
+      "region_name": "right_palm",
+      "hand_side": "right",
+      "body_names": ["allegro_palm"],
+      "geom_names": []
+    },
+    {
+      "region_name": "right_index",
+      "hand_side": "right",
+      "body_names": ["ff_base", "ff_proximal", "ff_medial", "ff_distal", "ff_tip"],
+      "geom_names": []
+    },
+    {
+      "region_name": "right_middle",
+      "hand_side": "right",
+      "body_names": ["mf_base", "mf_proximal", "mf_medial", "mf_distal", "mf_tip"],
+      "geom_names": []
+    },
+    {
+      "region_name": "right_ring",
+      "hand_side": "right",
+      "body_names": ["rf_base", "rf_proximal", "rf_medial", "rf_distal", "rf_tip"],
+      "geom_names": []
+    },
+    {
+      "region_name": "right_thumb",
+      "hand_side": "right",
+      "body_names": ["th_base", "th_proximal", "th_medial", "th_distal", "th_tip"],
+      "geom_names": []
+    }
+  ]
+}

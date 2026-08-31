@@ -1,0 +1,40 @@
+{
+  "schema": "tactile3d-unit.s4-1-dexjoco-runtime.v1",
+  "stage": "S4.1",
+  "environment": {
+    "name": "tactile-unit-dexjoco",
+    "spec": "configs/simulation/s4_1_dexjoco_environment.yml",
+    "python": "3.11.16",
+    "mujoco": "3.4.0",
+    "numpy": "1.26.4",
+    "gymnasium": "1.0.0",
+    "opencv_python": "4.11.0.86",
+    "pytorch": null,
+    "m3_environment": "unit",
+    "process_boundary": "file-based episode contract"
+  },
+  "provenance": {
+    "submodule": "third_party/dexjoco",
+    "pinned_sha": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+    "nested_diffusion_policy_initialized": false
+  },
+  "development_task": {
+    "name": "pinch_tongs",
+    "reason": "Official single-arm task with direct Allegro-hand/tool contacts and bounded headless runtime cost"
+  },
+  "headless": {
+    "render_mode": "rgb_array",
+    "backend_environment": "MUJOCO_GL=egl",
+    "display_required": false,
+    "camera": "front",
+    "rgb_order": "RGB",
+    "dtype": "uint8",
+    "resolution": [640, 640]
+  },
+  "scope": {
+    "policy_training": false,
+    "contact_representation_training": false,
+    "rpc_service": false,
+    "third_party_modification": false
+  }
+}

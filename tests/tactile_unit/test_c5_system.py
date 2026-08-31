@@ -1,6 +1,5 @@
 import hashlib
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -27,17 +26,28 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_branch_and_accepted_c1_through_c4_ancestry():
-    branch = os.environ.get("GITHUB_HEAD_REF") or subprocess.run(
-        ["git", "branch", "--show-current"], cwd=ROOT, text=True, capture_output=True, check=True
-    ).stdout.strip()
-    assert branch in {"develop/tactile-unit-vac", "main"}
-    history = subprocess.run(["git", "log", "--format=%h", "-80"], cwd=ROOT, text=True, capture_output=True, check=True).stdout
-    required_history = ("f43b71c", "beaa831", "639b4a9", "808416a", "5fe4bdb", "6a271c1", "7e77f7e", "9e1b431")
-    if not all(prefix in history for prefix in required_history):
-        pytest.skip("accepted stage history is unavailable in this shallow checkout")
+def test_m3_commit_contains_accepted_c1_through_c4_ancestry():
+    assert subprocess.run(
+        ["git", "merge-base", "--is-ancestor", "m3", "HEAD"], cwd=ROOT
+    ).returncode == 0
+    required_history = (
+        "f43b71c",
+        "beaa831",
+        "639b4a9",
+        "808416a",
+        "5fe4bdb",
+        "6a271c1",
+        "7e77f7e",
+        "9e1b431",
+    )
     for prefix in required_history:
-        assert prefix in history
+        if subprocess.run(
+            ["git", "cat-file", "-e", f"{prefix}^{{commit}}"], cwd=ROOT, capture_output=True
+        ).returncode != 0:
+            pytest.skip("accepted stage history is unavailable in this shallow checkout")
+        assert subprocess.run(
+            ["git", "merge-base", "--is-ancestor", prefix, "HEAD"], cwd=ROOT
+        ).returncode == 0
 
 
 def test_all_accepted_checkpoints_have_exact_frozen_hashes():

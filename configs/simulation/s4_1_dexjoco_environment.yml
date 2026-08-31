@@ -1,0 +1,29 @@
+name: tactile-unit-dexjoco
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11.16
+  - pip=26.2.1
+  - pip:
+      - absl-py==2.5.0
+      - av==18.1.0
+      - dm-robotics-transformations==0.9.0
+      - glfw==2.10.2
+      - gymnasium==1.0.0
+      - imageio==2.37.4
+      - imageio-ffmpeg==0.6.0
+      - jax==0.7.1
+      - jaxlib==0.7.1
+      - mujoco==3.4.0
+      - numcodecs==0.15.1
+      - numpy==1.26.4
+      - opencv-python==4.11.0.86
+      - pillow==12.3.0
+      - pytest==8.4.2
+      - PyYAML==6.0.3
+      - scipy==1.17.1
+      - tqdm==4.70.0
+      - tyro==1.0.16
+      - zarr==2.18.7
+      - -e ./third_party/dexjoco/dexjoco

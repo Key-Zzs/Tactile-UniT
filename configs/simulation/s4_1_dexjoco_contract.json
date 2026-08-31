@@ -1,0 +1,47 @@
+{
+  "schema": "tactile3d-unit.s4-1-dexjoco-observation-action-timing.v1",
+  "task": "pinch_tongs",
+  "observation": {
+    "timestamp": "MuJoCo data.time in seconds after the completed control step",
+    "camera": "front",
+    "rgb": {"shape": [640, 640, 3], "dtype": "uint8", "channel_order": "RGB"},
+    "proprio_dim": 31,
+    "proprio_names": [
+      "tcp_position_x_m", "tcp_position_y_m", "tcp_position_z_m",
+      "tcp_quaternion_w", "tcp_quaternion_x", "tcp_quaternion_y", "tcp_quaternion_z",
+      "allegro_right_ffj0_rad", "allegro_right_ffj1_rad", "allegro_right_ffj2_rad", "allegro_right_ffj3_rad",
+      "allegro_right_mfj0_rad", "allegro_right_mfj1_rad", "allegro_right_mfj2_rad", "allegro_right_mfj3_rad",
+      "allegro_right_rfj0_rad", "allegro_right_rfj1_rad", "allegro_right_rfj2_rad", "allegro_right_rfj3_rad",
+      "allegro_right_thj0_rad", "allegro_right_thj1_rad", "allegro_right_thj2_rad", "allegro_right_thj3_rad",
+      "tongs_position_x_m", "tongs_position_y_m", "tongs_position_z_m",
+      "tongs_quaternion_w", "tongs_quaternion_x", "tongs_quaternion_y", "tongs_quaternion_z",
+      "table_delta_height_m"
+    ]
+  },
+  "action": {
+    "policy_dim": 22,
+    "policy_order": ["tcp_target_xyz_m[3]", "tcp_target_rotvec_rad[3]", "allegro_joint_targets_rad[16]"],
+    "environment_dim": 23,
+    "environment_order": ["tcp_target_xyz_m[3]", "tcp_target_quaternion_wxyz[4]", "allegro_joint_targets_rad[16]"],
+    "conversion": "scipy Rotation rotvec to unit quaternion, reordered xyzw to wxyz",
+    "neutral": "current tcp pose and current Allegro joint positions",
+    "bounds": "all components must be finite; upstream policy wrapper exposes an unbounded absolute-pose Box and simulator controllers enforce task feasibility"
+  },
+  "timing": {
+    "physics_dt_sec": 0.002,
+    "physics_substeps": 10,
+    "control_dt_sec": 0.02,
+    "control_hz": 50.0,
+    "observation_hz": 50.0,
+    "render_hz": 50.0,
+    "wall_clock_pacing_hz": 30.0,
+    "tactile_history_sec": 0.5,
+    "history_samples_inclusive": 26,
+    "transition_target_sec": 0.5333333333333333,
+    "transition_control_steps": 27,
+    "actual_transition_sec": 0.54,
+    "rounding_error_sec": 0.00666666666666671,
+    "future_history_start_relative_to_anchor_sec": 0.04,
+    "raw_history_overlap": false
+  }
+}
