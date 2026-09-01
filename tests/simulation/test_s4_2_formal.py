@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import torch
+import numpy as np
 
 from gr00t.simulation.s4_2_formal import (
     ConditionalContactPredictor,
@@ -14,6 +15,7 @@ from gr00t.simulation.s4_2_formal import (
     ResidualVectorQuantizer,
     SharedPrivateDecomposer,
 )
+from scripts.simulation.run_s4_2_8_locked_test import validate_evaluator_schema
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -121,7 +123,7 @@ def test_s4_2_8_test_access_is_guarded_by_pretest_freeze() -> None:
     )
     assert 'build_pair_arrays(\n        "test"' in source
     assert 'purpose="locked_test"' in source
-    assert "pretest_freeze=PRETEST_PATH" in source
+    assert "pretest_freeze=pretest_path" in source
     assert '"training_performed": False' in source
     assert '"selection_performed": False' in source
 
@@ -130,3 +132,34 @@ def test_s4_2_8_repeat_is_equality_only() -> None:
     source = (ROOT / "scripts/simulation/run_s4_2_8_locked_test.py").read_text()
     assert 'result["metric_digest"] == first["metric_digest"]' in source
     assert "S4_2_8_DETERMINISTIC_REPEAT_FAIL" in source
+
+
+def test_locked_evaluator_joins_shared_contact_by_pair_identity() -> None:
+    pair_id = np.asarray(["a", "b"])
+    latent = np.zeros((2, 8, 32), dtype=np.float32)
+    train = {
+        "pair_id": pair_id,
+        "episode_id": np.asarray(["e1", "e2"]),
+        "task": np.asarray(["t", "t"]),
+        "source_trajectory_id": np.asarray(["g1", "g2"]),
+        "z_v": latent,
+        "z_a": latent,
+        "z_c": latent,
+        "h_current": np.zeros((2, 256), dtype=np.float32),
+        "contact_transition": np.zeros(2, dtype=np.int8),
+        "force_trend": np.zeros(2, dtype=np.int8),
+    }
+    shared_train = {"pair_id": pair_id, "u_v": latent, "u_a": latent, "u_c": latent}
+    test = train | shared_train | {
+        "current_state": np.zeros((2, 23), dtype=np.float32),
+        "action_chunk": np.zeros((2, 27, 22), dtype=np.float32),
+    }
+    audit = validate_evaluator_schema(train, shared_train, test)
+    assert audit["status"] == "PASS"
+    assert audit["shared_contact_owner"] == "shared_train"
+
+
+def test_uncertainty_baseline_uses_shared_train_contact() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_8_locked_test.py").read_text()
+    assert 'predictions_train[mean_name].astype(np.float64) - shared_train["u_c"]' in source
+    assert 'predictions_train[mean_name].astype(np.float64) - train["u_c"]' not in source

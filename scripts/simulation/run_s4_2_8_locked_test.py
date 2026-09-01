@@ -201,24 +201,35 @@ def build_locked_cache(
     device: torch.device,
     batch_size: int,
     workers: int,
+    *,
+    dataset_root: Path = DEFAULT_DATASET_ROOT,
+    pretest_path: Path = PRETEST_PATH,
+    test_cache: Path = TEST_CACHE,
+    access_path: Path | None = None,
+    prior_cache_paths: tuple[Path, ...] | None = None,
+    access_schema: str = "tactile3d-unit.s4-2-8-locked-test-access.v1",
+    test_name: str = "TEST_V1",
 ) -> dict[str, Any]:
     pairs = build_pair_arrays(
         "test",
-        DEFAULT_DATASET_ROOT,
+        dataset_root,
         purpose="locked_test",
-        pretest_freeze=PRETEST_PATH,
+        pretest_freeze=pretest_path,
     )
     if len(pairs["pair_id"]) != 4860:
-        raise RuntimeError("locked TEST pair count mismatch")
-    train = load_npz(CACHE_ROOT / "paired_train.npz")
-    validation = load_npz(CACHE_ROOT / "paired_validation.npz")
+        raise RuntimeError(f"locked {test_name} pair count mismatch")
+    if prior_cache_paths is None:
+        prior_cache_paths = (
+            CACHE_ROOT / "paired_train.npz",
+            CACHE_ROOT / "paired_validation.npz",
+        )
     test_groups = set(zip(pairs["task"].tolist(), pairs["source_trajectory_id"].tolist()))
-    prior_groups = set(zip(train["task"].tolist(), train["source_trajectory_id"].tolist()))
-    prior_groups |= set(
-        zip(validation["task"].tolist(), validation["source_trajectory_id"].tolist())
-    )
+    prior_groups: set[tuple[str, str]] = set()
+    for cache_path in prior_cache_paths:
+        prior = load_npz(cache_path)
+        prior_groups |= set(zip(prior["task"].tolist(), prior["source_trajectory_id"].tolist()))
     if test_groups & prior_groups or len(test_groups) != 9:
-        raise RuntimeError("locked TEST source-group leakage")
+        raise RuntimeError(f"locked {test_name} source-group leakage")
     tactile_current = pairs["current_history"][:, -1].reshape(-1, 5, 6)
     tactile_future = pairs["future_history"][:, -1].reshape(-1, 5, 6)
     current_contact = tactile_current[:, :, 0].sum(1) > 0
@@ -274,8 +285,9 @@ def build_locked_cache(
     u_v = encode_shared(bridge, z_v, "vision", device)
     u_a = encode_shared(bridge, z_a, "action", device)
     u_c = encode_shared(bridge, z_c, "contact", device)
+    test_cache.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
-        TEST_CACHE,
+        test_cache,
         pair_id=pairs["pair_id"],
         episode_id=pairs["episode_id"],
         task=pairs["task"],
@@ -299,7 +311,8 @@ def build_locked_cache(
         future_total_force=future_force,
     )
     access = {
-        "schema": "tactile3d-unit.s4-2-8-locked-test-access.v1",
+        "schema": access_schema,
+        "test_name": test_name,
         "test_loaded": True,
         "first_access": True,
         "pairs": len(pairs["pair_id"]),
@@ -307,10 +320,10 @@ def build_locked_cache(
         "source_group_overlap": 0,
         "transition_offset_exact": bool(np.all(pairs["future_step"] - pairs["anchor_step"] == 27)),
         "vision_checkpoint_file_sha256": identity["original_unit_tokenizer_files_sha256"],
-        "cache": str(TEST_CACHE.relative_to(ROOT)),
-        "cache_sha256": sha256_file(TEST_CACHE),
+        "cache": str(test_cache.relative_to(ROOT)),
+        "cache_sha256": sha256_file(test_cache),
     }
-    atomic_json(ARTIFACT_ROOT / "locked_test_access.json", access)
+    atomic_json(access_path or ARTIFACT_ROOT / "locked_test_access.json", access)
     return access
 
 
@@ -343,10 +356,66 @@ def load_conditional(name: str, device: torch.device) -> ConditionalContactPredi
     return model.eval().requires_grad_(False).to(device)
 
 
-def evaluate_locked(device: torch.device, bootstrap_samples: int) -> dict[str, Any]:
+def validate_evaluator_schema(
+    train: dict[str, np.ndarray],
+    shared_train: dict[str, np.ndarray],
+    test: dict[str, np.ndarray],
+) -> dict[str, Any]:
+    """Validate the native/shared join before any model-performance calculation."""
+
+    native_required = {
+        "pair_id", "episode_id", "task", "source_trajectory_id", "z_v", "z_a", "z_c",
+        "h_current", "contact_transition", "force_trend",
+    }
+    shared_required = {"pair_id", "u_v", "u_a", "u_c"}
+    test_required = native_required | shared_required | {"current_state", "action_chunk"}
+    missing = {
+        "native_train": sorted(native_required - set(train)),
+        "shared_train": sorted(shared_required - set(shared_train)),
+        "test": sorted(test_required - set(test)),
+    }
+    if any(missing.values()):
+        raise RuntimeError(f"locked evaluator schema missing fields: {missing}")
+    if "u_c" in train:
+        raise RuntimeError("native TRAIN unexpectedly owns shared Contact u_c")
+    if not np.array_equal(train["pair_id"], shared_train["pair_id"]):
+        raise RuntimeError("native/shared TRAIN pair_id join mismatch")
+    rows = len(train["pair_id"])
+    test_rows = len(test["pair_id"])
+    if any(len(shared_train[name]) != rows for name in shared_required):
+        raise RuntimeError("shared TRAIN row count mismatch")
+    if any(len(test[name]) != test_rows for name in test_required):
+        raise RuntimeError("locked TEST row count mismatch")
+    expected_latent = (8, 32)
+    latent_shapes = {
+        "shared_train_u_c": tuple(shared_train["u_c"].shape[1:]),
+        "test_u_c": tuple(test["u_c"].shape[1:]),
+    }
+    if any(shape != expected_latent for shape in latent_shapes.values()):
+        raise RuntimeError(f"locked evaluator Contact latent shape mismatch: {latent_shapes}")
+    return {
+        "status": "PASS",
+        "native_train_rows": rows,
+        "shared_train_rows": len(shared_train["pair_id"]),
+        "test_rows": test_rows,
+        "shared_contact_owner": "shared_train",
+        "native_shared_pair_id_equal": True,
+        "contact_latent_shape": list(expected_latent),
+    }
+
+
+def evaluate_locked(
+    device: torch.device,
+    bootstrap_samples: int,
+    *,
+    test_cache: Path = TEST_CACHE,
+    result_schema: str = "tactile3d-unit.s4-2-8-locked-test.v1",
+    test_name: str = "TEST_V1",
+) -> dict[str, Any]:
     config = load_json(CONFIG_PATH)
-    train, test = load_npz(CACHE_ROOT / "paired_train.npz"), load_npz(TEST_CACHE)
+    train, test = load_npz(CACHE_ROOT / "paired_train.npz"), load_npz(test_cache)
     shared_train = load_npz(CACHE_ROOT / "shared_train.npz")
+    schema_audit = validate_evaluator_schema(train, shared_train, test)
     action_model, stats = load_action(device)
     state = policy_state(test["current_state"])
     action = np.asarray(test["action_chunk"], dtype=np.float32)
@@ -510,7 +579,7 @@ def evaluate_locked(device: torch.device, bootstrap_samples: int) -> dict[str, A
             axis=(1, 2)
         )
         train_error = np.square(
-            predictions_train[mean_name].astype(np.float64) - train["u_c"]
+            predictions_train[mean_name].astype(np.float64) - shared_train["u_c"]
         ).mean(axis=(1, 2))
         log_variance = infer_log_variance(head, test_values, device).astype(np.float64) + np.log(
             float(payload["variance_scale"])
@@ -578,7 +647,8 @@ def evaluate_locked(device: torch.device, bootstrap_samples: int) -> dict[str, A
         },
     }
     result = {
-        "schema": "tactile3d-unit.s4-2-8-locked-test.v1",
+        "schema": result_schema,
+        "test_name": test_name,
         "split": "test",
         "pairs": len(test["pair_id"]),
         "source_groups": 9,
@@ -591,6 +661,7 @@ def evaluate_locked(device: torch.device, bootstrap_samples: int) -> dict[str, A
         "threshold_change": False,
         "historical_10_percent_gate": "FAIL_UNCHANGED",
         "canonical_contact": "C3",
+        "evaluator_schema_audit": schema_audit,
     }
     result["metric_digest"] = canonical_digest(result)
     return result

@@ -115,18 +115,24 @@ def generate_episode(
     perturbation: int,
     split: str,
     contract: dict[str, Any],
+    *,
+    source_id: str | None = None,
+    episode_id: str | None = None,
+    seed: int | None = None,
+    parameters: dict[str, Any] | None = None,
+    metadata_updates: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     task_contract = contract["tasks"][task]
-    source_id = f"{task}-script-{group:02d}"
-    episode_id = f"{task}-g{group:02d}-p{perturbation:02d}"
+    source_id = source_id or f"{task}-script-{group:02d}"
+    episode_id = episode_id or f"{task}-g{group:02d}-p{perturbation:02d}"
     episode_dir = root / "episodes" / episode_id
     if (episode_dir / "metadata.json").is_file():
         return json.loads((episode_dir / "metadata.json").read_text(encoding="utf-8"))
     if episode_dir.exists():
         raise RuntimeError(f"refusing partial existing episode directory: {episode_dir}")
 
-    seed = int(task_contract["seed_base"] + 10 * group + perturbation)
-    parameters = group_parameters(group, contract)
+    seed = int(seed if seed is not None else task_contract["seed_base"] + 10 * group + perturbation)
+    parameters = parameters or group_parameters(group, contract)
     offset = np.asarray(contract["script_family"]["base_contact_offsets_m"][task])
     offset += np.asarray(contract["script_family"]["perturbation_xyz_m"][perturbation])
     adapter = DexJoCoRuntimeAdapter(
@@ -165,6 +171,8 @@ def generate_episode(
         "physics_dt_sec": 0.002,
         "region_audit": region_audit,
     }
+    if metadata_updates:
+        metadata.update(metadata_updates)
     logger = DexJoCoEpisodeLogger(root / "episodes", episode_id, metadata)
     try:
         for step in range(int(contract["episode_plan"]["steps"])):
