@@ -1,0 +1,20 @@
+{
+  "branch": "develop/sim-benchmark",
+  "decision": "S4_3_0_DEMONSTRATION_CONTRACT_FAIL",
+  "downstream": {
+    "S4.3-0B": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.3-0C": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.3-0D": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.3-1": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.3-2": "NOT_RUN_DEPENDENCY_BLOCKED"
+  },
+  "final_s4_3_2_classification": "STRUCTURAL_FAIL",
+  "policy_eval_started": false,
+  "policy_training_started": false,
+  "reason": "The frozen S4.2 DS source contains zero successful task-solving demonstrations; it is a contact-probe corpus and is invalid for ACT behavior cloning.",
+  "s4_2_mutation_allowed": false,
+  "s4_3_3_readiness": "NOT_READY",
+  "schema": "tactile3d-unit.s4-3-0-public-final-decision.v1",
+  "stage": "S4.3-0A",
+  "status": "FAILED"
+}
