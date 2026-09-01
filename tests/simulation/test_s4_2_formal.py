@@ -11,6 +11,7 @@ from gr00t.simulation.s4_2_formal import (
     FormalActionEncoder,
     FormalVACBridge,
     ScalarLogVarianceHead,
+    ResidualVectorQuantizer,
     SharedPrivateDecomposer,
 )
 
@@ -68,6 +69,14 @@ def test_shared_private_and_conditional_interfaces_are_explicit() -> None:
     assert uncertainty(values).shape == (3,)
 
 
+def test_residual_quantizer_has_exact_frozen_capacity() -> None:
+    model = ResidualVectorQuantizer()
+    quantized, indices = model(torch.randn(4, 8, 32))
+    assert quantized.shape == (4, 8, 32)
+    assert indices.shape == (4, 8, 2)
+    assert model.codebooks.shape == (2, 128, 32)
+
+
 def test_formal_freeze_script_never_loads_a_test_array() -> None:
     source = (ROOT / "scripts/simulation/freeze_s4_2_formal_protocol.py").read_text()
     assert 'PAIR_ROOT / "test.npz"' not in source
@@ -89,3 +98,17 @@ def test_s4_2_5_script_has_five_bounded_trials_and_no_test_access() -> None:
     assert 'PAIR_ROOT / "paired_test.npz"' not in source
     protocol = json.loads((ROOT / "configs/simulation/s4_2_formal_downstream.json").read_text())
     assert len(protocol["s4_2_5"]["trainable_candidates"]) == 5
+
+
+def test_s4_2_6_rejects_a_bad_discrete_alternative_without_relaxing_its_gate() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_6_bottleneck_shared_private.py").read_text()
+    assert "REJECTED_RECOVERY_GATE" in source
+    assert 'rq_result["gates"]' in source
+    assert 'PAIR_ROOT / "paired_test.npz"' not in source
+
+
+def test_s4_2_7_freezes_mean_before_uncertainty_and_has_no_test_access() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_7_conditional_uncertainty.py").read_text()
+    assert '"mean_predictor_frozen": True' in source
+    assert '"calibration_split": "validation"' in source
+    assert 'PAIR_ROOT / "paired_test.npz"' not in source

@@ -180,6 +180,39 @@ class SharedPrivateDecomposer(nn.Module):
         return self.cross_decoder[modality](shared)
 
 
+class ResidualVectorQuantizer(nn.Module):
+    """Two-stage residual quantizer with a shared 32D codebook per stage."""
+
+    def __init__(self, stages: int = 2, codes_per_stage: int = 128, code_dim: int = 32) -> None:
+        super().__init__()
+        if stages != 2 or codes_per_stage != 128 or code_dim != 32:
+            raise ValueError("formal Contact RQ contract is exactly 2x128x32")
+        self.stages = stages
+        self.codes_per_stage = codes_per_stage
+        self.code_dim = code_dim
+        self.codebooks = nn.Parameter(torch.randn(stages, codes_per_stage, code_dim) * 0.02)
+
+    def forward(self, value: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        if value.ndim != 3 or tuple(value.shape[1:]) != (8, 32):
+            raise ValueError("Contact shared representation must be [B,8,32]")
+        residual = value
+        quantized = torch.zeros_like(value)
+        indices = []
+        for stage in range(self.stages):
+            codebook = self.codebooks[stage]
+            distance = (
+                residual.square().sum(dim=-1, keepdim=True)
+                - 2.0 * residual @ codebook.T
+                + codebook.square().sum(dim=-1)
+            )
+            index = distance.argmin(dim=-1)
+            selected = F.embedding(index, codebook)
+            quantized = quantized + selected
+            residual = value - quantized
+            indices.append(index)
+        return quantized, torch.stack(indices, dim=-1)
+
+
 class ConditionalContactPredictor(nn.Module):
     """Predict shared Contact transition tokens from an explicit conditioning set."""
 
