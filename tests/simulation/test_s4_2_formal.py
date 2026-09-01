@@ -119,7 +119,9 @@ def test_s4_2_8_test_access_is_guarded_by_pretest_freeze() -> None:
     assert source.index("verify_pretest(repeat=repeat)") < source.index(
         "build_locked_cache(args.unit_checkpoint"
     )
-    assert 'build_pair_arrays("test"' in source
+    assert 'build_pair_arrays(\n        "test"' in source
+    assert 'purpose="locked_test"' in source
+    assert "pretest_freeze=PRETEST_PATH" in source
     assert '"training_performed": False' in source
     assert '"selection_performed": False' in source
 

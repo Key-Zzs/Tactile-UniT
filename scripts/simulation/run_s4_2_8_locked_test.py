@@ -202,7 +202,12 @@ def build_locked_cache(
     batch_size: int,
     workers: int,
 ) -> dict[str, Any]:
-    pairs = build_pair_arrays("test", DEFAULT_DATASET_ROOT)
+    pairs = build_pair_arrays(
+        "test",
+        DEFAULT_DATASET_ROOT,
+        purpose="locked_test",
+        pretest_freeze=PRETEST_PATH,
+    )
     if len(pairs["pair_id"]) != 4860:
         raise RuntimeError("locked TEST pair count mismatch")
     train = load_npz(CACHE_ROOT / "paired_train.npz")
