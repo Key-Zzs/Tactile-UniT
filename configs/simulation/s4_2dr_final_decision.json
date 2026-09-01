@@ -1,0 +1,51 @@
+{
+  "schema": "tactile3d-unit.s4-2dr-final-decision.v1",
+  "decision": "S4_2DR_DYNAMICS_REMEDIATION_FAIL",
+  "historical_failure": {
+    "decision": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "C2_dynamic_mse": 0.018156317993998528,
+    "original_C3_dynamic_mse": 0.01715606078505516,
+    "relative_improvement": 0.05509144067764282,
+    "required_improvement": 0.10,
+    "modified": false
+  },
+  "route_A": {
+    "result": "FAIL",
+    "classification": "DYNAMICS_REMEDIATION_REQUIRED",
+    "failed_gates": [
+      "B_empirical_reference_exists",
+      "C_C2_near_empirical_reference",
+      "D_C3_captures_half_remaining_headroom"
+    ]
+  },
+  "route_B": {
+    "result": "FAIL",
+    "trials_run": 3,
+    "maximum_trials": 3,
+    "best_trial": "R2",
+    "best_dynamic_mse": 0.01689503493804136,
+    "best_relative_improvement": 0.06946791527584839,
+    "required_improvement": 0.10,
+    "failed_gate_for_all_trials": "A_dynamic_improvement_at_least_10_percent"
+  },
+  "selected_checkpoint": null,
+  "selected_checkpoint_sha256": null,
+  "z_c_shape": [8, 32],
+  "exact_blocker": "All three bounded trials failed Route B gate A: no candidate reached the unchanged >=10% dynamic improvement over frozen C2.",
+  "warnings": [
+    "ORIGINAL_10_PERCENT_GATE_NOT_MET",
+    "NO_EMPIRICAL_HEADROOM_REFERENCE"
+  ],
+  "locked_test": {
+    "formal_test": "PRESERVED",
+    "model_performance_test_loaded": false,
+    "selection_used_test": false
+  },
+  "downstream": {
+    "S4.2-4": "NOT_READY",
+    "S4.2-5": "BLOCKED",
+    "executed": false
+  },
+  "S4_2_overall": "NOT_COMPLETE",
+  "stop_after": "S4.2-DR"
+}
