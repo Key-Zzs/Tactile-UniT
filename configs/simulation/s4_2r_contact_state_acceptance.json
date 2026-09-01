@@ -1,0 +1,50 @@
+{
+  "schema": "tactile3d-unit.s4-2r-contact-state-acceptance.v1",
+  "stage": "S4.2-R",
+  "final_state": "S4_2R_CONTACT_STATE_ACCEPTED_EXISTING",
+  "classification": "LOW_INTRINSIC_DIMENSION_NOT_COLLAPSE",
+  "original_s4_2": {
+    "decision": "S4_2_CONTACT_STATE_FAIL",
+    "effective_rank": 11.255626031431431,
+    "threshold": 16.0,
+    "result_modified": false
+  },
+  "accepted_teacher": {
+    "candidate": "B3-N1-R0.25",
+    "architecture": "B3 PredictiveContactTeacher",
+    "parameters": 2792466,
+    "checkpoint": ".local/experiments/simulation/s4_2r/contact_state/accepted.pt",
+    "checkpoint_sha256": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19",
+    "normalization": "N1",
+    "input_shape": [26, 30],
+    "output_shape": [256]
+  },
+  "validation": {
+    "future_mse": 0.15545710921287537,
+    "effective_rank": 11.25756565525719,
+    "participation_ratio": 5.641271534962352,
+    "top_pc_explained_variance": 0.35959349594236484,
+    "near_zero_variance_fraction": 0.0,
+    "source_dimension_reference": 3.121517446651421,
+    "source_relative_ratio": 3.606440088083967,
+    "different_sample_distance_p05": 5.001279725597744e-06,
+    "gates": {
+      "A_variance": "PASS",
+      "B_dominant_component": "PASS",
+      "C_effective_rank_floor": "PASS",
+      "D_source_relative_diversity": "PASS",
+      "E_pairwise_diversity": "PASS",
+      "F_semantic_functionality": "PASS",
+      "G_perturbation_sensitivity": "PASS"
+    }
+  },
+  "remediation": {
+    "required": false,
+    "new_trials": 0,
+    "remediation_trials_artifact": "NOT_APPLICABLE"
+  },
+  "warnings": ["LOW_EFFECTIVE_RANK_WARNING", "THUMB_ZERO_ACTIVITY"],
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "s4_2_3_allowed": true
+}

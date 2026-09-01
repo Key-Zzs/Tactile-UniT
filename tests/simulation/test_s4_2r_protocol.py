@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from gr00t.simulation.s4_2r_acceptance import evaluate_no_collapse_contract
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -78,3 +80,55 @@ def test_remediation_is_validation_only_and_bounded_to_three_trials() -> None:
         "locked_test_deferred_until_after_s4_2_6_and_s4_2_7": True,
     }
     assert remediation["training_started"] is False
+
+
+def test_new_no_collapse_gate_evaluator_applies_all_frozen_thresholds() -> None:
+    remediation = load("s4_2r_contact_state_rank_remediation.json")
+    metrics = {
+        "near_zero_variance_fraction": 0.0,
+        "top_pc_explained_variance": 0.36,
+        "effective_rank": 11.25,
+    }
+    pairwise = {
+        "same_sample_duplicate_distance_mean": 0.0,
+        "different_sample_distance_mean": 18.9,
+        "different_sample_distance_p05": 1e-5,
+    }
+    required = remediation["new_structural_collapse_contract"][
+        "gate_f_semantic_functionality"
+    ]["require_all_original_validation_gates"]
+    original = {name: True for name in required}
+    controls = {
+        name: {"correct_mse": 0.3, "control_mse": 0.8, "improvement_ci95": [0.1, 0.2]}
+        for name in remediation["new_structural_collapse_contract"][
+            "gate_g_perturbation_sensitivity"
+        ]["correct_history_must_beat"]
+    }
+    result = evaluate_no_collapse_contract(
+        remediation, metrics, pairwise, original, controls
+    )
+    assert result["overall_pass"] is True
+    assert all(row["pass"] for row in result["gates"].values())
+    metrics["top_pc_explained_variance"] = 0.5
+    failed = evaluate_no_collapse_contract(
+        remediation, metrics, pairwise, original, controls
+    )
+    assert failed["overall_pass"] is False
+    assert failed["gates"]["B_dominant_component"]["pass"] is False
+
+
+def test_contact_state_acceptance_promotes_existing_without_rewriting_original() -> None:
+    original = load("s4_2_final_decision.json")
+    acceptance = load("s4_2r_contact_state_acceptance.json")
+    assert original["decision"] == "S4_2_CONTACT_STATE_FAIL"
+    assert acceptance["final_state"] == "S4_2R_CONTACT_STATE_ACCEPTED_EXISTING"
+    assert acceptance["classification"] == "LOW_INTRINSIC_DIMENSION_NOT_COLLAPSE"
+    assert acceptance["original_s4_2"]["result_modified"] is False
+    assert acceptance["remediation"] == {
+        "required": False,
+        "new_trials": 0,
+        "remediation_trials_artifact": "NOT_APPLICABLE",
+    }
+    assert all(value == "PASS" for value in acceptance["validation"]["gates"].values())
+    assert acceptance["test_loaded"] is False
+    assert acceptance["s4_2_3_allowed"] is True
