@@ -1,0 +1,104 @@
+{
+  "schema": "tactile3d-unit.s4-2-tf-public-final-decision.v1",
+  "status": "COMPLETE",
+  "stage": "S4.2-TF",
+  "decision": {
+    "S4.2": "COMPLETE",
+    "S4.3": "READY_WITH_WARNINGS"
+  },
+  "test_v1": {
+    "classification": "TEST_V1_EXPOSED",
+    "original_structural_fail": "PRESERVED",
+    "scientific_decision_eligible": false,
+    "pairs": 4860,
+    "pair_identity_sha256": "e6d22e06c81e0965afc1f6347a92c5909b1ec7a0a8f71815ba7a73821eb4afee",
+    "post_fix_engineering_diagnostic_run": false
+  },
+  "evaluator_remediation": {
+    "status": "PASS",
+    "bug": "native TRAIN does not own u_c",
+    "fix": "uncertainty training baseline target uses shared_train['u_c']",
+    "native_shared_train_pair_id_equal": true,
+    "train_rows": 22680,
+    "contact_latent_shape": [8, 32],
+    "validation_only_dry_run": "PASS",
+    "simulation_regression_before_freeze": "96_PASS_1_SKIP",
+    "training_performed": false,
+    "selection_performed": false
+  },
+  "formal_test_v2": {
+    "integrity": "PASS",
+    "episodes": 45,
+    "pairs": 4860,
+    "source_groups": 9,
+    "unique_episode_seeds": 45,
+    "pair_identity_sha256": "8c40ab81643f5d21748bb68591f2801e1c0fa99285cb7544636a5d9ab7ccdc32",
+    "overlap_with_train_dev_validation_test_v1": 0,
+    "locked_evaluation": "PASS",
+    "deterministic_repeat": "PASS",
+    "deterministic_equal": true,
+    "metric_digest": "7f87740c498ba23a0f31dca7786c91cb004c971661fd0843ea5d815fb6971e93",
+    "sections": {
+      "action": "PASS",
+      "bridge": "PASS",
+      "shared_private": "PASS",
+      "conditional": "PASS",
+      "uncertainty": "PASS"
+    },
+    "headline_metrics": {
+      "action_different_episode_over_correct_mse": 523.8547232694419,
+      "minimum_contact_retrieval_r10_chance_multiplier": 33.099999999999994,
+      "shared_contact_semantic_retention": 0.9999842280904299,
+      "shared_force_semantic_retention": 1.0007178244649035,
+      "conditional_full_relative_improvement": 0.10002107767027536,
+      "conditional_missing_vision_relative_improvement": 0.08509792005883918,
+      "missing_contact_semantic_retention": 0.9516816213115044,
+      "uncertainty_full_nll_improvement": 0.07959187238946375,
+      "uncertainty_full_coverage_90": 0.929835390946502,
+      "uncertainty_missing_h_nll_improvement": 0.030248339241168043,
+      "uncertainty_missing_h_coverage_90": 0.9139917695473251
+    }
+  },
+  "preserved_structural_events": {
+    "dataset_integrity_attempt_1": "STRUCTURAL_AUDIT_HARNESS_FAIL_CONTROL_STEP_ORIGIN_ASSUMPTION",
+    "dataset_integrity_attempt_1_model_metrics_read": false,
+    "locked_evaluation_launch_attempt_1": "STRUCTURAL_LAUNCH_FAIL_CUBLAS_WORKSPACE_CONFIG_MISSING",
+    "locked_evaluation_launch_attempt_1_model_metrics_computed": false
+  },
+  "historical_conclusions": {
+    "original_contact_state_rank_gate": "HISTORICAL_FAIL",
+    "contact_state_remediation": "LOW_INTRINSIC_DIMENSION_NOT_COLLAPSE",
+    "original_contact_dynamics_10_percent_gate": "HISTORICAL_FAIL",
+    "bounded_dynamics_remediation": "HISTORICAL_FAIL",
+    "canonical_contact": "C3",
+    "canonical_contact_classification": "S4_2DS_C3_REPRESENTATION_UTILITY_SELECTED",
+    "selected_action": "A0",
+    "selected_bridge": "B3_slot_t0.07_w1",
+    "frozen_m3_zero_shot_transfer": "NOT_ESTABLISHED",
+    "accepted_bridge_claim": "SHARED_PHYSICAL_REPRESENTATION_PRINCIPLE_REPLICATED_WITH_SIM_SPECIFIC_CONTINUOUS_MAPPING",
+    "continuous_contact": "ACCEPTED",
+    "discrete_contact_rq": "REJECTED_RECOVERY_GATE",
+    "shared_private": "ACCEPTED",
+    "conditional_prediction": "PASS",
+    "missing_modality": "PASS",
+    "uncertainty": "PASS"
+  },
+  "immutability": {
+    "training_during_or_after_test_v2": false,
+    "checkpoint_change": false,
+    "bridge_change": false,
+    "predictor_change": false,
+    "uncertainty_change": false,
+    "threshold_change": false,
+    "normalization_change": false,
+    "split_change": false,
+    "locked_test_v2_completed_runs": 1,
+    "deterministic_repeat_runs": 1
+  },
+  "warnings": [
+    "FROZEN_M3_ZERO_SHOT_TRANSFER_NOT_ESTABLISHED",
+    "DEXJOCO_REQUIRES_SIM_SPECIFIC_CONTINUOUS_SHARED_MAPPING",
+    "OOD_DYNAMICS_DEFERRED",
+    "RIGHT_THUMB_INACTIVE_IN_FORMAL_SCRIPTED_CORPUS"
+  ]
+}

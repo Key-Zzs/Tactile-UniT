@@ -85,3 +85,17 @@ def test_corrected_dataset_audit_uses_contractual_step_contiguity() -> None:
     assert 'np.ones(length - 1)' in source
     assert 'dataset_bytes_changed_after_generation": False' in source
     assert "model_performance_metrics_loaded" in source
+
+
+def test_public_tf_decision_preserves_history_and_uses_only_v2() -> None:
+    decision = json.loads(
+        (ROOT / "configs/simulation/s4_2_tf_final_decision.json").read_text()
+    )
+    assert decision["decision"] == {"S4.2": "COMPLETE", "S4.3": "READY_WITH_WARNINGS"}
+    assert decision["test_v1"]["classification"] == "TEST_V1_EXPOSED"
+    assert decision["test_v1"]["scientific_decision_eligible"] is False
+    assert decision["formal_test_v2"]["locked_evaluation"] == "PASS"
+    assert decision["formal_test_v2"]["deterministic_equal"] is True
+    assert decision["historical_conclusions"]["original_contact_state_rank_gate"] == "HISTORICAL_FAIL"
+    assert decision["historical_conclusions"]["frozen_m3_zero_shot_transfer"] == "NOT_ESTABLISHED"
+    assert all(value is False for value in decision["immutability"].values() if isinstance(value, bool))
