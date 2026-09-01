@@ -1,0 +1,64 @@
+{
+  "schema": "tactile3d-unit.s4-2r-contact-dynamics-decision.v1",
+  "stage": "S4.2-3",
+  "decision": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+  "contact_state_dependency": "S4_2R_CONTACT_STATE_ACCEPTED_EXISTING",
+  "window_contract": {
+    "current_history_relative_steps": [-25, 0],
+    "future_history_relative_steps": [2, 27],
+    "future_anchor_offset_steps": 27,
+    "anchor_delta_sec": 0.54,
+    "raw_overlap": false
+  },
+  "selected": {
+    "candidate": "C3-lambda1.0",
+    "checkpoint": ".local/experiments/simulation/s4_2r/contact_dynamics/selected.pt",
+    "checkpoint_sha256": "f67b8b0d6f519944adafecbb0a93bb4387213fa1a4f33f7f770a55938de05602",
+    "parameters": 1251520,
+    "z_c_shape": [8, 32]
+  },
+  "validation": {
+    "dynamic_windows": 1492,
+    "dynamic_mse": 0.01715606078505516,
+    "overall_mse": 0.013867278583347797,
+    "strongest_baseline": "C2",
+    "strongest_baseline_dynamic_mse": 0.018156317993998528,
+    "dynamic_relative_improvement": 0.05509144067764282,
+    "required_dynamic_relative_improvement": 0.1,
+    "dynamic_improvement_ci95": [
+      0.0008774169545423116,
+      0.0011298185982803837
+    ],
+    "controls": {
+      "zero_dynamic_mse": 0.8491136431694031,
+      "different_episode_dynamic_mse": 0.403402179479599,
+      "reversed_dynamic_mse": 2.1478846073150635,
+      "mismatched_future_dynamic_mse": 0.40390267968177795
+    },
+    "effective_rank": 31.040205370980367,
+    "near_zero_variance_fraction": 0.0,
+    "collapsed_query_fraction": 0.0,
+    "contact_transition_macro_f1": 0.9784170774864388,
+    "force_trend_macro_f1": 0.950372681461033
+  },
+  "gates": {
+    "dynamic_improvement_at_least_10_percent": "FAIL",
+    "dynamic_improvement_bootstrap_lower_positive": "PASS",
+    "full_beats_all_controls": "PASS",
+    "finite": "PASS",
+    "deterministic_reload": "PASS",
+    "shape_8x32": "PASS",
+    "no_structural_collapse": "PASS"
+  },
+  "failed_gates": ["dynamic_improvement_at_least_10_percent"],
+  "failure_reason": "C3 improves dynamic validation MSE over the strongest C2 baseline by 5.509%, below the frozen 10% minimum.",
+  "minimal_remediation": "Open a separate preregistered Contact-Dynamics remediation that strengthens the proposed transition inductive bias or objective against the matched C2 delta-autoencoder ceiling; do not change this gate or run downstream stages.",
+  "downstream": {
+    "S4.2-4A": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-4B": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-4C": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-5": "NOT_RUN_DEPENDENCY_BLOCKED"
+  },
+  "test_loaded": false,
+  "selection_uses_test": false
+}
