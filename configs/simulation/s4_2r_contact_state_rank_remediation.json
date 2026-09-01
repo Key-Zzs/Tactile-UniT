@@ -1,0 +1,162 @@
+{
+  "schema": "tactile3d-unit.s4-2r-contact-state-rank-remediation.v1",
+  "stage": "S4.2-R",
+  "status": "PREREGISTERED_AFTER_R1_R2_BEFORE_R4_REEVALUATION_OR_TRAINING",
+  "freeze_date_utc": "2026-09-01",
+  "scientific_integrity": {
+    "original_s4_2_result": "FAIL",
+    "original_decision": "S4_2_CONTACT_STATE_FAIL",
+    "original_effective_rank": 11.255626031431431,
+    "original_effective_rank_min": 16.0,
+    "original_reason": "effective_rank_11.255626_below_16",
+    "original_decision_path": "configs/simulation/s4_2_final_decision.json",
+    "original_protocol_path": "configs/simulation/s4_2_representation_contract.json",
+    "original_result_must_not_be_modified": true,
+    "follow_up_is_separately_preregistered": true
+  },
+  "frozen_inputs": {
+    "dataset_manifest_canonical_sha256": "652181d45bc317a1b17debe5e9c58529ae7d096bb75441cd17d0165bf2d701d4",
+    "tasks": ["pinch_tongs", "hammer_nail", "click_mouse"],
+    "train_anchors": 22680,
+    "validation_anchors": 4860,
+    "test_anchors": 4860,
+    "selected_teacher": "B3-N1-R0.25",
+    "teacher_checkpoint": ".local/experiments/simulation/s4_2/contact_teacher/selected.pt",
+    "teacher_checkpoint_sha256": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19",
+    "normalization": "N1",
+    "input_shape": [26, 30],
+    "latent_shape": [256],
+    "future_target_shape": [13, 30]
+  },
+  "r1_source_dimension_reference": {
+    "split": "train",
+    "d_src": 3.121517446651421,
+    "definition": "median(active raw-frame effective rank, active raw-frame participation ratio, history temporal-summary effective rank, history temporal-summary participation ratio)",
+    "terms": {
+      "active_raw_effective_rank": 2.6479266490107225,
+      "active_raw_participation_ratio": 2.161357505456751,
+      "history_summary_effective_rank": 5.024975572043099,
+      "history_summary_participation_ratio": 3.5951082442921196
+    },
+    "terms_canonical_sha256": "62a33f61000606431bd3b34e6cb7dd3b6a903d3851ad56c0e152f6b6a47ddb7b",
+    "source_artifact": ".local/artifacts/simulation/s4_2r/intrinsic_dimension/source_intrinsic_dimension.json",
+    "source_artifact_sha256_at_freeze": "766d4bb449f6c78f3c725d5816e4d5066b867f56638b763c55d66ce62010ffe4"
+  },
+  "r2_coverage": {
+    "classification": "THUMB_INACTIVITY_IS_DATA_COVERAGE",
+    "mapping_bug": false,
+    "meaningful_active_regions": 4,
+    "retain_frozen_dataset": true,
+    "warning": "THUMB_ZERO_ACTIVITY"
+  },
+  "new_structural_collapse_contract": {
+    "gate_a_variance": {
+      "near_zero_variance_fraction_max": 0.01,
+      "near_zero_definition": "variance < 1e-4 * median positive variance",
+      "comparison": "strict variance threshold; equality is not near-zero"
+    },
+    "gate_b_dominant_component": {
+      "top_1_pca_explained_variance_max_exclusive": 0.5
+    },
+    "gate_c_effective_rank_floor": {
+      "effective_rank_min": 8.0,
+      "rationale": "conservative minimum diverse-factor count, not a full-capacity utilization target"
+    },
+    "gate_d_source_relative_diversity": {
+      "formula": "effective_rank(h_validation) / min(d_src, 16)",
+      "d_src": 3.121517446651421,
+      "denominator": 3.121517446651421,
+      "ratio_min": 0.75
+    },
+    "gate_e_pairwise_diversity": {
+      "same_sample_duplicate_distance_max": 1e-08,
+      "different_sample_mean_strictly_above_duplicate": true,
+      "different_sample_distance_p05_strictly_positive": true,
+      "sampling_seed": 4242,
+      "maximum_samples": 4096
+    },
+    "gate_f_semantic_functionality": {
+      "require_all_original_validation_gates": [
+        "overall_baseline_improvement",
+        "dynamic_improvement",
+        "temporal_value",
+        "contact_probe",
+        "force_probe",
+        "trend_probe",
+        "finite",
+        "deterministic_reload"
+      ]
+    },
+    "gate_g_perturbation_sensitivity": {
+      "split": "validation_dynamic_q70",
+      "correct_history_must_beat": [
+        "shuffled_history",
+        "reversed_history",
+        "last_frame_repeated"
+      ],
+      "bootstrap_error_difference_ci_lower_strictly_above": 0.0,
+      "bootstrap_samples": 5000,
+      "bootstrap_seed_base": 6270
+    }
+  },
+  "warnings": {
+    "LOW_EFFECTIVE_RANK_WARNING": "emit when validation effective rank < 16",
+    "THUMB_ZERO_ACTIVITY": "retain as dataset coverage warning",
+    "nonblocking_strata": ["static", "free_to_free", "active_regions_0"]
+  },
+  "r4_existing_checkpoint_first": {
+    "new_training": false,
+    "split": "validation",
+    "pass_classification": "LOW_INTRINSIC_DIMENSION_NOT_COLLAPSE",
+    "pass_state": "S4_2R_CONTACT_STATE_ACCEPTED_EXISTING",
+    "failure_action": "enter bounded R5 remediation"
+  },
+  "r5_bounded_remediation": {
+    "enabled_only_if_r4_fails": true,
+    "maximum_new_trials_total": 3,
+    "architecture": "existing B3",
+    "normalization": "frozen N1",
+    "parameter_increase_max_fraction": 0.05,
+    "trials_in_priority_order": [
+      {
+        "id": "R0",
+        "objective": "original predictive plus reconstruction objective",
+        "seed": 5242,
+        "purpose": "seed sensitivity control"
+      },
+      {
+        "id": "R1",
+        "objective": "predictive + reconstruction + VICReg-style variance/covariance preservation",
+        "seed": 6242,
+        "lambda_reconstruction": 0.25,
+        "lambda_variance": 0.001,
+        "lambda_covariance": 0.0001
+      },
+      {
+        "id": "R2",
+        "objective": "predictive + reconstruction + temporal InfoNCE diversity",
+        "seed": 7242,
+        "lambda_reconstruction": 0.25,
+        "lambda_temporal_contrastive": 0.001,
+        "temperature": 0.1,
+        "positive": "correct history and own future",
+        "negatives": ["shuffled_history", "different_episode_history"]
+      }
+    ],
+    "loss_scale_addendum": "at most one deterministic TRAIN-only rescaling may be frozen in a protocol addendum before the first new trial if raw loss magnitudes prove dimensional mismatch; validation lambda sweeps are forbidden",
+    "selection_split": "validation",
+    "selection_priority": ["existing", "R0", "R1", "R2"],
+    "passing_models_within_future_mse_fraction": 0.03,
+    "tie_breakers": ["healthier effective rank", "fewer parameters", "smaller intervention"],
+    "rank_alone_cannot_select": true,
+    "failure_state": "S4_2R_CONTACT_STATE_REMEDIATION_FAIL"
+  },
+  "test_policy": {
+    "test_loaded": false,
+    "test_metrics_forbidden": true,
+    "training_uses_test": false,
+    "selection_uses_test": false,
+    "locked_test_deferred_until_after_s4_2_6_and_s4_2_7": true
+  },
+  "training_started": false
+}
