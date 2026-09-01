@@ -1,0 +1,160 @@
+{
+  "schema": "tactile3d-unit.s4-2ds-representation-selection.v1",
+  "status": "FROZEN_BEFORE_ACTION_OR_BRIDGE_PILOT_TRAINING",
+  "seed": 4242,
+  "scientific_boundary": {
+    "historical_question": "Does C3 improve dynamic MSE over C2 by at least 10 percent?",
+    "historical_answer": "NO",
+    "historical_decision": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "remediation_decision": "S4_2DR_DYNAMICS_REMEDIATION_FAIL",
+    "historical_gate_modified": false,
+    "ds_question": "Which frozen Contact transition representation is more useful for the downstream VAC bridge?",
+    "historical_10_percent_gate_used_for_ds_selection": false
+  },
+  "data": {
+    "selection_source": "original TRAIN source groups only",
+    "group_key": ["task", "source_trajectory_id"],
+    "split": "per-task deterministic SHA256 ordering; nearest whole-group 80/20 DS-TRAIN/DS-DEV",
+    "formal_validation_role": "one follow-up confirmation after all candidates and protocol are frozen",
+    "formal_test_model_metrics_loaded": false
+  },
+  "contact_candidates": {
+    "C2": {
+      "checkpoint": ".local/experiments/simulation/s4_2r/contact_dynamics/C2/best.pt",
+      "native_shape": [8, 32],
+      "common_adapter": "identity",
+      "adapter_parameters": 0
+    },
+    "C3": {
+      "checkpoint": ".local/experiments/simulation/s4_2r/contact_dynamics/selected.pt",
+      "native_shape": [8, 32],
+      "common_adapter": "identity",
+      "adapter_parameters": 0
+    },
+    "maximum_adapter_parameters_per_candidate": 50000,
+    "maximum_adapter_types": 2,
+    "arbitrary_reshape_pad_or_truncate": false
+  },
+  "contact_only_hard_gates": {
+    "finite": true,
+    "no_structural_collapse": true,
+    "contact_transition_macro_f1_min": 0.9,
+    "force_trend_macro_f1_min": 0.9,
+    "information_necessity_controls": "PASS",
+    "transition_specificity": "PASS",
+    "deterministic": true
+  },
+  "action_pilot": {
+    "role": "bridge pilot infrastructure; not formal S4.2-4",
+    "input_shape": [27, 22],
+    "current_state_dim": 22,
+    "features": ["absolute", "state_relative", "first_difference"],
+    "feature_shape": [27, 66],
+    "architecture": {
+      "family": "fixed small temporal TCN/query encoder",
+      "width": 128,
+      "dilations": [1, 2, 4],
+      "queries": 8,
+      "token_dim": 32,
+      "parameter_max": 5000000
+    },
+    "decoder": "current state plus flattened latent to [27,22]",
+    "training": {
+      "split": "DS-TRAIN only",
+      "steps": 1200,
+      "batch_size": 256,
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001,
+      "gradient_clip": 1.0,
+      "seed_count": 1,
+      "selection": "fixed final step; no hyperparameter or checkpoint search"
+    },
+    "gates": {
+      "dynamic_reversed_over_correct_min": 1.05,
+      "dynamic_shuffled_over_correct_min": 1.1,
+      "dynamic_different_episode_over_correct_min": 2.0,
+      "all_paired_improvement_ci_lower_positive": true,
+      "finite": true,
+      "no_collapse": true,
+      "deterministic": true
+    }
+  },
+  "vision_pilot": {
+    "role": "offline transition teacher; not formal S4.2-4",
+    "frames": ["I_t", "I_t+27"],
+    "architecture": "frozen Original UniT Vision path",
+    "output_shape": [8, 32],
+    "checkpoint": "$UNIT_FULLDATA_CKPT/tokenizer",
+    "checkpoint_files_sha256": {
+      "config.json": "7a651f488c93521e0d507880fc250a475e6a08aa9307aa1349f9d3509844971e",
+      "model-00001-of-00002.safetensors": "32d5c326f6c83d12185b6954d2a52511f66ad18b6fdf814aecc5726dd39c243c",
+      "model-00002-of-00002.safetensors": "2f8093a900330e5111b63e44dc1687b3212bec343e5b3832bf2e40f2bf18a768",
+      "model.safetensors.index.json": "3b6d73d2442ce694287c5cd8b93db1bb232909becf35f08ecabadb614b9a1b86"
+    },
+    "preprocessing": "Original-UniT-DINO:center-crop-0.95:resize-224-bilinear-antialias:imagenet-v1",
+    "gates": ["checkpoint hash unchanged", "eval mode", "requires_grad false", "finite", "deterministic", "shape [8,32]"]
+  },
+  "bridge_pilot": {
+    "role": "fixed representation comparison; not formal S4.2-5",
+    "architecture": {
+      "family": "independent token-wise residual shared-slot projectors and recovery heads",
+      "projector": "Linear(32,64), GELU, Linear(64,32), residual LayerNorm",
+      "shared_shape": [8, 32],
+      "total_trainable_parameters_max": 300000,
+      "independent_encoders": true,
+      "counterpart_inputs": false
+    },
+    "training": {
+      "split": "DS-TRAIN only",
+      "steps": 1000,
+      "batch_size": 256,
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001,
+      "gradient_clip": 1.0,
+      "temperature": 0.1,
+      "seed_count": 1,
+      "negative_sampling": "different-source-trajectory in-batch negatives",
+      "same_steps_and_batches_for_candidates": true
+    },
+    "loss_weights": {
+      "symmetric_v_a_infonce": 1.0,
+      "symmetric_v_c_infonce": 1.0,
+      "symmetric_a_c_infonce": 1.0,
+      "relational_preservation": 0.2,
+      "variance_covariance_no_collapse": 0.1,
+      "modality_recovery": 0.5
+    },
+    "hard_gates": {
+      "v_c_paired_minus_shuffled_bootstrap_ci_lower_positive": true,
+      "a_c_paired_minus_shuffled_bootstrap_ci_lower_positive": true,
+      "v_to_c_r10_chance_multiplier_min": 5.0,
+      "c_to_v_r10_chance_multiplier_min": 5.0,
+      "a_to_c_r10_chance_multiplier_min": 5.0,
+      "c_to_a_r10_chance_multiplier_min": 5.0,
+      "contact_semantic_retention_min": 0.85,
+      "force_retention_min": 0.85,
+      "no_collapse": true,
+      "independent_encodability": true
+    }
+  },
+  "material_advantage": {
+    "c3_semantic": "contact F1 gain >=0.01 OR force F1 gain >=0.01, with bootstrap CI lower >0",
+    "c3_bridge": "mean Contact-involving R@10 >=1.20x C2 OR mean Contact-involving MRR improves >=20 percent",
+    "c3_reconstruction": "shared/future recovery MSE decreases >=5 percent with paired bootstrap CI lower >0"
+  },
+  "canonical_selection_rule": {
+    "C2_not_representation_eligible_and_C3_passes": "C3_STRUCTURED_REPRESENTATION_SELECTED",
+    "only_C2_passes": "C2_DELTA_REPRESENTATION_SELECTED",
+    "only_C3_passes": "C3_REPRESENTATION_UTILITY_SELECTED",
+    "both_pass_and_C3_has_no_material_advantage": "C2_DELTA_REPRESENTATION_SELECTED",
+    "both_pass_and_C3_has_any_material_advantage": "C3_REPRESENTATION_UTILITY_SELECTED",
+    "neither_passes": "CONTACT_REPRESENTATION_INSUFFICIENT"
+  },
+  "prohibited": [
+    "formal test model metrics",
+    "post-hoc threshold changes",
+    "C2/C3 dynamics retraining",
+    "formal S4.2-4 or S4.2-5 claims",
+    "policy training"
+  ]
+}
