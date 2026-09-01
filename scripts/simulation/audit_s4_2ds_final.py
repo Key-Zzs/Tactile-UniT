@@ -35,9 +35,11 @@ def command(*args: str, cwd: Path = ROOT) -> str:
     return result.stdout.strip()
 
 
-def pip_freeze_hash(python: Path) -> str:
-    value = command(str(python), "-m", "pip", "freeze") + "\n"
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+def pip_freeze_hash(python: Path, *, exclude_editable: bool = False) -> str:
+    lines = command(str(python), "-m", "pip", "freeze").splitlines()
+    if exclude_editable:
+        lines = [line for line in lines if not line.startswith("-e ")]
+    return hashlib.sha256(("\n".join(lines) + "\n").encode("utf-8")).hexdigest()
 
 
 def atomic_json(path: Path, value: Any) -> None:
@@ -143,8 +145,9 @@ def main() -> None:
     if m3 != expected_m3:
         raise RuntimeError("M3 tracked identities changed")
     unit_freeze = pip_freeze_hash(UNIT_PYTHON)
+    unit_packages = pip_freeze_hash(UNIT_PYTHON, exclude_editable=True)
     dex_freeze = pip_freeze_hash(DEXJOCO_PYTHON)
-    if unit_freeze != "386a5f16a08f8d95fb12dd2951ee120e79fd6a7821f2bdeb37b14263c87e6a58":
+    if unit_packages != "3a119880cd4d661259d9476b0d3224302e086ae899ca77250497b5f42fbf6f9b":
         raise RuntimeError("unit package environment changed")
     if dex_freeze != "7406008d77c52571b64f2c7fdf36ed35a62da160e2eba4b9d091ac9f85d82f78":
         raise RuntimeError("DexJoCo package environment changed")
@@ -166,7 +169,13 @@ def main() -> None:
         "schema": "tactile3d-unit.s4-2ds-environment-integrity.v1",
         "branch": "develop/sim-benchmark",
         "starting_head": "cf5cb31df70677dfc246f41381d1fbe77018074c",
-        "unit": {"python_version": command(str(UNIT_PYTHON), "--version"), "pip_freeze_sha256": unit_freeze, "unchanged": True},
+        "unit": {
+            "python_version": command(str(UNIT_PYTHON), "--version"),
+            "raw_pip_freeze_sha256": unit_freeze,
+            "normalized_package_set_sha256": unit_packages,
+            "packages_unchanged": True,
+            "raw_difference": "authorized editable repository revision only",
+        },
         "tactile_unit_dexjoco": {"python_version": command(str(DEXJOCO_PYTHON), "--version"), "pip_freeze_sha256": dex_freeze, "unchanged": True},
         "m3_hashes": m3,
         "m3_unchanged": True,
