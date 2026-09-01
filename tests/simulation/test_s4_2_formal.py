@@ -72,3 +72,20 @@ def test_formal_freeze_script_never_loads_a_test_array() -> None:
     source = (ROOT / "scripts/simulation/freeze_s4_2_formal_protocol.py").read_text()
     assert 'PAIR_ROOT / "test.npz"' not in source
     assert 'formal_test_loaded": False' in source
+
+
+def test_s4_2_4_script_uses_exact_paired_train_and_validation_only() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_4_formal_representations.py").read_text()
+    assert 'PAIR_ROOT / "train.npz"' in source
+    assert 'PAIR_ROOT / "validation.npz"' in source
+    assert 'PAIR_ROOT / "test.npz"' not in source
+    assert "formal train/validation source-group leakage" in source
+
+
+def test_s4_2_5_script_has_five_bounded_trials_and_no_test_access() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_5_formal_bridge.py").read_text()
+    assert 'PAIR_ROOT / "paired_train.npz"' in source
+    assert 'PAIR_ROOT / "paired_validation.npz"' in source
+    assert 'PAIR_ROOT / "paired_test.npz"' not in source
+    protocol = json.loads((ROOT / "configs/simulation/s4_2_formal_downstream.json").read_text())
+    assert len(protocol["s4_2_5"]["trainable_candidates"]) == 5
