@@ -77,3 +77,11 @@ def test_tf_forbids_scientific_mutation() -> None:
             "uncertainty_retraining_permitted",
         )
     )
+
+
+def test_corrected_dataset_audit_uses_contractual_step_contiguity() -> None:
+    source = (ROOT / "scripts/simulation/audit_s4_2_tf_test_v2_dataset.py").read_text()
+    assert 'np.diff(values["control_step"])' in source
+    assert 'np.ones(length - 1)' in source
+    assert 'dataset_bytes_changed_after_generation": False' in source
+    assert "model_performance_metrics_loaded" in source
