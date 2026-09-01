@@ -1,0 +1,105 @@
+{
+  "schema": "tactile3d-unit.s4-3-pd-protocol.v1",
+  "stage": "PD5",
+  "status": "FROZEN_BEFORE_FORMAL_ACQUISITION",
+  "tasks": [
+    "pinch_tongs",
+    "hammer_nail",
+    "click_mouse"
+  ],
+  "hard_execution_order": [
+    "PD0",
+    "PD1",
+    "PD2",
+    "PD3",
+    "PD4",
+    "PD5",
+    "PD6",
+    "PD7",
+    "PD8",
+    "PD9"
+  ],
+  "completed_before_freeze": [
+    "PD0",
+    "PD1",
+    "PD2",
+    "PD3",
+    "PD4"
+  ],
+  "pilot": {
+    "seed_namespace": "PD_PILOT",
+    "source_groups_per_task": 4,
+    "attempts_per_group": 5,
+    "attempts_per_task": 20,
+    "native_successes": {
+      "pinch_tongs": 20,
+      "hammer_nail": 20,
+      "click_mouse": 20
+    },
+    "corrupt_episodes": 0,
+    "invalid_actions": 0,
+    "nan_or_inf": 0,
+    "status": "PASS"
+  },
+  "formal": {
+    "seed_namespace": "PD_FORMAL",
+    "source_groups_per_task": 25,
+    "attempts_per_group": 5,
+    "attempts_per_task": 125,
+    "total_attempts": 375,
+    "train_groups_per_task": 20,
+    "train_attempts_per_task": 100,
+    "dev_groups_per_task": 5,
+    "dev_attempts_per_task": 25,
+    "run_all_frozen_attempts": true,
+    "success_count_stopping": false,
+    "replacement_seeds": false
+  },
+  "hard_success_gates_per_task": {
+    "train_successes_min": 80,
+    "dev_successes_min": 20,
+    "total_successes_min": 100,
+    "total_success_rate_min": 0.8
+  },
+  "policy_observation_contract": {
+    "current_rgb": true,
+    "current_proprio": [
+      22
+    ],
+    "current_tactile": [
+      30
+    ],
+    "expert_action": [
+      22
+    ],
+    "privileged_student_fields": false
+  },
+  "policy_action_contract": {
+    "layout": "TCP xyz 3 + TCP rotvec 3 + Allegro targets 16",
+    "shape": [
+      22
+    ],
+    "environment_action_shape": [
+      23
+    ],
+    "central_adapter_required": true
+  },
+  "dataset_membership": {
+    "native_success_only": true,
+    "all_schema_valid_successes_included": true,
+    "formal_failures": "ACQUISITION_AUDIT_ONLY",
+    "pilot": "EXCLUDED",
+    "old_contact_probing_episodes": "EXCLUDED"
+  },
+  "freeze_rule": "No expert/controller or formal-protocol change after this freeze; inadequacy is a protocol failure.",
+  "task_semantics_modified": false,
+  "s4_2_retraining_or_mutation": false,
+  "out_of_scope": [
+    "ACT training",
+    "Diffusion Policy training",
+    "closed-loop policy benchmark",
+    "S4.3-1",
+    "S4.3-2",
+    "S4.3-3"
+  ]
+}

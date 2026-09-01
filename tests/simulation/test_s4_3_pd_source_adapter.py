@@ -2,10 +2,13 @@ import numpy as np
 
 from gr00t.simulation.dexjoco_adapter import (
     SimObservation,
+    SimPolicyAction,
     policy_action_to_env_action,
 )
 from gr00t.simulation.s4_3_pd import (
+    OfficialReplaySource,
     S43PDAttemptLogger,
+    expert_action_at,
     official_env_action_to_policy_action,
     policy_proprio_22,
     quaternion_wxyz_to_signed_rotvec,
@@ -37,6 +40,40 @@ def test_policy_proprio_filters_task_state_and_is_22d():
 def test_zero_quaternion_is_rejected():
     with np.testing.assert_raises_regex(ValueError, "norm is zero"):
         quaternion_wxyz_to_signed_rotvec(np.zeros(4))
+
+
+def test_pinch_tail_recovery_reuses_official_open_and_close_actions(tmp_path):
+    actions = []
+    for index in range(101):
+        values = np.zeros(22, dtype=np.float32)
+        values[:3] = [0.1, -0.2, 1.2]
+        values[6:] = index
+        actions.append(SimPolicyAction(values))
+    source = OfficialReplaySource(
+        task="pinch_tongs",
+        source_group_id="group",
+        replay_path=tmp_path / "replay.zarr",
+        source_tree_sha256="0" * 64,
+        environment_actions=np.zeros((101, 23)),
+        policy_actions=tuple(actions),
+        initial_state=np.zeros(31),
+        source_timestamps=np.arange(101) * 0.02,
+    )
+
+    open_action, open_phase, open_index = expert_action_at(source, 101)
+    close_action, close_phase, close_index = expert_action_at(source, 131)
+    hold_action, hold_phase, hold_index = expert_action_at(source, 161)
+
+    assert open_phase == "RECOVERY_OPEN"
+    assert open_index == 88
+    np.testing.assert_array_equal(open_action.values[:6], actions[-1].values[:6])
+    np.testing.assert_array_equal(open_action.values[6:], actions[88].values[6:])
+    assert close_phase == "RECOVERY_CLOSE"
+    assert close_index == 100
+    np.testing.assert_array_equal(close_action.values, actions[-1].values)
+    assert hold_phase == "HOLD_SUCCESS"
+    assert hold_index == 100
+    np.testing.assert_array_equal(hold_action.values, actions[-1].values)
 
 
 def test_attempt_logger_records_only_student_visible_shapes(tmp_path):

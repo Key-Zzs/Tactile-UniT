@@ -1,0 +1,76 @@
+{
+  "schema": "tactile3d-unit.s4-3-pd-expert-contract.v1",
+  "stage": "PD5",
+  "status": "FROZEN_BEFORE_FORMAL_ACQUISITION",
+  "source_dataset": "DexJoCo/DexJoCo-Datasets-Raw",
+  "source_dataset_revision": "125df5c1019e97503929ef1a0ad8f90373436afa",
+  "dexjoco_revision": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+  "source_class_per_task": {
+    "pinch_tongs": "E0_OFFICIAL_DEMONSTRATION",
+    "hammer_nail": "E0_OFFICIAL_DEMONSTRATION",
+    "click_mouse": "E0_OFFICIAL_DEMONSTRATION"
+  },
+  "expert_code": {
+    "path": "gr00t/simulation/s4_3_pd.py",
+    "sha256": "165dc2fc797610253ecec104d96c8e81910b4976102d279b176ac2fe0f6ef104"
+  },
+  "central_action_adapter": {
+    "path": "gr00t/simulation/dexjoco_adapter.py",
+    "sha256": "0e1318b4121cb6873964ee55fe27697aa830ded0a4a37d0b826699ecdfcb2494"
+  },
+  "formal_generator": {
+    "path": "scripts/simulation/generate_s4_3_policy_expert_data.py",
+    "sha256": "83ca7b6e582b973db0b47867888ab7b258091feea980940c0c5fa8ed45fe3b40"
+  },
+  "native_success_sources": {
+    "pinch_tongs": {
+      "path": "third_party/dexjoco/dexjoco/dexjoco/sim/envs/panda_pinch_tongs_env.py",
+      "sha256": "850bd6411cec8e94bab8cb74b668cf6980da8372e3202fbe7713caf212b42f1d"
+    },
+    "hammer_nail": {
+      "path": "third_party/dexjoco/dexjoco/dexjoco/sim/envs/panda_hammer_nail_env.py",
+      "sha256": "afa50ffa7d7bb7fb41e982fc236bfc7d9f45e161c7540da00074bd7b9048aa64"
+    },
+    "click_mouse": {
+      "path": "third_party/dexjoco/dexjoco/dexjoco/sim/envs/panda_click_mouse_env.py",
+      "sha256": "50c8906597e7191486cbe5246b28ee859fc5d2946d3585967b81ea523a052230"
+    }
+  },
+  "adaptation": {
+    "official_action": "[TCP xyz 3, quaternion-wxyz 4, Allegro targets 16]",
+    "policy_action": "[TCP xyz 3, signed rotvec 3, Allegro targets 16]",
+    "signed_quaternion_roundtrip": true,
+    "central_22_to_23_adapter": true,
+    "max_tail_steps": 120,
+    "pinch_tail_recovery": {
+      "purpose": "preserve the official third open-close cycle after the frozen float32 policy boundary",
+      "open_source_fraction": 0.88,
+      "open_steps": 30,
+      "close_steps": 30,
+      "reuses_official_hand_targets": true,
+      "retains_official_final_tcp_target": true,
+      "object_pose_setting": false,
+      "success_state_setting": false,
+      "physics_or_reward_change": false
+    }
+  },
+  "student_fields": [
+    "current RGB reference",
+    "current 22D proprio",
+    "current 30D tactile",
+    "22D policy-facing expert Action"
+  ],
+  "diagnostic_only_fields": [
+    "23D environment Action",
+    "native task state",
+    "expert phase",
+    "Contact diagnostics",
+    "reward",
+    "termination",
+    "timestamps"
+  ],
+  "privileged_student_contamination": false,
+  "hand_action_nondegeneracy_required": true,
+  "task_semantics_modified": false,
+  "expert_frozen_after_pilot": true
+}

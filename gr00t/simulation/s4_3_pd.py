@@ -178,6 +178,22 @@ def expert_action_at(
 ) -> tuple[SimPolicyAction, str, int]:
     if step < source.steps:
         return source.policy_actions[step], "REPLAY", step
+    if source.task == "pinch_tongs":
+        # The native task counts three open→close cycles.  Some official
+        # demonstrations cross the third open threshold by only a few
+        # hundredths of a radian in float64 and can miss it after the frozen
+        # policy-facing float32 round trip.  Reuse the source's late open hand
+        # pose, while retaining its final lifted TCP target, before returning
+        # to the source's final close pose.  This remains an Action-only
+        # physical replay adaptation: no object or task state is mutated.
+        recovery_step = step - source.steps
+        if recovery_step < 30:
+            open_index = int(round(0.88 * (source.steps - 1)))
+            values = source.policy_actions[-1].values.copy()
+            values[6:] = source.policy_actions[open_index].values[6:]
+            return SimPolicyAction(values), "RECOVERY_OPEN", open_index
+        if recovery_step < 60:
+            return source.policy_actions[-1], "RECOVERY_CLOSE", source.steps - 1
     return source.policy_actions[-1], "HOLD_SUCCESS", source.steps - 1
 
 

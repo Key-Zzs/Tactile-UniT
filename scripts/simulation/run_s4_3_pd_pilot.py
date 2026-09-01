@@ -35,7 +35,7 @@ PILOT_ROOT = ROOT / ".local/datasets/simulation/s4_3_policy_expert/pilot/attempt
 ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_pd"
 RAW_DATASET_REVISION = "125df5c1019e97503929ef1a0ad8f90373436afa"
 DEXJOCO_REVISION = "8d23b0fab23b17a58c4b55f3942e17013aaf8267"
-MAX_HOLD_STEPS = 60
+MAX_HOLD_STEPS = 120
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -133,6 +133,14 @@ def run_attempt(row: dict[str, Any], *, official_root: Path, pilot_root: Path) -
         "control_dt_sec": 0.02,
         "control_hz": 50.0,
         "max_hold_steps": MAX_HOLD_STEPS,
+        "pinch_tail_recovery": {
+            "open_source_fraction": 0.88,
+            "open_steps": 30,
+            "close_steps": 30,
+            "object_state_mutation": False,
+        }
+        if row["task"] == "pinch_tongs"
+        else None,
         "student_privileged_state": False,
     }
     adapter = DexJoCoRuntimeAdapter(

@@ -1,0 +1,153 @@
+{
+  "schema": "tactile3d-unit.s4-3-pd-formal-acquisition.v1",
+  "stage": "PD5",
+  "status": "FROZEN_BEFORE_FORMAL_ACQUISITION",
+  "source_dataset_revision": "125df5c1019e97503929ef1a0ad8f90373436afa",
+  "source_order": "lexicographic source_group_id among complete replay.zarr stores",
+  "pilot_source_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "formal_source_indices": {
+    "inclusive_start": 4,
+    "inclusive_end": 28
+  },
+  "formal_group_ids": {
+    "pinch_tongs": [
+      "table_tongs_demo_11_2026-03-16_09-10-31_724780",
+      "table_tongs_demo_12_2026-03-12_15-27-32_354229",
+      "table_tongs_demo_12_2026-03-12_16-30-48_799113",
+      "table_tongs_demo_12_2026-03-16_09-10-52_199273",
+      "table_tongs_demo_13_2026-03-12_15-28-15_033728",
+      "table_tongs_demo_13_2026-03-12_16-31-09_553291",
+      "table_tongs_demo_13_2026-03-16_09-11-10_232032",
+      "table_tongs_demo_14_2026-03-12_16-31-28_944172",
+      "table_tongs_demo_14_2026-03-16_09-11-29_162250",
+      "table_tongs_demo_15_2026-03-12_15-29-11_465467",
+      "table_tongs_demo_15_2026-03-12_16-32-02_211644",
+      "table_tongs_demo_15_2026-03-16_09-12-00_729182",
+      "table_tongs_demo_16_2026-03-12_15-29-33_619992",
+      "table_tongs_demo_16_2026-03-12_16-32-23_672329",
+      "table_tongs_demo_16_2026-03-16_09-12-21_884261",
+      "table_tongs_demo_17_2026-03-12_15-29-49_891987",
+      "table_tongs_demo_17_2026-03-16_09-12-45_704435",
+      "table_tongs_demo_18_2026-03-12_15-30-07_898132",
+      "table_tongs_demo_18_2026-03-12_16-33-18_958666",
+      "table_tongs_demo_18_2026-03-16_09-13-05_901717",
+      "table_tongs_demo_19_2026-03-12_15-30-47_833388",
+      "table_tongs_demo_19_2026-03-12_16-33-38_255867",
+      "table_tongs_demo_19_2026-03-16_09-13-27_284892",
+      "table_tongs_demo_20_2026-03-12_15-31-08_396235",
+      "table_tongs_demo_20_2026-03-12_16-33-54_455124"
+    ],
+    "hammer_nail": [
+      "hammer_nail_demo_13_2026-02-05_19-19-33_036858",
+      "hammer_nail_demo_14_2026-02-05_19-19-45_668624",
+      "hammer_nail_demo_15_2026-02-05_19-19-58_155343",
+      "hammer_nail_demo_16_2026-02-05_19-20-11_096748",
+      "hammer_nail_demo_17_2026-02-05_19-20-27_862442",
+      "hammer_nail_demo_18_2026-02-05_19-20-48_712542",
+      "hammer_nail_demo_19_2026-02-05_19-21-03_148122",
+      "hammer_nail_demo_1_2026-02-05_19-14-11_416353",
+      "hammer_nail_demo_1_2026-03-10_20-09-46_502364",
+      "hammer_nail_demo_20_2026-02-05_19-21-15_505851",
+      "hammer_nail_demo_21_2026-02-05_19-21-28_399320",
+      "hammer_nail_demo_22_2026-02-05_19-21-40_875764",
+      "hammer_nail_demo_23_2026-02-05_19-21-52_555006",
+      "hammer_nail_demo_24_2026-02-05_19-22-04_607327",
+      "hammer_nail_demo_25_2026-02-05_19-22-15_769356",
+      "hammer_nail_demo_26_2026-02-05_19-22-26_227670",
+      "hammer_nail_demo_27_2026-02-05_19-22-37_275137",
+      "hammer_nail_demo_28_2026-02-05_19-22-48_393902",
+      "hammer_nail_demo_29_2026-02-05_19-23-07_801019",
+      "hammer_nail_demo_2_2026-02-05_19-14-45_881469",
+      "hammer_nail_demo_2_2026-02-05_19-16-49_403013",
+      "hammer_nail_demo_2_2026-03-10_20-10-04_885632",
+      "hammer_nail_demo_30_2026-02-05_19-23-23_849291",
+      "hammer_nail_demo_31_2026-02-05_19-23-37_566806",
+      "hammer_nail_demo_33_2026-02-05_19-24-01_668553"
+    ],
+    "click_mouse": [
+      "monitor_mousepad_demo_12_2026-03-11_20-50-46_068322",
+      "monitor_mousepad_demo_12_2026-03-12_12-49-54_922385",
+      "monitor_mousepad_demo_13_2026-03-11_20-51-01_573653",
+      "monitor_mousepad_demo_13_2026-03-12_12-50-15_735942",
+      "monitor_mousepad_demo_14_2026-03-11_20-51-32_277544",
+      "monitor_mousepad_demo_15_2026-03-11_20-52-00_231200",
+      "monitor_mousepad_demo_15_2026-03-12_12-50-53_489565",
+      "monitor_mousepad_demo_16_2026-03-11_20-52-18_105139",
+      "monitor_mousepad_demo_17_2026-03-11_20-52-54_409047",
+      "monitor_mousepad_demo_17_2026-03-12_12-51-35_417711",
+      "monitor_mousepad_demo_18_2026-03-11_20-53-10_020894",
+      "monitor_mousepad_demo_19_2026-03-11_20-53-23_989512",
+      "monitor_mousepad_demo_19_2026-03-12_12-52-11_565960",
+      "monitor_mousepad_demo_1_2026-03-10_20-03-12_829101",
+      "monitor_mousepad_demo_1_2026-03-11_20-46-03_805780",
+      "monitor_mousepad_demo_1_2026-03-11_20-46-50_544801",
+      "monitor_mousepad_demo_1_2026-03-12_12-43-43_746083",
+      "monitor_mousepad_demo_1_2026-03-12_13-10-29_074836",
+      "monitor_mousepad_demo_20_2026-03-11_20-53-41_619856",
+      "monitor_mousepad_demo_20_2026-03-12_12-52-58_502345",
+      "monitor_mousepad_demo_21_2026-03-11_20-53-57_387343",
+      "monitor_mousepad_demo_22_2026-03-11_20-54-13_132577",
+      "monitor_mousepad_demo_23_2026-03-11_20-54-27_525825",
+      "monitor_mousepad_demo_23_2026-03-12_12-53-53_415581",
+      "monitor_mousepad_demo_24_2026-03-11_20-54-50_446334"
+    ]
+  },
+  "split_assignment": {
+    "POLICY_TRAIN": {
+      "formal_group_indices": [
+        0,
+        19
+      ],
+      "groups_per_task": 20,
+      "attempts_per_task": 100
+    },
+    "POLICY_DEV": {
+      "formal_group_indices": [
+        20,
+        24
+      ],
+      "groups_per_task": 5,
+      "attempts_per_task": 25
+    }
+  },
+  "attempt_indices_per_group": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "seed_formula": {
+    "task_index_order": [
+      "pinch_tongs",
+      "hammer_nail",
+      "click_mouse"
+    ],
+    "environment_reset_visual": "4500000 + task_index*10000 + formal_group_index*100 + attempt_index",
+    "perturbation": "4600000 + task_index*10000 + formal_group_index*100 + attempt_index",
+    "controller_seed": null,
+    "namespace": "PD_FORMAL"
+  },
+  "randomization": {
+    "randomize": true,
+    "randomize_dynamics": false,
+    "camera": "random_camera",
+    "official_initial_state_restore": true,
+    "control_hz": 50,
+    "future_eval_not_deliberately_easier": true
+  },
+  "failure_policy": {
+    "all_375_attempts_required": true,
+    "expert_failures_retained": true,
+    "failed_attempts_in_bc": false,
+    "infrastructure_rerun": "exact same frozen identity/seeds only; retain infrastructure-failure record",
+    "replacement_seed": false,
+    "success_count_stopping": false,
+    "manual_success_selection": false
+  }
+}
