@@ -1,0 +1,110 @@
+{
+  "schema": "tactile3d-unit.s4-2-formal-downstream.v1",
+  "status": "FROZEN_BEFORE_FORMAL_S4_2_4_TRAINING",
+  "seed": 4242,
+  "scientific_boundary": {
+    "historical_original": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "historical_remediation": "S4_2DR_DYNAMICS_REMEDIATION_FAIL",
+    "historical_10_percent_gate": "FAIL_UNCHANGED",
+    "canonical_contact": "C3",
+    "canonical_contact_checkpoint_sha256": "f67b8b0d6f519944adafecbb0a93bb4387213fa1a4f33f7f770a55938de05602",
+    "contact_state_checkpoint_sha256": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19"
+  },
+  "data": {
+    "manifest_canonical_sha256": "652181d45bc317a1b17debe5e9c58529ae7d096bb75441cd17d0165bf2d701d4",
+    "split_unit": ["task", "source_trajectory_id"],
+    "train_pairs": 22680,
+    "validation_pairs": 4860,
+    "test_pairs": 4860,
+    "train_groups": 42,
+    "validation_groups": 9,
+    "test_groups": 9,
+    "transition_offset_steps": 27,
+    "formal_test_loaded": false,
+    "training_uses_test": false,
+    "selection_uses_test": false
+  },
+  "s4_2_4": {
+    "action_candidates": ["A0", "A1", "A2"],
+    "action_shape": [8, 32],
+    "vision_shape": [8, 32],
+    "action_parameter_max": 25000000,
+    "training": {
+      "steps": 1200,
+      "batch_size": 512,
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001,
+      "gradient_clip": 1.0
+    },
+    "gates": {
+      "reversed_over_correct_mse_min": 1.05,
+      "shuffled_over_correct_mse_min": 1.10,
+      "different_episode_over_correct_mse_min": 2.0,
+      "effective_rank_min": 2.0,
+      "near_zero_variance_fraction_max": 0.5
+    },
+    "selection": "all gates first; maximize the minimum temporal-control ratio, then minimize validation reconstruction MSE, then parameter count, then A0/A1/A2 order"
+  },
+  "s4_2_5": {
+    "candidates": ["B0_native", "B1_frozen_m3_zero_shot", "B2_affine_w1", "B2_mlp_w1", "B2_mlp_w2", "B3_slot_t0.07_w1", "B3_slot_t0.10_w2"],
+    "trainable_candidates": ["B2_affine_w1", "B2_mlp_w1", "B2_mlp_w2", "B3_slot_t0.07_w1", "B3_slot_t0.10_w2"],
+    "training": {
+      "steps": 800,
+      "batch_size": 512,
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001,
+      "gradient_clip": 1.0
+    },
+    "gates": {
+      "paired_margin_ci_lower_min": 0.0,
+      "contact_retrieval_r10_chance_multiplier_min": 5.0,
+      "contact_semantic_retention_min": 0.85,
+      "force_semantic_retention_min": 0.85,
+      "near_zero_variance_fraction_max": 0.5
+    },
+    "selection": "smallest passing B2 within 0.01 mean Contact-involving validation utility of the best passing candidate; otherwise best passing B3; otherwise fail"
+  },
+  "s4_2_6": {
+    "contact_rq": {
+      "stages": 2,
+      "codes_per_stage": 128,
+      "code_dim": 32,
+      "queries": 8,
+      "learning_rate_candidates": [0.003, 0.01],
+      "steps": 600
+    },
+    "gates": {
+      "quantized_recovery_mse_over_continuous_max": 1.25,
+      "contact_semantic_retention_min": 0.85,
+      "force_semantic_retention_min": 0.85,
+      "minimum_stage_utilization": 0.10,
+      "private_incremental_recovery_min": 0.01,
+      "shared_cross_modal_margin_min": 0.0
+    }
+  },
+  "s4_2_7": {
+    "predictors": ["A_plus_H", "V_plus_A_plus_H", "V_plus_A_missing_H", "A_only_missing_H"],
+    "training": {
+      "steps": 800,
+      "batch_size": 512,
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001
+    },
+    "gates": {
+      "full_over_A_plus_H_relative_mse_improvement_min": 0.0,
+      "missing_VA_over_A_relative_mse_improvement_min": 0.0,
+      "missing_contact_macro_f1_retention_min": 0.75,
+      "uncertainty_nll_improvement_over_constant_min": 0.0,
+      "interval_90_coverage_min": 0.80,
+      "interval_90_coverage_max": 0.99
+    },
+    "uncertainty": "mean predictors frozen; scalar log-variance heads trained on TRAIN and one scalar temperature calibrated on validation"
+  },
+  "s4_2_8": {
+    "pretest_freeze_required": true,
+    "locked_test_runs": 1,
+    "deterministic_repeat_runs": 1,
+    "repeat_purpose": "deterministic equality only",
+    "post_test_changes_forbidden": ["candidate", "training", "threshold", "normalization", "split", "checkpoint"]
+  }
+}
