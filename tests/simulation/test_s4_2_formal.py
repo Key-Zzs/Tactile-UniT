@@ -112,3 +112,19 @@ def test_s4_2_7_freezes_mean_before_uncertainty_and_has_no_test_access() -> None
     assert '"mean_predictor_frozen": True' in source
     assert '"calibration_split": "validation"' in source
     assert 'PAIR_ROOT / "paired_test.npz"' not in source
+
+
+def test_s4_2_8_test_access_is_guarded_by_pretest_freeze() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_8_locked_test.py").read_text()
+    assert source.index("verify_pretest(repeat=repeat)") < source.index(
+        "build_locked_cache(args.unit_checkpoint"
+    )
+    assert 'build_pair_arrays("test"' in source
+    assert '"training_performed": False' in source
+    assert '"selection_performed": False' in source
+
+
+def test_s4_2_8_repeat_is_equality_only() -> None:
+    source = (ROOT / "scripts/simulation/run_s4_2_8_locked_test.py").read_text()
+    assert 'result["metric_digest"] == first["metric_digest"]' in source
+    assert "S4_2_8_DETERMINISTIC_REPEAT_FAIL" in source
