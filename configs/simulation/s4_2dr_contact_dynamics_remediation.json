@@ -1,0 +1,110 @@
+{
+  "schema": "tactile3d-unit.s4-2dr-contact-dynamics-remediation.v1",
+  "status": "FROZEN_AFTER_DR1_DR3_BEFORE_DR5_AND_BEFORE_NEW_DYNAMICS_TRAINING",
+  "seed": 4242,
+  "historical_result": {
+    "original_s4_2_3_result": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "original_C2_dynamic_mse": 0.018156317993998528,
+    "original_C3_dynamic_mse": 0.01715606078505516,
+    "original_dynamic_improvement": 0.05509144067764282,
+    "original_required": 0.10,
+    "result_remains_unchanged": true
+  },
+  "follow_up": {
+    "independent_from_original_protocol": true,
+    "acceptance_routes": [
+      "CEILING_LIMITED_EXISTING_ACCEPTANCE",
+      "ORIGINAL_10_PERCENT_REMEDIATED_ACCEPTANCE"
+    ],
+    "routes_mutually_exclusive": true
+  },
+  "route_A": {
+    "name": "CEILING_LIMITED_EXISTING_ACCEPTANCE",
+    "existing_frozen_C3_only": true,
+    "gates": {
+      "absolute_C2_minus_C3_positive": true,
+      "paired_bootstrap_lower_positive": true,
+      "empirical_reference_below_C2": true,
+      "relative_C2_to_ref_gap_max": 0.10,
+      "headroom_capture_C3_min": 0.50,
+      "boundary_transition_gain_ci_lower_positive": true,
+      "high_force_or_high_tangential_gain_ci_lower_positive": true,
+      "all_transition_code_controls_worse_ci_lower_positive": true,
+      "contact_transition_macro_f1_min": 0.90,
+      "force_trend_macro_f1_min": 0.90,
+      "no_collapse": true,
+      "deterministic_reload": true
+    },
+    "accepted_classification": "S4_2DR_DYNAMICS_ACCEPTED_EXISTING_CEILING_LIMITED"
+  },
+  "route_B": {
+    "name": "ORIGINAL_10_PERCENT_REMEDIATED_ACCEPTANCE",
+    "only_if_route_A_fails": true,
+    "gates": {
+      "dynamic_relative_improvement_over_frozen_C2_min": 0.10,
+      "paired_bootstrap_lower_positive": true,
+      "overall_mse_regression_vs_original_C3_max": 0.03,
+      "zero_code_strongly_worse": true,
+      "shuffled_code_strongly_worse": true,
+      "reversed_transition_strongly_worse": true,
+      "different_episode_and_mismatch_strongly_worse": true,
+      "contact_transition_macro_f1_min": 0.90,
+      "force_trend_macro_f1_min": 0.90,
+      "no_collapse": true,
+      "deterministic_reload": true,
+      "code_shape": [8, 32]
+    },
+    "accepted_classification": "S4_2DR_DYNAMICS_ACCEPTED_REMEDIATED"
+  },
+  "remediation": {
+    "maximum_trials": 3,
+    "input": ["h_current", "h_future"],
+    "decoder_may_use": ["h_current"],
+    "forbidden_modalities": ["Action", "Vision", "raw_future_tactile", "labels", "task_state"],
+    "output": [8, 32],
+    "parameter_max": 2000000,
+    "frozen": ["Contact-State E_T^sim", "normalization", "dataset", "splits", "C2 baseline"],
+    "training": {
+      "optimizer": "AdamW",
+      "learning_rate": 0.0003,
+      "weight_decay": 0.0001,
+      "batch_size": 512,
+      "epochs_max": 16,
+      "patience": 4,
+      "optimizer_steps_max_relative_to_original": 1.25,
+      "selection_split": "validation"
+    },
+    "trials": [
+      {
+        "id": "R1",
+        "objective": "residual_delta_decoder",
+        "loss": "MSE(delta_hat, delta) + 0.25 * MSE(future_hat, future)"
+      },
+      {
+        "id": "R2",
+        "objective": "residual_delta_decoder_with_dynamic_weighting",
+        "weight": "1 + min(3, L2(delta) / TRAIN median dynamic delta L2)",
+        "loss": "weighted residual MSE + 0.25 * unweighted future MSE"
+      },
+      {
+        "id": "R3",
+        "objective": "residual_delta_decoder_with_transition_contrastive",
+        "margin": 0.2,
+        "lambda_transition": 0.01,
+        "negatives": ["different_episode_future", "reversed_pair"],
+        "loss_scale_rescale_rule": "one deterministic TRAIN-only rescale allowed if contrastive/prediction ratio is >10 or <0.01 at initialization"
+      }
+    ],
+    "selection": "prefer R1 then R2 then R3 when candidate dynamic MSE is within 3% of best passing model"
+  },
+  "locked_test": {
+    "model_performance_test_loaded": false,
+    "selection_uses_test": false,
+    "allowed": "immutable data-integrity metadata only"
+  },
+  "downstream": {
+    "on_acceptance": "S4.2-4 READY TO RESUME",
+    "execute_action_vision_or_bridge": false,
+    "stop_after": "S4.2-DR"
+  }
+}
