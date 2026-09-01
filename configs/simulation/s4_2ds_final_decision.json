@@ -1,0 +1,45 @@
+{
+  "schema": "tactile3d-unit.s4-2ds-final-decision.v1",
+  "decision": "S4_2DS_C3_REPRESENTATION_UTILITY_SELECTED",
+  "canonical_contact_representation": "C3",
+  "classification": "C3_REPRESENTATION_UTILITY_SELECTED",
+  "historical": {
+    "original_s4_2_3": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "original_dynamic_improvement": 0.05509144067764282,
+    "required_dynamic_improvement": 0.1,
+    "s4_2dr": "S4_2DR_DYNAMICS_REMEDIATION_FAIL",
+    "best_remediation_improvement": 0.06947,
+    "decisions_modified": false
+  },
+  "selection": {
+    "c2_contact_only": "PASS",
+    "c3_contact_only": "PASS",
+    "c2_bridge": "PASS",
+    "c3_bridge": "PASS",
+    "c3_material_semantic_advantage": false,
+    "c3_material_bridge_advantage": false,
+    "c3_material_frozen_future_recovery_advantage": true,
+    "reason": "C3 reduced frozen future-recovery MSE by 7.017% with a positive paired bootstrap CI; the frozen DS3 rule selects C3 when either candidate passes and C3 has any material advantage."
+  },
+  "canonical_contract": {
+    "checkpoint": ".local/experiments/simulation/s4_2r/contact_dynamics/selected.pt",
+    "checkpoint_sha256": "f67b8b0d6f519944adafecbb0a93bb4387213fa1a4f33f7f770a55938de05602",
+    "native_shape": [8, 32],
+    "common_shape": [8, 32],
+    "adapter": "identity"
+  },
+  "follow_up_validation_confirmation": "PASS",
+  "formal_test_model_metrics_loaded": false,
+  "selection_used_formal_test": false,
+  "next_readiness": {
+    "S4.2-4_formal_Action_Vision": "READY",
+    "S4.2-5_formal_Bridge": "READY_AFTER_S4.2-4",
+    "pilot_replaces_formal_stages": false
+  },
+  "scope": {
+    "formal_S4.2-4_started": false,
+    "formal_S4.2-5_started": false,
+    "S4.2-6_7_started": false,
+    "policy_training_performed": false
+  }
+}
