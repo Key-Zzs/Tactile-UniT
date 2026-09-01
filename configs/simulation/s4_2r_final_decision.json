@@ -1,0 +1,56 @@
+{
+  "schema": "tactile3d-unit.s4-2r-final-decision.v1",
+  "decision": "S4_2R_CONTACT_DYNAMICS_FAIL",
+  "original_s4_2": {
+    "decision": "S4_2_CONTACT_STATE_FAIL",
+    "effective_rank": 11.255626031431431,
+    "threshold": 16.0,
+    "modified": false
+  },
+  "stages": {
+    "R1": "PASS",
+    "R2": "PASS_WITH_WARNINGS",
+    "R3": "PASS",
+    "R4": "PASS",
+    "R5": "NOT_RUN_NOT_REQUIRED",
+    "R6": "S4_2R_CONTACT_STATE_ACCEPTED_EXISTING",
+    "S4.2-3": "S4_2_3_CONTACT_DYNAMICS_FAIL",
+    "S4.2-4A": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-4B": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-4C": "NOT_RUN_DEPENDENCY_BLOCKED",
+    "S4.2-5": "NOT_RUN_DEPENDENCY_BLOCKED"
+  },
+  "contact_dynamics_failure": {
+    "candidate": "C3-lambda1.0",
+    "dynamic_mse": 0.01715606078505516,
+    "strongest_baseline": "C2",
+    "strongest_baseline_dynamic_mse": 0.018156317993998528,
+    "relative_improvement": 0.05509144067764282,
+    "required_relative_improvement": 0.1,
+    "absolute_improvement_ci95": [
+      0.0008774169545423116,
+      0.0011298185982803837
+    ],
+    "failed_gate": "dynamic_improvement_at_least_10_percent"
+  },
+  "successful_stages": [
+    "R1_INTRINSIC_DIMENSION_AUDIT",
+    "R2_REGION_THUMB_COVERAGE_AUDIT",
+    "R3_NO_COLLAPSE_PROTOCOL_FREEZE",
+    "R4_EXISTING_CHECKPOINT_REEVALUATION",
+    "R6_CONTACT_STATE_ACCEPTANCE"
+  ],
+  "failed_stages": [
+    "S4.2-3_CONTACT_DYNAMICS"
+  ],
+  "unexecuted_stages": [
+    "R5_BOUNDED_RANK_REMEDIATION_NOT_REQUIRED",
+    "S4.2-4_ACTION_VISION_PAIRED_VAC_DEPENDENCY_BLOCKED",
+    "S4.2-5_CROSS_MODAL_VAC_BRIDGE_DEPENDENCY_BLOCKED"
+  ],
+  "minimal_remediation": "Open a separate preregistered Contact-Dynamics remediation that strengthens the proposed transition inductive bias or objective against the matched C2 delta-autoencoder ceiling; preserve the 10% gate and keep downstream stages blocked until it passes.",
+  "formal_test_split": "PRESERVED",
+  "test_loaded": false,
+  "selection_uses_test": false,
+  "publication_external_confirmation_claimed": false
+}
