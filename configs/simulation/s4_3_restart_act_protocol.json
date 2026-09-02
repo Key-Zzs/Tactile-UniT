@@ -1,0 +1,182 @@
+{
+  "schema": "tactile3d-unit.s4-3-restart-act-protocol.v1",
+  "stage": "S4.3-0R",
+  "status": "FROZEN_BEFORE_ACT_IMPLEMENTATION_AND_TRAINING",
+  "provenance": {
+    "repository_act_found": false,
+    "network_fetch_allowed": false,
+    "implementation": "minimal repository-owned ACT reproduction based on the standard action-chunking CVAE Transformer structure",
+    "license": "repository LICENSE"
+  },
+  "observation": {
+    "vision": {
+      "input": "I_t only",
+      "encoder": "frozen current-frame Original-UniT DINO boundary",
+      "preprocessing": "Original-UniT-DINO:center-crop-0.95:resize-224-bilinear-antialias:imagenet-v1",
+      "output": [
+        8,
+        32
+      ],
+      "trainable": false,
+      "eval_mode": true,
+      "checkpoint_identity_artifact": ".local/artifacts/simulation/s4_2_formal/vision_identity.json",
+      "future_transition_latent": false
+    },
+    "proprio": {
+      "shape": [
+        22
+      ],
+      "normalization": "z-score fit on POLICY_EXPERT_TRAIN only"
+    },
+    "raw_tactile": {
+      "history": [
+        26,
+        30
+      ],
+      "normalization": "z-score fit on POLICY_EXPERT_TRAIN only",
+      "encoder": {
+        "type": "strict causal Conv1d",
+        "channels": [
+          30,
+          64,
+          128
+        ],
+        "kernel_size": 3,
+        "pooling": "last state",
+        "projection": [
+          128,
+          256
+        ],
+        "trainable_parameter_max": 100000
+      }
+    },
+    "contact_state": {
+      "history": [
+        26,
+        30
+      ],
+      "encoder": "exact frozen E_T^sim with accepted S4.2 normalization",
+      "output": [
+        256
+      ],
+      "requires_grad": false,
+      "eval_mode": true,
+      "projection": [
+        256,
+        256
+      ],
+      "projection_trainable": true
+    }
+  },
+  "act": {
+    "hidden_dim": 256,
+    "action_chunk": 27,
+    "action_dim": 22,
+    "cvae_latent_dim": 32,
+    "heads": 8,
+    "transformer_encoder_layers": 4,
+    "transformer_decoder_layers": 4,
+    "ffn_dim": 1024,
+    "dropout": 0.1,
+    "kl_beta": 10,
+    "inference": "deterministic latent-prior mean z=0",
+    "query_count": 27,
+    "position_encoding": "learned",
+    "loss": "full-chunk normalized Action L1 + 10.0 * KL",
+    "action_normalization": "per-task per-dimension min/max fit on POLICY_EXPERT_TRAIN only",
+    "differentiable_action_bound": "normalized_action = tanh(logit); physical_action = train_min + 0.5*(normalized_action+1)*(train_max-train_min), with epsilon range floor",
+    "action_adapter": "single central 22D-to-23D adapter",
+    "replan_stride": 5
+  },
+  "p3_auxiliary": {
+    "inference_inputs_identical_to": "P2",
+    "lambda_contact": 0.1,
+    "loss": "MSE(u_hat_c_plan, stopgrad(u_c_demo))",
+    "physical_action_not_detached": true,
+    "path": [
+      "ACT bounded physical planned Action [27,22]",
+      "frozen exact differentiable A0 feature normalization and encoder",
+      "frozen B3 Action projector",
+      "frozen causal A+H predictor with current h_t",
+      "predicted shared Contact [8,32]"
+    ],
+    "target": [
+      "same expert transition t to t+27",
+      "frozen E_T future Contact-State",
+      "frozen C3",
+      "frozen B3 Contact projector",
+      "training only"
+    ],
+    "frozen_parameters": [
+      "E_T^sim",
+      "C3",
+      "A0",
+      "B3",
+      "A+H"
+    ],
+    "uncertainty_weighting": false,
+    "future_vision": false
+  },
+  "fairness": {
+    "same": [
+      "current visual encoder",
+      "ACT core",
+      "Action decoder",
+      "CVAE",
+      "hidden dimension",
+      "optimizer",
+      "batch size",
+      "total step budget",
+      "checkpoint selection",
+      "replan stride"
+    ],
+    "P2_P3_identical_inference_architecture_and_parameter_count": true,
+    "no_architecture_search": true
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 128,
+    "gradient_clip": 1
+  },
+  "budget": {
+    "maximum_optimizer_steps": 20000,
+    "dev_interval": 1000,
+    "minimum_steps_before_early_stop": 5000,
+    "early_stop_patience_dev_evaluations": 5,
+    "checkpoint_selection": "lowest POLICY_DEV normalized full-chunk Action L1"
+  },
+  "determinism": {
+    "python_seed": true,
+    "numpy_seed": true,
+    "torch_seed": true,
+    "cuda_seed": true,
+    "dataloader_seed": true,
+    "cublas_workspace_config": ":4096:8",
+    "deterministic_mode": true
+  },
+  "jobs": {
+    "tasks": 3,
+    "variants": 4,
+    "seeds": 3,
+    "total": 36,
+    "multitask": false,
+    "ddp": false,
+    "max_concurrent": 4,
+    "one_job_per_idle_physical_gpu": true
+  },
+  "gpu_policy": {
+    "physical_gpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "advisory_lock": "$COMMON_GIT_DIR/tactile3d_unit_gpu${GPU_ID}.lock",
+    "occupancy_check_before_lock": true,
+    "occupancy_recheck_after_lock": true,
+    "oversubscription": false,
+    "preemption": false
+  }
+}

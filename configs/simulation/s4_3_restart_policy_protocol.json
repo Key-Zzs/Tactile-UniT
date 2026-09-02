@@ -1,0 +1,265 @@
+{
+  "schema": "tactile3d-unit.s4-3-restart-policy-protocol.v1",
+  "stage": "S4.3-0R",
+  "status": "FROZEN_BEFORE_ACT_IMPLEMENTATION_AND_TRAINING",
+  "previous_s4_3_0": {
+    "decision": "S4_3_0_DEMONSTRATION_CONTRACT_FAIL",
+    "status": "FAILED_PRESERVED",
+    "modified": false
+  },
+  "restart_basis": "S4_3_PD_COMPLETE_POLICY_DATA_READY",
+  "old_probing_data_used": false,
+  "policy_expert_dataset": {
+    "source_dataset_revision": "125df5c1019e97503929ef1a0ad8f90373436afa",
+    "dexjoco_revision": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+    "membership_manifest": ".local/artifacts/simulation/s4_3_pd/policy_expert_dataset_manifest.json",
+    "membership_manifest_sha256": "576080b8c19265e965ab593f74be053d5646917d1752a967c438e76f83157efa",
+    "content_sha256": "a334af12ab2c5bbfbd46b47e1167f51fe194c97bbd69fb945d760f96b648d7f4",
+    "counts": {
+      "POLICY_EXPERT_TRAIN": {
+        "pinch_tongs": 90,
+        "hammer_nail": 100,
+        "click_mouse": 100,
+        "total": 290
+      },
+      "POLICY_EXPERT_DEV": {
+        "pinch_tongs": 25,
+        "hammer_nail": 20,
+        "click_mouse": 25,
+        "total": 70
+      }
+    },
+    "valid_bc_windows": {
+      "pinch_tongs": {
+        "train": 33995,
+        "dev": 8840
+      },
+      "hammer_nail": {
+        "train": 19250,
+        "dev": 4035
+      },
+      "click_mouse": {
+        "train": 43205,
+        "dev": 6610
+      }
+    },
+    "exclusions": [
+      "old 210 Contact-probing episodes",
+      "S4.3-PD pilot episodes",
+      "failed formal attempts",
+      "S4.2 formal validation",
+      "TEST_V1",
+      "TEST_V2"
+    ],
+    "immutable": true
+  },
+  "s4_2_immutable": {
+    "contact_state": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19",
+    "contact_C3": "f67b8b0d6f519944adafecbb0a93bb4387213fa1a4f33f7f770a55938de05602",
+    "action_A0": "9392154b5a87fbe0a62bae6842a7df84165bd79d0c345cb816812e939060dc58",
+    "bridge_B3": "4d741ee79da2c34879bdc6c20af04e6c0bdbbbce70a26833b9738917ff20d73d",
+    "shared_private": "c4b2d0baf7d2a0eff284a976dd2893554d8ca5e40c0a81e718a2b0c63eeae49c",
+    "conditional_A_plus_H": "bf622980ef7668819f76c92627e03eefc04b1042cc1ff7fc523f417d16b0431d",
+    "fallback_A_only_missing_H": "aee995e232c64401b392b0ac8092f21249afca3889f472837b43893a5d96b31d",
+    "uncertainty_full": "8525631c547da3152a4300b198e62b7852d9e4367b937913ec66df6bc9a65896",
+    "uncertainty_missing_H": "51d4efe296b91bbc2888ab9a3daf1e34e1c9cdbbbacbf5d289865d90c31660b1",
+    "tracked_s4_2_config_hash_set": "9a3477e8b140aa4302a69861e797e9e4a104d774c18d6d5596d8a87c95a70ec9"
+  },
+  "tasks": [
+    "pinch_tongs",
+    "hammer_nail",
+    "click_mouse"
+  ],
+  "variants": {
+    "P0": {
+      "name": "ACT_VP",
+      "inputs": [
+        "current RGB I_t",
+        "current proprio s_t"
+      ]
+    },
+    "P1": {
+      "name": "ACT_VP_RAW",
+      "inputs": [
+        "current RGB I_t",
+        "current proprio s_t",
+        "raw tactile history T[t-25:t] [26,30]"
+      ]
+    },
+    "P2": {
+      "name": "ACT_VP_H",
+      "inputs": [
+        "current RGB I_t",
+        "current proprio s_t",
+        "frozen Contact-State h_t [256]"
+      ]
+    },
+    "P3": {
+      "name": "ACT_TACTILE_UNIT",
+      "inputs": [
+        "current RGB I_t",
+        "current proprio s_t",
+        "frozen Contact-State h_t [256]"
+      ],
+      "training_only": [
+        "frozen A0/B3/A+H Contact-transition auxiliary"
+      ],
+      "inference_architecture_identical_to": "P2"
+    }
+  },
+  "training_seeds": [
+    0,
+    1,
+    2
+  ],
+  "timeouts": {
+    "formula": "clamp(ceil(1.5 * p95 successful POLICY_EXPERT_TRAIN control length), 250, 1000)",
+    "percentile_method": "numpy linear",
+    "warmup_excluded": true,
+    "tasks": {
+      "pinch_tongs": {
+        "p50": 424.5,
+        "p90": 538,
+        "p95": 548.4499999999999,
+        "timeout_steps": 823
+      },
+      "hammer_nail": {
+        "p50": 205.5,
+        "p90": 359.0000000000005,
+        "p95": 422.74999999999943,
+        "timeout_steps": 635
+      },
+      "click_mouse": {
+        "p50": 398.5,
+        "p90": 902.5000000000009,
+        "p95": 1005.4499999999995,
+        "timeout_steps": 1000
+      }
+    }
+  },
+  "success_contracts": {
+    "pinch_tongs": "tongs_pos.z >= table_z + 0.10 m AND native pinch_count >= 3 continuously for 30 control steps",
+    "hammer_nail": "native nail depth >= 0.04 m",
+    "click_mouse": "mouse inside mousepad AND display-blue click latch for 10 consecutive control steps",
+    "source_artifact": ".local/artifacts/simulation/s4_3_pd/task_success_contract.json",
+    "redefined": false
+  },
+  "evaluation_reset_specs": {
+    "path": "configs/simulation/s4_3_policy_eval_v1.json",
+    "sha256": "e04144eef2f5b6914bafb43611ff69821ad1a894e89424af40a7dc0d35063a08",
+    "resets_per_task": 30,
+    "total": 90,
+    "frozen_before_training": true
+  },
+  "warmup": {
+    "control_steps": 26,
+    "duration_sec": 0.5,
+    "action": "central neutral/hold policy action",
+    "counted_in_timeout": false,
+    "identical_all_variants": true
+  },
+  "action_contract": {
+    "shape": [
+      27,
+      22
+    ],
+    "replan_stride": 5,
+    "execute_indices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "temporal_ensemble": false,
+    "queue_sweep": false,
+    "adapter": "gr00t.simulation.dexjoco_adapter.policy_action_to_env_action"
+  },
+  "primary_endpoint": {
+    "name": "MACRO_TASK_SUCCESS",
+    "definition": "equal-weight mean of the three per-task success rates"
+  },
+  "preregistered_secondary": {
+    "name": "TACTILE_ACTIVE_MACRO_SUCCESS",
+    "tasks": [
+      "pinch_tongs",
+      "click_mouse"
+    ],
+    "definition": "equal-weight mean of the two per-task success rates",
+    "replaces_primary": false
+  },
+  "mapped_tactile_inactive_control": {
+    "task": "hammer_nail",
+    "warning": "HAMMER_NAIL_MAPPED_TACTILE_INACTIVE",
+    "native_task_success_valid": true,
+    "free_to_contact": 0,
+    "contact_to_free": 0,
+    "peak_mapped_force": 0,
+    "frozen_before_training": true
+  },
+  "comparisons": {
+    "P1-P0": "RAW_TACTILE_EFFECT",
+    "P2-P1": "CONTACT_STATE_VS_RAW_EFFECT",
+    "P3-P2": "TACTILE_UNIT_AUXILIARY_EFFECT",
+    "P3-P0": "FULL_TACTILE_UNIT_EFFECT"
+  },
+  "material_effect": {
+    "MATERIAL_IMPROVEMENT": "delta >= +0.05 AND paired hierarchical bootstrap 95% CI lower > 0",
+    "MATERIAL_HURT": "delta <= -0.05 AND paired hierarchical bootstrap 95% CI upper < 0",
+    "otherwise": "NO_MATERIAL_DIFFERENCE"
+  },
+  "statistics": {
+    "method": "paired hierarchical bootstrap preserving task, matched training seed, and matched evaluation reset",
+    "samples": 10000,
+    "seed": 43020,
+    "confidence": 0.95,
+    "paired": true
+  },
+  "secondary_metrics": [
+    "success rate",
+    "time-to-success",
+    "timeout rate",
+    "environment termination failure rate",
+    "peak normal force",
+    "integrated normal force",
+    "peak tangential force",
+    "free-to-contact event count",
+    "contact-to-free event count",
+    "Action step L2",
+    "Action second difference",
+    "TCP translational jerk",
+    "hand-joint total variation",
+    "replan count"
+  ],
+  "failure_classes": [
+    "SUCCESS",
+    "TIMEOUT",
+    "ENV_TERMINATION_FAILURE",
+    "INVALID_ACTION",
+    "NUMERIC_FAILURE",
+    "SIMULATION_EXCEPTION"
+  ],
+  "leakage_prohibitions": [
+    "I_t+1 or later",
+    "I_t+27",
+    "S4.2 two-frame Vision transition latent",
+    "future frame feature",
+    "future rendered state",
+    "future tactile as inference input",
+    "actual future Contact at inference",
+    "future reward",
+    "future success",
+    "expert Action at inference"
+  ],
+  "scope_stop": [
+    "S4.3-3 Diffusion Policy",
+    "S4.3-4",
+    "pi0.5",
+    "GR00T",
+    "RL",
+    "real robot",
+    "RH56DFTP",
+    "Flexiv",
+    "M4"
+  ]
+}
