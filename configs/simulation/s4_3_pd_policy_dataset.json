@@ -1,0 +1,97 @@
+{
+  "schema": "tactile3d-unit.s4-3-pd-policy-dataset-summary.v1",
+  "stage": "PD8",
+  "status": "PASS",
+  "bulk_location": ".local/datasets/simulation/s4_3_policy_expert",
+  "membership_manifest": {
+    "location": ".local/artifacts/simulation/s4_3_pd/policy_expert_dataset_manifest.json",
+    "sha256": "576080b8c19265e965ab593f74be053d5646917d1752a967c438e76f83157efa"
+  },
+  "formal_success_audit": {
+    "location": ".local/artifacts/simulation/s4_3_pd/formal_success_audit.json",
+    "sha256": "8131ff03ad032384d86b5c9f6973367a19e26128c22b5533bc5003eabbf290f7"
+  },
+  "policy_window_counts": {
+    "location": ".local/artifacts/simulation/s4_3_pd/policy_window_counts.json",
+    "sha256": "b742d454f36e30b600634af5e389609ac850aa219115f992ed1122d5bf77c20c"
+  },
+  "s4_2_compatibility": {
+    "location": ".local/artifacts/simulation/s4_3_pd/s4_2_compatibility.json",
+    "sha256": "e015eb02cbfdd87c355a77dde23b665c573c9432ddeee855ef6e6028cc4b625a",
+    "status": "PASS",
+    "retraining": false
+  },
+  "determinism_spotcheck": {
+    "location": ".local/artifacts/simulation/s4_3_pd/determinism_spotcheck.json",
+    "sha256": "e7c8f6783aefb5d5fc73c60f874dbe6efa23bd5f878d777babab82fd7a6e2f21",
+    "episodes_per_task": 2,
+    "state_action_tactile_success_exact": true,
+    "numeric_checksum_exact": true,
+    "rgb_byte_checksum_exact": false,
+    "rgb_replay": "BOUNDED_EGL_PIXEL_NONDETERMINISM",
+    "status": "PASS_WITH_RENDERER_WARNING"
+  },
+  "successful_episode_counts": {
+    "POLICY_EXPERT_TRAIN": {
+      "pinch_tongs": 90,
+      "hammer_nail": 100,
+      "click_mouse": 100,
+      "total": 290
+    },
+    "POLICY_EXPERT_DEV": {
+      "pinch_tongs": 25,
+      "hammer_nail": 20,
+      "click_mouse": 25,
+      "total": 70
+    },
+    "total": 360
+  },
+  "formal_expert_failures": {
+    "pinch_tongs": 10,
+    "hammer_nail": 5,
+    "click_mouse": 0,
+    "total": 15,
+    "membership": "ACQUISITION_AUDIT_ONLY"
+  },
+  "valid_bc_windows": {
+    "pinch_tongs": {
+      "train": 33995,
+      "dev": 8840
+    },
+    "hammer_nail": {
+      "train": 19250,
+      "dev": 4035
+    },
+    "click_mouse": {
+      "train": 43205,
+      "dev": 6610
+    },
+    "history": [
+      26,
+      30
+    ],
+    "target_action_chunk": [
+      27,
+      22
+    ],
+    "no_cross_episode_windows": true
+  },
+  "source_group_isolation": {
+    "train_dev_overlap": 0,
+    "pilot_formal_overlap": 0,
+    "s4_2_groups_overlap": 0,
+    "formal_validation_overlap": 0,
+    "test_v1_overlap": 0,
+    "test_v2_overlap": 0,
+    "status": "PASS"
+  },
+  "exclusions": [
+    "old 210 Contact-probing episodes",
+    "PD pilot episodes",
+    "failed formal attempts",
+    "S4.2 formal validation",
+    "TEST_V1",
+    "TEST_V2"
+  ],
+  "membership_policy": "all and only schema-valid native-success attempts in their frozen source-group split"
+}
