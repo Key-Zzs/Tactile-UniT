@@ -12,6 +12,7 @@ from gr00t.simulation.s4_3_runtime import (
     CausalHistoryBuffer,
     mapped_force_metrics,
 )
+from gr00t.simulation.s4_3_training import valid_anchors
 
 
 def normalization() -> PolicyNormalization:
@@ -120,3 +121,15 @@ def test_mapped_force_metrics_use_frozen_five_region_schema() -> None:
     assert metrics["peak_normal_force"] == 2.0
     assert metrics["integrated_normal_force"] == pytest.approx(0.04)
     assert metrics["peak_tangential_force"] == 3.0
+
+
+def test_policy_cache_anchors_have_no_padding_and_full_targets() -> None:
+    anchors = valid_anchors(100)
+    assert list(anchors) == list(range(25, 73))
+    assert len(anchors) == 48
+    for t in anchors:
+        assert len(range(t - 25, t + 1)) == 26
+        assert len(range(t, t + 27)) == 27
+        assert len(range(t + 2, t + 28)) == 26
+        assert min(range(t - 25, t + 1)) >= 0
+        assert max(range(t + 2, t + 28)) < 100
