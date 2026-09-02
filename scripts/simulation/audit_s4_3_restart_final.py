@@ -56,22 +56,48 @@ def command(*args: str) -> str:
 
 
 def main() -> None:
+    final = read_json(ARTIFACT_ROOT / "final_decision.json")
+    hard_failure = final.get("decision") == "S4_3_2_ENVIRONMENT_FAIL"
+    if hard_failure and not (ARTIFACT_ROOT / "r12_structural_failure.json").is_file():
+        raise RuntimeError("R12 environment failure evidence is missing")
     missing = [name for name in REQUIRED if not (ARTIFACT_ROOT / name).is_file()]
     if missing:
         raise RuntimeError(f"missing required S4.3 artifacts: {missing}")
     plots = sorted((ARTIFACT_ROOT / "plots").glob("*.png"))
     plot_numbers = {
-        int(match.group(1))
-        for path in plots
-        if (match := re.match(r"^(\d\d)_", path.name)) is not None
+        int(match.group(1)) for path in plots if (match := re.match(r"^(\d\d)_", path.name)) is not None
     }
     if not set(range(1, 25)).issubset(plot_numbers):
         raise RuntimeError("required 01-24 visualization set is incomplete")
     videos = read_json(ARTIFACT_ROOT / "representative_videos.json")
-    if videos.get("status") != "PASS":
-        raise RuntimeError("representative rollout video selection failed")
+    expected_video_status = "NOT_AVAILABLE_STRUCTURAL_FAILURE" if hard_failure else "PASS"
+    if videos.get("status") != expected_video_status:
+        raise RuntimeError("representative rollout video disposition is invalid")
     rollouts = read_json(ARTIFACT_ROOT / "closed_loop_rollouts.json")
-    if rollouts.get("completed_rollouts") != 1080 or rollouts.get("status") != "PASS":
+    if hard_failure:
+        failure = read_json(ARTIFACT_ROOT / "r12_structural_failure.json")
+        if (
+            rollouts.get("completed_rollouts") != 0
+            or rollouts.get("status") != "FAIL"
+            or rollouts.get("rollout_performance_seen") is not False
+            or failure.get("classification") != "S4_3_2_ENVIRONMENT_FAIL"
+            or failure.get("scientific_rollouts_started") != 0
+            or failure.get("dexjoco_client_started") is not False
+            or failure.get("failure_message") != "AF_UNIX path too long"
+        ):
+            raise RuntimeError("R12 structural failure evidence is inconsistent")
+        blocked = (
+            "closed_loop_summary.json",
+            "primary_statistics.json",
+            "tactile_active_statistics.json",
+            "hammer_control_analysis.json",
+            "secondary_metrics.json",
+            "training_seed_analysis.json",
+            "uncertainty_diagnostics.json",
+        )
+        if any(read_json(ARTIFACT_ROOT / name).get("status") != "NOT_RUN_STRUCTURAL_FAILURE" for name in blocked):
+            raise RuntimeError("a dependent scientific artifact is not marked NOT_RUN")
+    elif rollouts.get("completed_rollouts") != 1080 or rollouts.get("status") != "PASS":
         raise RuntimeError("closed-loop rollout matrix is incomplete")
     checkpoints = read_json(ARTIFACT_ROOT / "act_checkpoint_manifest.json")
     if checkpoints.get("count") != 36 or checkpoints.get("status") != "PASS":
@@ -109,7 +135,8 @@ def main() -> None:
     if privacy_matches:
         raise RuntimeError(f"tracked privacy scan failed: {privacy_matches}")
     artifact_hashes = {name: sha256_file(ARTIFACT_ROOT / name) for name in REQUIRED}
-    final = read_json(ARTIFACT_ROOT / "final_decision.json")
+    if hard_failure:
+        artifact_hashes["r12_structural_failure.json"] = sha256_file(ARTIFACT_ROOT / "r12_structural_failure.json")
     result: dict[str, Any] = {
         "schema": "tactile3d-unit.s4-3-final-artifact-audit.v1",
         "stage": "R20-R25",
@@ -120,6 +147,8 @@ def main() -> None:
         "representative_videos": len(videos["videos"]),
         "canonical_checkpoints": checkpoints["count"],
         "closed_loop_rollouts": rollouts["completed_rollouts"],
+        "hard_failure_closeout": hard_failure,
+        "dependent_scientific_stages_not_run": hard_failure,
         "branch": branch,
         "tracked_local_files": 0,
         "privacy_matches": privacy_matches,

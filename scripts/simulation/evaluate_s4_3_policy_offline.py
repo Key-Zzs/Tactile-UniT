@@ -81,6 +81,8 @@ def evaluate(
     rows = 0
     shape_pass = True
     bound_pass = True
+    auxiliary_shape_pass = True
+    auxiliary_finite_pass = True
     repeat_max_absolute_difference = 0.0
     first_batch = True
     for raw_batch in loader:
@@ -129,6 +131,13 @@ def evaluate(
             contact_prediction = stack.predict_shared_contact(
                 batch["proprio"], prediction, batch["contact_state"]
             )
+            auxiliary_shape_pass = auxiliary_shape_pass and tuple(contact_prediction.shape[1:]) == (
+                8,
+                32,
+            )
+            auxiliary_finite_pass = auxiliary_finite_pass and bool(
+                torch.isfinite(contact_prediction).all()
+            )
             contact_delta = contact_prediction - batch["contact_target"]
             sums["p3_contact_auxiliary_mse"] += float(contact_delta.square().sum())
             counts["p3_contact_auxiliary_mse"] += contact_delta.numel()
@@ -139,6 +148,8 @@ def evaluate(
         "selected_checkpoint_loaded_cold": True,
         "prediction_shape_27x22": shape_pass,
         "all_predictions_finite": finite_rows == rows,
+        "p3_contact_auxiliary_shape_8x32": auxiliary_shape_pass,
+        "p3_contact_auxiliary_finite": auxiliary_finite_pass,
         "action_within_train_bounds": bound_pass,
         "deterministic_repeat_max_absolute_difference": repeat_max_absolute_difference,
         "deterministic_within_tolerance": repeat_max_absolute_difference <= 1e-7,
@@ -148,6 +159,8 @@ def evaluate(
         (
             sanity["prediction_shape_27x22"],
             sanity["all_predictions_finite"],
+            sanity["p3_contact_auxiliary_shape_8x32"],
+            sanity["p3_contact_auxiliary_finite"],
             sanity["action_within_train_bounds"],
             sanity["deterministic_within_tolerance"],
         )
@@ -199,6 +212,12 @@ def main() -> None:
             ),
             "all_action_bounds_pass": all(
                 row["hard_sanity"]["action_within_train_bounds"] for row in results
+            ),
+            "all_p3_contact_auxiliary_shapes_8x32": all(
+                row["hard_sanity"]["p3_contact_auxiliary_shape_8x32"] for row in results
+            ),
+            "all_p3_contact_auxiliary_predictions_finite": all(
+                row["hard_sanity"]["p3_contact_auxiliary_finite"] for row in results
             ),
             "all_deterministic": all(
                 row["hard_sanity"]["deterministic_within_tolerance"] for row in results

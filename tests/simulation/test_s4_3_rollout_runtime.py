@@ -2,7 +2,11 @@ from pathlib import Path
 
 import numpy as np
 
-from scripts.simulation.run_s4_3_policy_rollouts_dex import existing_rollout, jpeg
+from scripts.simulation.run_s4_3_policy_rollouts_dex import (
+    POLICY_RGB_JPEG_QUALITY,
+    existing_rollout,
+    jpeg,
+)
 
 
 def test_rollout_rgb_ipc_encoding_is_valid_jpeg() -> None:
@@ -11,6 +15,14 @@ def test_rollout_rgb_ipc_encoding_is_valid_jpeg() -> None:
     rgb = np.zeros((32, 48, 3), dtype=np.uint8)
     rgb[:, :, 0] = 255
     payload = jpeg(rgb)
+    expected_ok, expected = cv2.imencode(
+        ".jpg",
+        cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
+        [cv2.IMWRITE_JPEG_QUALITY, 80],
+    )
+    assert expected_ok
+    assert POLICY_RGB_JPEG_QUALITY == 80
+    assert payload == expected.tobytes()
     decoded = cv2.imdecode(np.frombuffer(payload, dtype=np.uint8), cv2.IMREAD_COLOR)
     assert decoded.shape == rgb.shape
     assert decoded.dtype == np.uint8

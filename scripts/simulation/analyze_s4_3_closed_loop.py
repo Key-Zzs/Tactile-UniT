@@ -132,6 +132,39 @@ def success_comparisons(
     return results
 
 
+def absolute_success(
+    lookup: dict[tuple[str, str, int, str], dict[str, Any]],
+    tasks: tuple[str, ...],
+    samples: int,
+    seed: int,
+) -> dict[str, Any]:
+    results = {}
+    for variant_index, variant in enumerate(VARIANTS):
+        cube = np.empty((len(tasks), 3, 30), dtype=np.float64)
+        for task_index, task in enumerate(tasks):
+            for training_seed in range(3):
+                scoped = sorted(
+                    [
+                        row
+                        for key, row in lookup.items()
+                        if key[0] == task and key[1] == variant and key[2] == training_seed
+                    ],
+                    key=lambda row: row["reset_index"],
+                )
+                if len(scoped) != 30:
+                    raise RuntimeError("absolute success matrix is incomplete")
+                cube[task_index, training_seed] = [row["success"] for row in scoped]
+        rate, interval = hierarchical_bootstrap(cube, samples, seed + variant_index)
+        results[variant] = {
+            "macro_success": rate,
+            "ci95": interval,
+            "per_task": {
+                task: float(cube[task_index].mean()) for task_index, task in enumerate(tasks)
+            },
+        }
+    return results
+
+
 def summarize_rollouts(rows: list[dict[str, Any]]) -> dict[str, Any]:
     tasks: dict[str, Any] = {}
     for task in TASKS:
@@ -198,7 +231,7 @@ def secondary_value(row: dict[str, Any], metric: str) -> float:
     if metric == "timeout_rate":
         return float(row["termination_reason"] == "TIMEOUT")
     if metric == "environment_termination_failure_rate":
-        return float(row["termination_reason"] == "NATIVE_TERMINATION_FAILURE")
+        return float(row["termination_reason"] == "ENV_TERMINATION_FAILURE")
     if metric in {
         "peak_normal_force",
         "integrated_normal_force",
@@ -290,6 +323,29 @@ def seed_analysis(rows: list[dict[str, Any]], primary: dict[str, Any]) -> dict[s
                 "std": float(np.std(values)),
                 "range": [float(np.min(values)), float(np.max(values))],
             }
+    macro_rates = {}
+    for variant in VARIANTS:
+        values = []
+        for seed in range(3):
+            per_task = []
+            for task in TASKS:
+                scoped = [
+                    row
+                    for row in rows
+                    if row["task"] == task
+                    and row["variant"] == variant
+                    and row["training_seed"] == seed
+                ]
+                if len(scoped) != 30:
+                    raise RuntimeError("training-seed success matrix is incomplete")
+                per_task.append(float(np.mean([row["success"] for row in scoped])))
+            values.append(float(np.mean(per_task)))
+        macro_rates[variant] = {
+            "per_training_seed": values,
+            "mean": float(np.mean(values)),
+            "std": float(np.std(values)),
+            "range": [float(np.min(values)), float(np.max(values))],
+        }
     dominance = {}
     for name, comparison in primary.items():
         high, low = comparison["high"], comparison["low"]
@@ -319,6 +375,7 @@ def seed_analysis(rows: list[dict[str, Any]], primary: dict[str, Any]) -> dict[s
         "schema": "tactile3d-unit.s4-3-training-seed-analysis.v1",
         "stage": "R14.6",
         "success_rates": rates,
+        "three_task_macro_success_rates": macro_rates,
         "contrast_seed_dominance": dominance,
         "bad_training_seeds_deleted": False,
         "status": "PASS",
@@ -338,8 +395,12 @@ def main() -> None:
     seed = int(protocol["statistics"]["seed"])
     summary = summarize_rollouts(rows)
     primary_comparisons = success_comparisons(lookup, TASKS, samples, seed)
+    primary_variants = absolute_success(lookup, TASKS, samples, seed + 20_000)
     tactile_comparisons = success_comparisons(
         lookup, ("pinch_tongs", "click_mouse"), samples, seed + 10_000
+    )
+    tactile_variants = absolute_success(
+        lookup, ("pinch_tongs", "click_mouse"), samples, seed + 30_000
     )
     primary = {
         "schema": "tactile3d-unit.s4-3-primary-statistics.v1",
@@ -347,6 +408,7 @@ def main() -> None:
         "endpoint": "equal-weight three-task macro success",
         "method": protocol["statistics"],
         "material_effect": protocol["material_effect"],
+        "variants": primary_variants,
         "comparisons": primary_comparisons,
         "status": "PASS",
     }
@@ -356,6 +418,7 @@ def main() -> None:
         "label": "SECONDARY_TACTILE_ACTIVE_ANALYSIS",
         "tasks": ["pinch_tongs", "click_mouse"],
         "replaces_primary": False,
+        "variants": tactile_variants,
         "comparisons": tactile_comparisons,
         "status": "PASS",
     }
@@ -390,6 +453,7 @@ def main() -> None:
         "contact_onset_correlation": None,
         "large_force_correlation": None,
         "timeout_correlation": None,
+        "scientific_status": "DIAGNOSTIC ONLY",
         "scientific_rollout_status": "PASS",
     }
     for name, value in {

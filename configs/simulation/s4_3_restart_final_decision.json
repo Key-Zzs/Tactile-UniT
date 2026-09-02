@@ -1,0 +1,64 @@
+{
+  "schema": "tactile3d-unit.s4-3-restart-final-decision.v1",
+  "stage": "R14-R26",
+  "historical_s4_3_0": "S4_3_0_DEMONSTRATION_CONTRACT_FAIL_PRESERVED",
+  "restart_basis": "S4_3_PD_COMPLETE_POLICY_DATA_READY",
+  "s4_3_0r": "COMPLETE",
+  "s4_3_1": "COMPLETE",
+  "s4_3_2": "FAILED",
+  "decision": "S4_3_2_ENVIRONMENT_FAIL",
+  "exactly_one_classification": true,
+  "benchmark_status": "FAIL",
+  "scientific_effect_classification_performed": false,
+  "training": {
+    "expected_jobs": 36,
+    "completed_jobs": 36,
+    "canonical_checkpoints": 36,
+    "scientific_performance_retries": 0,
+    "status": "PASS"
+  },
+  "offline_policy_dev": {
+    "expected_checkpoints": 36,
+    "evaluated_checkpoints": 36,
+    "status": "PASS"
+  },
+  "closed_loop": {
+    "expected_rollouts": 1080,
+    "started_rollouts": 0,
+    "completed_rollouts": 0,
+    "rollout_performance_seen": false,
+    "failure_boundary": "policy server AF_UNIX listener bind before socket readiness",
+    "failure_message": "AF_UNIX path too long",
+    "dependent_scientific_stages_stopped": true,
+    "status": "FAIL"
+  },
+  "s4_3_3_readiness": {
+    "decision": "NOT_READY",
+    "act_positive_tactile_unit_result_required": false,
+    "reason": "Runtime execution failure is a frozen NOT_READY structural blocker.",
+    "exact_remediation": "Shorten the production AF_UNIX socket endpoint below the platform limit, repeat the production-path runtime integration smoke, re-freeze R11 with the corrected code hashes, and start a new clean S4.3-2 rollout execution.",
+    "implemented": false
+  },
+  "integrity": {
+    "s4_2_byte_identical": true,
+    "environment_unchanged": true,
+    "unit_regressions": "PASS",
+    "dexjoco_regressions": "PASS",
+    "old_210_probing_episodes_used": false
+  },
+  "local_artifact_sha256": {
+    "act_training_manifest.json": "85c4876fb092e7eb80f30ed0953173cb619a0a8c37f33125094404252f4573a0",
+    "act_checkpoint_manifest.json": "1e552e0f5cbf76ef780d09c8203702a16305099cb7c60ade093b044db26921af",
+    "offline_dev_evaluation.json": "7c7013cb35bcef801dc9c958f3c1dd1f19645dd030095cb8671da599d3156251",
+    "pre_rollout_freeze.json": "747f4a1af172c4c8db63147acefcab63f521001549fb6d8164ab089557881d1a",
+    "r12_structural_failure.json": "77086bad22a08e5c272ab227fd925f2eeb5fdefe9934682f3cf25e312347f734",
+    "s4_2_immutability.json": "c3f638b852d96e4b9075ccdcc3698da635e0423495b0dfa972cfeff3f59c3351",
+    "environment_integrity.json": "353de399e14ff4bfa1b2f4dbb79e4a6f16d1804841d48a5650c9cbebe596ad45",
+    "regression_tests.json": "3db46ca7e257d303ade455939ae239c156f8a232e413d38a0792327e8f003be4",
+    "final_decision.json": "458f083b6f5d712db4c97a4aa9a1beb589e700dbc5daf8a16832c1526285d292"
+  },
+  "push_performed": false,
+  "pr_created": false,
+  "s4_3_3_implemented": false,
+  "status": "PASS"
+}

@@ -31,6 +31,7 @@ PROTOCOL = ROOT / "configs/simulation/s4_3_restart_policy_protocol.json"
 LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/closed_loop"
 RAW_VIDEO_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/raw_videos"
 WARMUP_ACTION_STEPS = 25
+POLICY_RGB_JPEG_QUALITY = 80
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,7 +73,9 @@ def existing_rollout(path: Path, identity: dict[str, Any]) -> dict[str, Any] | N
 
 def jpeg(rgb: np.ndarray) -> bytes:
     ok, encoded = cv2.imencode(
-        ".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 92]
+        ".jpg",
+        cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
+        [cv2.IMWRITE_JPEG_QUALITY, POLICY_RGB_JPEG_QUALITY],
     )
     if not ok:
         raise RuntimeError("failed to encode causal current RGB")
@@ -94,6 +97,14 @@ def collect(
         "variant": args.variant,
         "training_seed": args.seed,
         "evaluation_reset_id": reset["evaluation_reset_id"],
+        "reset_index": reset["reset_index"],
+        "seed_namespace": reset["seed_namespace"],
+        "reset_seed": reset["reset_seed"],
+        "environment_seed": reset["environment_seed"],
+        "visual_randomization_seed": reset["visual_randomization_seed"],
+        "dynamics_randomization": reset["dynamics_randomization"],
+        "perturbation_seed": reset["perturbation_seed"],
+        "overlap_with_prior_sources": reset["overlap_with_prior_sources"],
         "checkpoint_sha256": args.checkpoint_sha256,
     }
     existing = existing_rollout(metadata_path, identity)
@@ -210,7 +221,7 @@ def collect(
                 termination_reason = "SUCCESS"
                 break
             if observation.terminated or observation.truncated:
-                termination_reason = "NATIVE_TERMINATION_FAILURE"
+                termination_reason = "ENV_TERMINATION_FAILURE"
                 break
     except Exception as error:
         termination_reason = "SIMULATION_EXCEPTION"
@@ -247,8 +258,6 @@ def collect(
     metadata = {
         "schema": "tactile3d-unit.s4-3-closed-loop-rollout.v1",
         **identity,
-        "reset_index": reset["reset_index"],
-        "reset_seed": reset["reset_seed"],
         "success": success,
         "termination_reason": termination_reason,
         "control_steps": len(actions),
@@ -261,6 +270,12 @@ def collect(
         "warmup_counted_in_timeout": False,
         "replan_stride": 5,
         "action_chunk_shape": [27, 22],
+        "vision_transport": {
+            "source": "current RGB I_t only",
+            "codec": "JPEG",
+            "quality": POLICY_RGB_JPEG_QUALITY,
+            "matches_policy_expert_storage": True,
+        },
         "trace": str(trace_path.relative_to(ROOT)),
         "trace_sha256": sha256_file(trace_path),
         "raw_video": str(video_path.relative_to(ROOT)),

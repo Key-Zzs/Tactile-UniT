@@ -30,11 +30,21 @@ ACT = ROOT / "configs/simulation/s4_3_restart_act_protocol.json"
 EVALUATION = ROOT / "configs/simulation/s4_3_policy_eval_v1.json"
 SUCCESS = ARTIFACT_ROOT / "task_success_contract.json"
 STATISTICS_CODE = ROOT / "scripts/simulation/analyze_s4_3_closed_loop.py"
+DECISION_CODE = ROOT / "scripts/simulation/finalize_s4_3_restart.py"
 ROLLOUT_CODE = (
     ROOT / "scripts/simulation/run_s4_3_policy_rollouts_dex.py",
     ROOT / "scripts/simulation/serve_s4_3_act_policy.py",
     ROOT / "scripts/simulation/run_s4_3_rollout_job.py",
     ROOT / "scripts/simulation/run_s4_3_rollout_queue.py",
+)
+POLICY_DEPENDENCY_CODE = (
+    ROOT / "gr00t/simulation/s4_3_act.py",
+    ROOT / "gr00t/simulation/s4_3_runtime.py",
+    ROOT / "gr00t/simulation/s4_3_training.py",
+    ROOT / "scripts/simulation/evaluate_s4_3_policy_offline.py",
+    ROOT / "gr00t/tactile_unit/paired_contract.py",
+    ROOT / "scripts/tactile_unit/build_c5_causal_visual_cache.py",
+    ROOT / "scripts/tactile_unit/continuous_contact_bridge_common.py",
 )
 
 
@@ -108,8 +118,13 @@ def main() -> None:
         ],
         "statistical_code": str(STATISTICS_CODE.relative_to(ROOT)),
         "statistical_code_sha256": sha256_file(STATISTICS_CODE),
+        "decision_code": str(DECISION_CODE.relative_to(ROOT)),
+        "decision_code_sha256": sha256_file(DECISION_CODE),
         "rollout_code_sha256": {
             str(path.relative_to(ROOT)): sha256_file(path) for path in ROLLOUT_CODE
+        },
+        "policy_dependency_code_sha256": {
+            str(path.relative_to(ROOT)): sha256_file(path) for path in POLICY_DEPENDENCY_CODE
         },
         "policy_protocol_sha256": sha256_file(POLICY),
         "act_protocol_sha256": sha256_file(ACT),
@@ -131,6 +146,12 @@ def main() -> None:
         "jobs": training["jobs"],
         "expected_jobs": 36,
         "completed_jobs": 36,
+        "infrastructure_retries": (
+            read_json(ARTIFACT_ROOT / "training_infrastructure_retries.json")["retries"]
+            if (ARTIFACT_ROOT / "training_infrastructure_retries.json").is_file()
+            else []
+        ),
+        "scientific_performance_retries": 0,
         "hyperparameters": read_json(ACT)["optimizer"],
         "budget": read_json(ACT)["budget"],
         "status": "PASS",

@@ -144,41 +144,8 @@ def result_plots(
     save(fig, "08_closed_loop_success_by_task_variant.png")
 
     rows = rollouts["rollouts"]
-    macro = []
-    intervals = []
-    rng = np.random.default_rng(43020)
-    for variant in VARIANTS:
-        cube = np.empty((3, 3, 30), dtype=np.float64)
-        for task_index, task in enumerate(TASKS):
-            for training_seed in range(3):
-                scoped = sorted(
-                    [
-                        row
-                        for row in rows
-                        if row["task"] == task
-                        and row["variant"] == variant
-                        and row["training_seed"] == training_seed
-                    ],
-                    key=lambda row: row["reset_index"],
-                )
-                cube[task_index, training_seed] = [row["success"] for row in scoped]
-        macro.append(float(cube.mean()))
-        draws = []
-        for _ in range(10_000):
-            task_draw = rng.integers(0, 3, 3)
-            task_values = []
-            for task_index in task_draw:
-                seed_draw = rng.integers(0, 3, 3)
-                task_values.append(
-                    np.mean(
-                        [
-                            cube[task_index, seed_index, rng.integers(0, 30, 30)].mean()
-                            for seed_index in seed_draw
-                        ]
-                    )
-                )
-            draws.append(np.mean(task_values))
-        intervals.append(np.quantile(draws, [0.025, 0.975]))
+    macro = [primary["variants"][variant]["macro_success"] for variant in VARIANTS]
+    intervals = [primary["variants"][variant]["ci95"] for variant in VARIANTS]
     fig, axis = plt.subplots(figsize=(8, 5))
     error = np.asarray([[m - ci[0], ci[1] - m] for m, ci in zip(macro, intervals)]).T
     axis.bar(VARIANTS, macro, color=[COLORS[v] for v in VARIANTS], yerr=error, capsize=5)
