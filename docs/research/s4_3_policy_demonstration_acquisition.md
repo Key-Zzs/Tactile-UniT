@@ -67,3 +67,22 @@ python scripts/simulation/generate_s4_3_policy_expert_data.py --task TASK
 ```
 
 No ACT, Diffusion Policy, or later S4.3 stage is trained or started by this work.
+
+## Final acquisition result
+
+All 375 frozen formal attempts were executed. Native-success counts were 115/125
+for pinch_tongs, 120/125 for hammer_nail, and 125/125 for click_mouse; all
+per-task TRAIN, DEV, total-count, and 80% success-rate gates passed. The frozen
+policy dataset contains all 290 successful TRAIN episodes and all 70 successful
+DEV episodes. The 15 expert failures remain acquisition-audit-only.
+
+Per-task BC window counts exceed the frozen 5,000 TRAIN / 1,000 DEV minima, all
+source-isolation checks pass, and small non-selection samples are compatible with
+the unchanged S4.2 Contact-State, A0, C3, B3, and causal A+H interfaces. Exact
+numeric deterministic replay passed for two episodes per task. EGL JPEG bytes
+showed bounded pixel-level renderer nondeterminism, which is explicitly recorded
+and does not alter state, Action, tactile, native success, or numeric checksums.
+
+The PD9 decision is `S4_3_PD_COMPLETE_POLICY_DATA_READY`. This makes a fresh
+S4.3-0 restart ready; it does not establish ACT performance, policy closed-loop
+success, a Tactile-UniT policy benefit, Diffusion Policy benefit, or M4.

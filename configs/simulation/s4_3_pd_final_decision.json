@@ -1,0 +1,27 @@
+{
+  "schema": "tactile3d-unit.s4-3-pd-final-decision-summary.v1",
+  "stage": "PD9",
+  "status": "PASS",
+  "decision": "S4_3_PD_COMPLETE_POLICY_DATA_READY",
+  "historical_s4_3_0_decision": "S4_3_0_DEMONSTRATION_CONTRACT_FAIL",
+  "historical_result_modified": false,
+  "formal_attempts": 375,
+  "formal_successes": {
+    "pinch_tongs": 115,
+    "hammer_nail": 120,
+    "click_mouse": 125,
+    "total": 360
+  },
+  "policy_expert_train_episodes": 290,
+  "policy_expert_dev_episodes": 70,
+  "failed_attempts_audit_only": 15,
+  "s4_2_immutable": true,
+  "s4_3_0_restart": "READY",
+  "s4_3_1": "BLOCKED_UNTIL_RESTARTED_S4_3_0_PASSES",
+  "s4_3_2": "BLOCKED_UNTIL_S4_3_0_AND_S4_3_1_PASS",
+  "s4_3_3": "NOT_READY",
+  "policy_training_started": false,
+  "closed_loop_policy_benchmark_started": false,
+  "artifact": ".local/artifacts/simulation/s4_3_pd/final_decision.json",
+  "scientific_claim": "Valid task-solving expert demonstrations have been acquired and frozen for the S4.3 policy benchmark."
+}
