@@ -173,6 +173,7 @@ def main() -> None:
         "statistical_code": str(STATISTICS.relative_to(ROOT)),
         "statistical_code_sha256": sha256_file(STATISTICS),
         "checkpoint_count": 36,
+        "checkpoint_selection_complete": True,
         "checkpoint_sha256": checkpoints,
         "checkpoint_set_sha256": read_json(OLD_ROOT / "act_checkpoint_manifest.json")[
             "checkpoint_set_sha256"
@@ -198,6 +199,7 @@ def main() -> None:
         "policy_hyperparameter_change_allowed": False,
         "evaluation_seed_change_allowed": False,
         "scientific_rollout_performance_seen": False,
+        "rollout_performance_seen": False,
         "scientific_protocol_immutable_after_first_rollout": True,
         "package_hashes": packages,
         "python_versions": versions,
