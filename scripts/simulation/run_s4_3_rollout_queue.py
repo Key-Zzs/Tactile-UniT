@@ -16,14 +16,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from gr00t.simulation.s4_3_training import atomic_json, read_json  # noqa: E402
+from gr00t.simulation.s4_3_training import atomic_json, read_json, sha256_file  # noqa: E402
 from scripts.simulation.run_s4_3_training_queue import gpu_state  # noqa: E402
 
 TRAINING_JOBS = ROOT / ".local/artifacts/simulation/s4_3_restart/training_jobs.json"
-PRE_ROLLOUT = ROOT / ".local/artifacts/simulation/s4_3_restart/pre_rollout_freeze.json"
-JOB_ROOT = ROOT / ".local/artifacts/simulation/s4_3_restart/rollout_jobs"
-LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/rollout_queue"
-ARTIFACT = ROOT / ".local/artifacts/simulation/s4_3_restart/closed_loop_rollouts.json"
+PRE_ROLLOUT = ROOT / ".local/artifacts/simulation/s4_3_rr/pre_rollout_freeze_v2.json"
+JOB_ROOT = ROOT / ".local/artifacts/simulation/s4_3_rr/rollout_jobs"
+LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_rr/rollout_queue"
+ARTIFACT = ROOT / ".local/artifacts/simulation/s4_3_rr/closed_loop_rollouts.json"
+RETRY_ARTIFACT = ROOT / ".local/artifacts/simulation/s4_3_rr/infrastructure_retry_log.json"
 
 
 def now() -> str:
@@ -64,6 +65,15 @@ def main() -> None:
         or freeze.get("checkpoint_selection_complete") is not True
     ):
         raise RuntimeError("valid pre-rollout freeze is required")
+    for relative, expected in freeze["rollout_code_sha256"].items():
+        if sha256_file(ROOT / relative) != expected:
+            raise SystemExit("S4_3_RR_ROLLOUT_HARNESS_FAIL: frozen runtime hash mismatch")
+    if sha256_file(ROOT / freeze["evaluation_reset_config"]) != freeze[
+        "evaluation_reset_config_sha256"
+    ]:
+        raise SystemExit("S4_3_RR_ROLLOUT_HARNESS_FAIL: evaluation reset hash mismatch")
+    if sha256_file(ROOT / freeze["statistical_code"]) != freeze["statistical_code_sha256"]:
+        raise SystemExit("S4_3_RR_ROLLOUT_HARNESS_FAIL: statistics hash mismatch")
     common_git = Path(
         subprocess.run(
             ["git", "rev-parse", "--git-common-dir"],
@@ -87,15 +97,24 @@ def main() -> None:
             queue.remove(row)
     running: dict[int, dict[str, Any]] = {}
     attempts: dict[tuple[str, str, int], int] = {}
+    infrastructure_retries: list[dict[str, Any]] = []
     started_at = now()
     LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    atomic_json(
+        RETRY_ARTIFACT,
+        {
+            "schema": "tactile3d-unit.s4-3-rr-infrastructure-retries.v1",
+            "retries": infrastructure_retries,
+            "status": "PASS",
+        },
+    )
 
     def progress() -> None:
         atomic_json(
             ARTIFACT,
             {
                 "schema": "tactile3d-unit.s4-3-closed-loop-rollouts.v1",
-                "stage": "R12",
+                "stage": "RR6",
                 "start_time": started_at,
                 "end_time": None,
                 "expected_jobs": 36,
@@ -134,8 +153,46 @@ def main() -> None:
                     }
                 )
             elif return_code == 75 and attempts[key] == 1:
+                infrastructure_retries.append(
+                    {
+                        "task": row["task"],
+                        "variant": row["variant"],
+                        "training_seed": row["training_seed"],
+                        "attempt": 1,
+                        "exit_code": return_code,
+                        "same_checkpoint_sha256": row["checkpoint_sha256"],
+                        "same_scientific_configuration": True,
+                        "log": item["record"]["log"],
+                        "log_sha256": sha256_file(ROOT / item["record"]["log"]),
+                    }
+                )
+                atomic_json(
+                    RETRY_ARTIFACT,
+                    {
+                        "schema": "tactile3d-unit.s4-3-rr-infrastructure-retries.v1",
+                        "retries": infrastructure_retries,
+                        "status": "PASS",
+                    },
+                )
                 queue.append(row)
             else:
+                atomic_json(
+                    RETRY_ARTIFACT,
+                    {
+                        "schema": "tactile3d-unit.s4-3-rr-infrastructure-retries.v1",
+                        "retries": infrastructure_retries,
+                        "terminal_failure": {
+                            "task": row["task"],
+                            "variant": row["variant"],
+                            "training_seed": row["training_seed"],
+                            "attempt": attempts[key],
+                            "exit_code": return_code,
+                            "log": item["record"]["log"],
+                            "log_sha256": sha256_file(ROOT / item["record"]["log"]),
+                        },
+                        "status": "FAIL",
+                    },
+                )
                 progress()
                 raise SystemExit(f"S4_3_2_ENVIRONMENT_FAIL: {key}, exit={return_code}")
             del running[gpu]
@@ -157,7 +214,10 @@ def main() -> None:
             row = queue.pop(0)
             key = (row["task"], row["variant"], row["training_seed"])
             attempts[key] = attempts.get(key, 0) + 1
-            log_path = LOG_ROOT / f"{row['task']}_{row['variant']}_seed{row['training_seed']}.log"
+            log_path = LOG_ROOT / (
+                f"{row['task']}_{row['variant']}_seed{row['training_seed']}"
+                f"_attempt{attempts[key]}.log"
+            )
             log = log_path.open("w", encoding="utf-8")
             environment = os.environ.copy()
             environment.update(
@@ -166,6 +226,7 @@ def main() -> None:
                     "CUDA_VISIBLE_DEVICES": str(gpu),
                     "S4_3_PHYSICAL_GPU": str(gpu),
                     "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+                    "S4_3_ROLLOUT_ATTEMPT": str(attempts[key]),
                 }
             )
             environment.pop("DISPLAY", None)
@@ -230,7 +291,7 @@ def main() -> None:
         raise RuntimeError("closed-loop shared-reset coverage mismatch")
     final = {
         "schema": "tactile3d-unit.s4-3-closed-loop-rollouts.v1",
-        "stage": "R12",
+        "stage": "RR6",
         "start_time": started_at,
         "end_time": now(),
         "jobs": completed,
@@ -242,6 +303,14 @@ def main() -> None:
         "status": "PASS",
     }
     atomic_json(ARTIFACT, final)
+    atomic_json(
+        RETRY_ARTIFACT,
+        {
+            "schema": "tactile3d-unit.s4-3-rr-infrastructure-retries.v1",
+            "retries": infrastructure_retries,
+            "status": "PASS",
+        },
+    )
     print(json.dumps({"jobs": 36, "rollouts": 1080, "status": "PASS"}, sort_keys=True))
 
 

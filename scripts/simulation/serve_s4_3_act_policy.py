@@ -22,6 +22,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from gr00t.simulation.s4_3_act import FrozenS42PolicyStack  # noqa: E402
+from gr00t.simulation.s4_3_transport import (  # noqa: E402
+    cleanup_server_endpoint,
+    load_endpoint_manifest,
+    prepare_server_endpoint,
+    register_server_endpoint,
+)
 from gr00t.simulation.s4_3_training import set_deterministic, sha256_file  # noqa: E402
 from gr00t.tactile_unit.paired_contract import preprocess_trex_rgb  # noqa: E402
 from scripts.simulation.evaluate_s4_3_policy_offline import cold_load  # noqa: E402
@@ -33,7 +39,7 @@ VISION_IDENTITY = ROOT / ".local/artifacts/simulation/s4_2_formal/vision_identit
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--socket", required=True, type=Path)
+    parser.add_argument("--endpoint-manifest", required=True, type=Path)
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--checkpoint-sha256", required=True)
     parser.add_argument("--task", required=True)
@@ -46,6 +52,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    endpoint, _ = load_endpoint_manifest(args.endpoint_manifest)
     if sha256_file(args.checkpoint) != args.checkpoint_sha256:
         raise RuntimeError("policy server checkpoint SHA256 mismatch")
     set_deterministic(args.seed)
@@ -69,12 +76,22 @@ def main() -> None:
     if vision.training or vision_load["trainable_parameters"] != 0:
         raise RuntimeError("policy server Vision boundary is not frozen")
     stack = FrozenS42PolicyStack().to(device) if args.variant in {"P2", "P3"} else None
-    args.socket.parent.mkdir(parents=True, exist_ok=True)
-    args.socket.unlink(missing_ok=True)
+    prepare_server_endpoint(endpoint)
     first_inference = True
-    listener = Listener(str(args.socket), family="AF_UNIX", authkey=b"s4_3_local_v1")
-    print(json.dumps({"socket": str(args.socket), "status": "READY"}), flush=True)
+    listener = None
     try:
+        listener = Listener(endpoint.path, family="AF_UNIX", authkey=b"s4_3_local_v1")
+        register_server_endpoint(endpoint)
+        print(
+            json.dumps(
+                {
+                    "endpoint": endpoint.socket_path.name,
+                    "endpoint_bytes": endpoint.encoded_length,
+                    "status": "READY",
+                }
+            ),
+            flush=True,
+        )
         connection = listener.accept()
         try:
             while True:
@@ -149,8 +166,9 @@ def main() -> None:
         finally:
             connection.close()
     finally:
-        listener.close()
-        args.socket.unlink(missing_ok=True)
+        if listener is not None:
+            listener.close()
+        cleanup_server_endpoint(endpoint, allow_unregistered_own_socket=True)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 import traceback
@@ -25,23 +26,33 @@ from gr00t.simulation.s4_3_runtime import (  # noqa: E402
     CausalHistoryBuffer,
     mapped_force_metrics,
 )
+from gr00t.simulation.s4_3_transport import load_endpoint_manifest  # noqa: E402
 
 EVAL_CONFIG = ROOT / "configs/simulation/s4_3_policy_eval_v1.json"
 PROTOCOL = ROOT / "configs/simulation/s4_3_restart_policy_protocol.json"
-LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/closed_loop"
-RAW_VIDEO_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/raw_videos"
 WARMUP_ACTION_STEPS = 25
 POLICY_RGB_JPEG_QUALITY = 80
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--socket", required=True, type=Path)
+    parser.add_argument("--endpoint-manifest", required=True, type=Path)
     parser.add_argument("--task", required=True)
     parser.add_argument("--variant", required=True)
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--checkpoint-sha256", required=True)
+    parser.add_argument(
+        "--run-kind", choices=("scientific", "rr_smoke"), default="scientific"
+    )
+    parser.add_argument("--evaluation-config", type=Path, default=EVAL_CONFIG)
     return parser.parse_args()
+
+
+def output_roots(run_kind: str) -> tuple[Path, Path]:
+    base = ROOT / ".local/logs/simulation/s4_3_rr"
+    if run_kind == "scientific":
+        return base / "closed_loop", base / "raw_videos"
+    return base / "production_smoke/closed_loop", base / "production_smoke/raw_videos"
 
 
 def sha256_file(path: Path) -> str:
@@ -88,8 +99,9 @@ def collect(
     args: argparse.Namespace,
     timeout: int,
 ) -> dict[str, Any]:
+    log_root, raw_video_root = output_roots(args.run_kind)
     rollout_id = f"{reset['evaluation_reset_id']}-{args.variant}-trainseed{args.seed}"
-    destination = LOG_ROOT / args.task / args.variant / f"seed_{args.seed}" / rollout_id
+    destination = log_root / args.task / args.variant / f"seed_{args.seed}" / rollout_id
     metadata_path = destination / "metadata.json"
     identity = {
         "rollout_id": rollout_id,
@@ -113,7 +125,7 @@ def collect(
     destination.mkdir(parents=True, exist_ok=True)
     trace_path = destination / "trace.npz"
     video_path = (
-        RAW_VIDEO_ROOT / args.task / args.variant / f"seed_{args.seed}" / f"{rollout_id}.mp4"
+        raw_video_root / args.task / args.variant / f"seed_{args.seed}" / f"{rollout_id}.mp4"
     )
     video_path.parent.mkdir(parents=True, exist_ok=True)
     writer = cv2.VideoWriter(str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 20.0, (320, 320))
@@ -137,6 +149,7 @@ def collect(
         "proprio": [],
         "sim_tactile": [],
         "policy_action": [],
+        "env_action": [],
         "total_normal_force": [],
         "total_tangential_force": [],
         "success": [],
@@ -194,7 +207,7 @@ def collect(
             if not np.isfinite(action).all():
                 termination_reason = "NUMERIC_FAILURE"
                 break
-            next_observation, _, _, _ = adapter.step(action)
+            next_observation, _, _, env_action = adapter.step(action)
             tactile_matrix = causal.tactile_history[-1].reshape(5, 6)
             rows["policy_step"].append(policy_step)
             rows["control_step"].append(observation.control_step)
@@ -203,6 +216,7 @@ def collect(
             rows["proprio"].append(causal.proprio)
             rows["sim_tactile"].append(causal.tactile_history[-1])
             rows["policy_action"].append(action)
+            rows["env_action"].append(env_action.values)
             rows["total_normal_force"].append(float(np.maximum(tactile_matrix[:, 1], 0).sum()))
             rows["total_tangential_force"].append(float(np.maximum(tactile_matrix[:, 2], 0).sum()))
             rows["success"].append(bool(next_observation.success))
@@ -258,6 +272,8 @@ def collect(
     metadata = {
         "schema": "tactile3d-unit.s4-3-closed-loop-rollout.v1",
         **identity,
+        "run_kind": args.run_kind,
+        "scientific_result": args.run_kind == "scientific",
         "success": success,
         "termination_reason": termination_reason,
         "control_steps": len(actions),
@@ -270,6 +286,12 @@ def collect(
         "warmup_counted_in_timeout": False,
         "replan_stride": 5,
         "action_chunk_shape": [27, 22],
+        "action_adapter": {
+            "source": "gr00t.simulation.dexjoco_adapter.policy_action_to_env_action",
+            "policy_shape": [22],
+            "environment_shape": [23],
+            "status": "PASS" if arrays["env_action"].shape[1:] == (23,) else "FAIL",
+        },
         "vision_transport": {
             "source": "current RGB I_t only",
             "codec": "JPEG",
@@ -296,6 +318,13 @@ def collect(
         "runtime_exceptions": runtime_exceptions,
         "region_resolution": region_audit,
         "wall_duration_sec": time.time() - started_at,
+        "server_client_timestamps": {
+            "rollout_start_epoch_sec": started_at,
+            "rollout_end_epoch_sec": time.time(),
+        },
+        "physical_gpu": int(os.environ["S4_3_PHYSICAL_GPU"]),
+        "logical_device": "cuda:0",
+        "socket_endpoint_short_hash": args.endpoint_job_hash,
         "future_observation_read": False,
         "expert_action_read": False,
         "actual_future_contact_read": False,
@@ -307,13 +336,28 @@ def collect(
 
 def main() -> None:
     args = parse_args()
-    evaluation = json.loads(EVAL_CONFIG.read_text(encoding="utf-8"))
+    endpoint, _ = load_endpoint_manifest(args.endpoint_manifest)
+    args.endpoint_job_hash = endpoint.job_hash
+    evaluation = json.loads(args.evaluation_config.read_text(encoding="utf-8"))
     protocol = json.loads(PROTOCOL.read_text(encoding="utf-8"))
     resets = [row for row in evaluation["resets"] if row["task"] == args.task]
-    if len(resets) != 30:
-        raise RuntimeError("frozen task reset count is not 30")
-    timeout = int(protocol["timeouts"]["tasks"][args.task]["timeout_steps"])
-    connection = Client(str(args.socket), family="AF_UNIX", authkey=b"s4_3_local_v1")
+    if args.run_kind == "scientific":
+        if args.evaluation_config.resolve() != EVAL_CONFIG.resolve() or len(resets) != 30:
+            raise RuntimeError("scientific run must use the exact 30-reset POLICY_EVAL_V1 task set")
+        timeout = int(protocol["timeouts"]["tasks"][args.task]["timeout_steps"])
+    else:
+        scientific_ids = {
+            row["evaluation_reset_id"]
+            for row in json.loads(EVAL_CONFIG.read_text(encoding="utf-8"))["resets"]
+        }
+        if (
+            not resets
+            or any(row.get("seed_namespace") != "RR_SMOKE" for row in resets)
+            or any(row["evaluation_reset_id"] in scientific_ids for row in resets)
+        ):
+            raise RuntimeError("RR smoke resets must be disjoint from POLICY_EVAL_V1")
+        timeout = 100
+    connection = Client(endpoint.path, family="AF_UNIX", authkey=b"s4_3_local_v1")
     try:
         connection.send({"command": "ping"})
         if connection.recv().get("status") != "READY":
@@ -334,8 +378,13 @@ def main() -> None:
                 ),
                 flush=True,
             )
-        if len(results) != 30:
+        if len(results) != len(resets):
+            raise RuntimeError("rollout job did not produce every configured reset")
+        if args.run_kind == "scientific" and len(results) != 30:
             raise RuntimeError("rollout job did not produce exactly 30 frozen resets")
+        connection.send({"command": "shutdown"})
+        if connection.recv().get("status") != "STOPPING":
+            raise RuntimeError("policy server did not acknowledge clean shutdown")
     finally:
         connection.close()
 

@@ -9,17 +9,24 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from gr00t.simulation.s4_3_training import atomic_json, sha256_file  # noqa: E402
+from gr00t.simulation.s4_3_transport import (  # noqa: E402
+    EndpointContractError,
+    build_runtime_endpoint,
+    cleanup_server_endpoint,
+    write_endpoint_manifest,
+)
 
-TMP_ROOT = ROOT / ".local/tmp/simulation/s4_3_restart/rollout_sockets"
-LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/rollout_jobs"
-ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_restart/rollout_jobs"
-ROLLOUT_ROOT = ROOT / ".local/logs/simulation/s4_3_restart/closed_loop"
+TMP_ROOT = ROOT / ".local/tmp/simulation/s4_3_rr/endpoint_manifests"
+LOG_ROOT = ROOT / ".local/logs/simulation/s4_3_rr/rollout_jobs"
+ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_rr/rollout_jobs"
+EVAL_CONFIG = ROOT / "configs/simulation/s4_3_policy_eval_v1.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,7 +36,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--checkpoint-sha256", required=True)
+    parser.add_argument(
+        "--run-kind", choices=("scientific", "rr_smoke"), default="scientific"
+    )
+    parser.add_argument("--evaluation-config", type=Path, default=EVAL_CONFIG)
     return parser.parse_args()
+
+
+def run_roots(run_kind: str) -> tuple[Path, Path, Path]:
+    if run_kind == "scientific":
+        return (
+            LOG_ROOT,
+            ARTIFACT_ROOT,
+            ROOT / ".local/logs/simulation/s4_3_rr/closed_loop",
+        )
+    return (
+        ROOT / ".local/logs/simulation/s4_3_rr/production_smoke/jobs",
+        ROOT / ".local/artifacts/simulation/s4_3_rr/production_smoke/jobs",
+        ROOT / ".local/logs/simulation/s4_3_rr/production_smoke/closed_loop",
+    )
 
 
 def main() -> None:
@@ -41,18 +66,40 @@ def main() -> None:
     if sha256_file(args.checkpoint) != args.checkpoint_sha256:
         raise RuntimeError("rollout job checkpoint identity mismatch")
     job_id = f"{args.task}_{args.variant}_seed{args.seed}"
-    socket_path = TMP_ROOT / f"{job_id}.sock"
-    server_log_path = LOG_ROOT / f"{job_id}_server.log"
-    client_log_path = LOG_ROOT / f"{job_id}_client.log"
-    for path in (TMP_ROOT, LOG_ROOT, ARTIFACT_ROOT):
+    attempt = int(os.environ.get("S4_3_ROLLOUT_ATTEMPT", "1"))
+    if attempt < 1:
+        raise RuntimeError("S4_3_ROLLOUT_ATTEMPT must be positive")
+    log_root, artifact_root, rollout_root = run_roots(args.run_kind)
+    server_log_path = log_root / f"{job_id}_attempt{attempt}_server.log"
+    client_log_path = log_root / f"{job_id}_attempt{attempt}_client.log"
+    endpoint_manifest = TMP_ROOT / f"{args.run_kind}_{job_id}_attempt{attempt}_{os.getpid()}.json"
+    endpoint = build_runtime_endpoint(
+        experiment_identity="S4.3-RR-ACT-rollout-v2",
+        task=args.task,
+        variant=args.variant,
+        training_seed=args.seed,
+        worker_identity=f"{args.run_kind}:{job_id}",
+    )
+    write_endpoint_manifest(
+        endpoint_manifest,
+        endpoint,
+        {
+            "run_kind": args.run_kind,
+            "task": args.task,
+            "variant": args.variant,
+            "training_seed": args.seed,
+            "checkpoint_sha256": args.checkpoint_sha256,
+            "evaluation_config_sha256": sha256_file(args.evaluation_config),
+        },
+    )
+    for path in (TMP_ROOT, log_root, artifact_root):
         path.mkdir(parents=True, exist_ok=True)
-    socket_path.unlink(missing_ok=True)
     server_log = server_log_path.open("w", encoding="utf-8")
     server_command = [
         sys.executable,
         str(ROOT / "scripts/simulation/serve_s4_3_act_policy.py"),
-        "--socket",
-        str(socket_path),
+        "--endpoint-manifest",
+        str(endpoint_manifest),
         "--checkpoint",
         str(args.checkpoint),
         "--checkpoint-sha256",
@@ -79,7 +126,7 @@ def main() -> None:
     )
     try:
         deadline = time.monotonic() + 180
-        while not socket_path.exists():
+        while not endpoint.socket_path.exists() or not endpoint.lease_path.exists():
             if server.poll() is not None:
                 raise RuntimeError("policy server exited before socket readiness")
             if time.monotonic() >= deadline:
@@ -91,8 +138,8 @@ def main() -> None:
         client_command = [
             dex_python,
             str(ROOT / "scripts/simulation/run_s4_3_policy_rollouts_dex.py"),
-            "--socket",
-            str(socket_path),
+            "--endpoint-manifest",
+            str(endpoint_manifest),
             "--task",
             args.task,
             "--variant",
@@ -101,6 +148,10 @@ def main() -> None:
             str(args.seed),
             "--checkpoint-sha256",
             args.checkpoint_sha256,
+            "--run-kind",
+            args.run_kind,
+            "--evaluation-config",
+            str(args.evaluation_config),
         ]
         with client_log_path.open("w", encoding="utf-8") as client_log:
             client_result = subprocess.run(
@@ -127,13 +178,22 @@ def main() -> None:
         raise
     finally:
         server_log.close()
-        socket_path.unlink(missing_ok=True)
+        try:
+            cleanup_server_endpoint(endpoint, allow_unregistered_own_socket=True)
+        except EndpointContractError:
+            pass
 
     metadata_paths = sorted(
-        (ROLLOUT_ROOT / args.task / args.variant / f"seed_{args.seed}").glob("*/metadata.json")
+        (rollout_root / args.task / args.variant / f"seed_{args.seed}").glob("*/metadata.json")
     )
-    if len(metadata_paths) != 30:
-        raise RuntimeError("rollout job does not contain exactly 30 reset results")
+    expected_resets = sum(
+        row["task"] == args.task
+        for row in json.loads(args.evaluation_config.read_text(encoding="utf-8"))["resets"]
+    )
+    if args.run_kind == "scientific" and expected_resets != 30:
+        raise RuntimeError("scientific rollout job did not receive 30 frozen resets")
+    if len(metadata_paths) != expected_resets:
+        raise RuntimeError("rollout job reset-result cardinality mismatch")
     rollouts = [json.loads(path.read_text(encoding="utf-8")) for path in metadata_paths]
     if any(
         row["task"] != args.task
@@ -146,7 +206,10 @@ def main() -> None:
         raise RuntimeError("rollout job metadata identity mismatch")
     summary = {
         "schema": "tactile3d-unit.s4-3-rollout-job.v1",
-        "stage": "R12",
+        "stage": "RR4" if args.run_kind == "rr_smoke" else "RR6",
+        "run_kind": args.run_kind,
+        "scientific_result": args.run_kind == "scientific",
+        "attempt": attempt,
         "task": args.task,
         "variant": args.variant,
         "training_seed": args.seed,
@@ -154,13 +217,21 @@ def main() -> None:
         "logical_device": "cuda:0",
         "checkpoint": str(args.checkpoint.relative_to(ROOT)),
         "checkpoint_sha256": args.checkpoint_sha256,
-        "rollouts": 30,
+        "rollouts": expected_resets,
         "successes": sum(row["success"] for row in rollouts),
         "runtime_exception_rollouts": sum(bool(row["runtime_exceptions"]) for row in rollouts),
         "server_log": str(server_log_path.relative_to(ROOT)),
         "server_log_sha256": sha256_file(server_log_path),
         "client_log": str(client_log_path.relative_to(ROOT)),
         "client_log_sha256": sha256_file(client_log_path),
+        "endpoint": {
+            "algorithm": "$RUNTIME_TMP/tu3d_<short_hash>_<pid>_<nonce>.sock",
+            "basename": endpoint.socket_path.name,
+            "job_hash": endpoint.job_hash,
+            "encoded_length": endpoint.encoded_length,
+            "ceiling_bytes": endpoint.ceiling_bytes,
+            "cleanup_pass": not endpoint.socket_path.exists() and not endpoint.lease_path.exists(),
+        },
         "metadata": [
             {
                 "rollout_id": row["rollout_id"],
@@ -171,9 +242,25 @@ def main() -> None:
         ],
         "status": "PASS",
     }
-    atomic_json(ARTIFACT_ROOT / f"{job_id}.json", summary)
+    atomic_json(artifact_root / f"{job_id}.json", summary)
     print(json.dumps(summary, sort_keys=True))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException as error:
+        traceback.print_exc()
+        print(
+            json.dumps(
+                {
+                    "classification": "INFRASTRUCTURE_FAILURE",
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                    "status": "FAIL",
+                },
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+        raise SystemExit(75) from error

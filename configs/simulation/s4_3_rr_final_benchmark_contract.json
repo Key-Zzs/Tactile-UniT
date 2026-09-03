@@ -1,0 +1,68 @@
+{
+  "schema": "tactile3d-unit.s4-3-rr-final-benchmark-contract.v1",
+  "stage": "RR5",
+  "evaluation": "POLICY_EVAL_V1",
+  "tasks": [
+    "pinch_tongs",
+    "hammer_nail",
+    "click_mouse"
+  ],
+  "variants": {
+    "P0": "ACT_VP",
+    "P1": "ACT_VP_RAW",
+    "P2": "ACT_VP_H",
+    "P3": "ACT_TACTILE_UNIT"
+  },
+  "training_seeds": [
+    0,
+    1,
+    2
+  ],
+  "canonical_checkpoints": 36,
+  "resets_per_task": 30,
+  "evaluation_reset_specs": 90,
+  "expected_scientific_rollouts": 1080,
+  "matched_reset_design": true,
+  "warmup": {
+    "duration_sec": 0.5,
+    "samples": 26,
+    "counted_in_timeout": false
+  },
+  "action_chunk_shape": [
+    27,
+    22
+  ],
+  "replan_stride": 5,
+  "action_adapter": "gr00t.simulation.dexjoco_adapter.policy_action_to_env_action",
+  "runtime_uncertainty": "NOT_AVAILABLE_CAUSALLY_FOR_S4_3_2",
+  "uncertainty_intervention": false,
+  "primary_endpoint": "equal-weight 3-task macro success",
+  "primary_contrasts": [
+    "P1-P0",
+    "P2-P1",
+    "P3-P2",
+    "P3-P0"
+  ],
+  "secondary_tactile_active_tasks": [
+    "pinch_tongs",
+    "click_mouse"
+  ],
+  "mapped_tactile_inactive_control_task": "hammer_nail",
+  "material_effect": {
+    "MATERIAL_IMPROVEMENT": "delta >= +0.05 and paired hierarchical bootstrap CI lower > 0",
+    "MATERIAL_HURT": "delta <= -0.05 and paired hierarchical bootstrap CI upper < 0",
+    "otherwise": "NO_MATERIAL_DIFFERENCE"
+  },
+  "statistics": {
+    "method": "paired hierarchical bootstrap preserving task, matched training seed, and matched evaluation reset",
+    "samples": 10000,
+    "seed": 43020,
+    "confidence": 0.95
+  },
+  "training_allowed": false,
+  "checkpoint_selection_allowed": false,
+  "policy_hyperparameter_change_allowed": false,
+  "evaluation_seed_change_allowed": false,
+  "scientific_rollout_performance_seen": false,
+  "status": "FROZEN"
+}
