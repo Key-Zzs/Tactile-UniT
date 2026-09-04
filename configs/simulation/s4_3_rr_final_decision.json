@@ -1,0 +1,124 @@
+{
+  "schema": "tactile3d-unit.s4-3-rr-final-decision.v1",
+  "stage": "S4.3-RR",
+  "status": "COMPLETE",
+  "historical_s4_3_2_failure": {
+    "decision": "S4_3_2_ENVIRONMENT_FAIL",
+    "cause": "AF_UNIX_PATH_TOO_LONG",
+    "scientific_rollouts_started": 0,
+    "policy_performance_seen": false,
+    "modified": false
+  },
+  "runtime_remediation": {
+    "classification": "IPC_TRANSPORT_PATH_LENGTH_BUG",
+    "endpoint_format": "$RUNTIME_TMP/tu3d_<short_hash>_<pid>_<nonce>.sock",
+    "hard_endpoint_ceiling_bytes": 80,
+    "transport_gate": "PASS",
+    "production_smoke_gate": "PASS"
+  },
+  "frozen_benchmark": {
+    "tasks": [
+      "pinch_tongs",
+      "hammer_nail",
+      "click_mouse"
+    ],
+    "variants": [
+      "P0",
+      "P1",
+      "P2",
+      "P3"
+    ],
+    "training_seeds": [
+      0,
+      1,
+      2
+    ],
+    "resets_per_checkpoint": 30,
+    "canonical_checkpoints": 36,
+    "canonical_rollouts": 1080,
+    "canonical_scientific_retries": 0,
+    "controller_restarts": 2,
+    "pre_reset_infrastructure_relaunches": 1,
+    "scientific_failures_retained": 1062,
+    "reset_replacements": 0,
+    "completeness": "PASS",
+    "validity": "PASS"
+  },
+  "success_rate_by_task": {
+    "pinch_tongs": {
+      "P0": 0.0,
+      "P1": 0.08888888888888889,
+      "P2": 0.1,
+      "P3": 0.0
+    },
+    "hammer_nail": {
+      "P0": 0.0,
+      "P1": 0.011111111111111112,
+      "P2": 0.0,
+      "P3": 0.0
+    },
+    "click_mouse": {
+      "P0": 0.0,
+      "P1": 0.0,
+      "P2": 0.0,
+      "P3": 0.0
+    }
+  },
+  "primary_macro_success": {
+    "P0": 0.0,
+    "P1": 0.03333333333333333,
+    "P2": 0.03333333333333333,
+    "P3": 0.0
+  },
+  "primary_comparisons": {
+    "P1-P0": {
+      "delta": 0.03333333333333333,
+      "ci95": [
+        0.0,
+        0.09999999999999999
+      ],
+      "classification": "NO_MATERIAL_DIFFERENCE"
+    },
+    "P2-P1": {
+      "delta": 0.0,
+      "ci95": [
+        -0.05555555555555555,
+        0.05925925925925926
+      ],
+      "classification": "NO_MATERIAL_DIFFERENCE"
+    },
+    "P3-P2": {
+      "delta": -0.03333333333333333,
+      "ci95": [
+        -0.1037037037037037,
+        0.0
+      ],
+      "classification": "NO_MATERIAL_DIFFERENCE"
+    },
+    "P3-P0": {
+      "delta": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "classification": "NO_MATERIAL_DIFFERENCE"
+    }
+  },
+  "policy_learning_sanity": "WEAK",
+  "s4_3_2_decision": "S4_3_2_ACT_BENCHMARK_WEAK",
+  "s4_3_3_readiness": "NOT_READY",
+  "positive_tactile_unit_gain_required_for_s4_3_3": false,
+  "warnings": [
+    "ACT_WEAK",
+    "CLICK_MOUSE_ZERO_SUCCESS",
+    "P0_ZERO_SUCCESS",
+    "P3_ZERO_SUCCESS",
+    "OFFLINE_ACTION_ERROR_WARNING",
+    "HAMMER_NAIL_MAPPED_TACTILE_INACTIVE",
+    "FROZEN_CAUSAL_UNCERTAINTY_UNAVAILABLE",
+    "CONTROLLER_RESTART_RECORD_RECONSTRUCTED_AFTER_QUEUE_COMPLETION"
+  ],
+  "next_step": "Pre-register a separate ACT competence remediation/re-baseline with fresh evaluation resets; do not tune on or reuse exposed POLICY_EVAL_V1 results for model selection.",
+  "s4_3_3_started": false,
+  "diffusion_policy_training_started": false
+}

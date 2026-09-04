@@ -1,4 +1,4 @@
-# Restarted S4.3-0 to S4.3-2 Causal ACT Policy Benchmark Result
+# S4.3-RR ACT Rollout Runtime Remediation & Frozen Benchmark Resume Result
 
 ## 1. Git
 
@@ -6,17 +6,16 @@ Branch:
 develop/sim-benchmark
 
 Starting HEAD:
-ab359b63518baaec374d22852b2d16863ea4842a
+862c93681d68fa86b628e62b219b702680a114ab
 
 Final HEAD:
 SELF — the local commit containing this report
 
 Commits:
 
-- f86cf49297462173bbc6e85c635b12f2316ad7b8 — test(sim): freeze restarted S4.3 ACT benchmark protocol
-- dbf6b769054d49692c3ff704ac88077bf9de99a7 — feat(sim): establish causal Tactile-UniT ACT integration
-- f7dc99c9293dd7c238caef34a0707176041df076 — feat(sim): add ACT tactile policy baselines
-- final local commit — eval(sim): record restarted S4.3 R12 failure
+- eeece4f5333375ab4e4f11b45a4533699315c6b0 — fix(sim): harden ACT rollout IPC transport
+- 86da21bc03f12f52a22073cc003ec275438f6b35 — test(sim): refreeze ACT closed-loop rollout harness
+- final local commit — eval(sim): close frozen ACT policy benchmark
 
 Push:
 NOT PERFORMED
@@ -27,103 +26,199 @@ NOT CREATED
 Working tree:
 Clean after the final local commit.
 
-## 2. Historical Failure Preservation
+## 2. Historical S4.3-2 Failure Preservation
 
-Previous S4.3-0:
+Historical decision:
+S4_3_2_ENVIRONMENT_FAIL
 
-S4_3_0_DEMONSTRATION_CONTRACT_FAIL
+Historical cause:
+AF_UNIX_PATH_TOO_LONG
 
-Modified:
+Old endpoint bytes:
+118
+
+Old platform payload limit:
+107
+
+Scientific rollouts previously started:
+0
+
+Policy performance previously seen:
 NO
 
-Old 210 probing episodes used for BC:
+Historical result modified:
 NO
 
-Restart basis:
+## 3. Frozen Scientific State
 
-S4_3_PD_COMPLETE_POLICY_DATA_READY
+ACT checkpoints:
+36
 
-## 3. Frozen Policy Dataset
+Checkpoint hashes unchanged:
+PASS — all 36 are byte-identical; checkpoint-set SHA256 is `152ce90961e0c943d21a554b4b564ba80b4a6520e78073f6edba1624512b78c0`.
 
-TRAIN:
-
-pinch_tongs:
-90 BC-eligible episodes
-
-hammer_nail:
-100 BC-eligible episodes
-
-click_mouse:
-100 BC-eligible episodes
-
-DEV:
-
-pinch_tongs:
-25 BC-eligible episodes
-
-hammer_nail:
-20 BC-eligible episodes
-
-click_mouse:
-25 BC-eligible episodes
-
-BC-eligible totals:
-290 TRAIN / 70 DEV. Fifteen native-failure attempts remain audit-only.
-
-Valid BC windows:
-115,575 total: pinch_tongs 33,905 TRAIN / 8,815 DEV; hammer_nail 19,150 / 4,015; click_mouse 43,105 / 6,585.
-
-Manifest SHA:
-576080b8c19265e965ab593f74be053d5646917d1752a967c438e76f83157efa
-
-Dataset content SHA:
-a334af12ab2c5bbfbd46b47e1167f51fe194c97bbd69fb945d760f96b648d7f4
-
-Mutation:
-NO
-
-## 4. Policy Benchmark Protocol
+Policy variants:
+P0/P1/P2/P3
 
 Training seeds:
 0, 1, 2
 
-Evaluation resets/task:
-30
-
-Timeouts:
-pinch_tongs 823; hammer_nail 635; click_mouse 1000 control steps. The common 0.5 s / 26-sample warm-up is excluded.
+Evaluation resets:
+90 frozen `POLICY_EVAL_V1` reset specifications; 30 per task.
 
 Success predicates:
+Unchanged native pinch-height/pinch-count, nail-depth, and mouse-display contracts; contract SHA256 `7268e8d3dce846621157dcf982e15b38321d0cf8952024f03fdfcd77c729d2f9`.
 
-- pinch_tongs: tongs height at least table + 0.10 m and pinch count at least 3 continuously for 30 control steps.
-- hammer_nail: nail depth at least 0.04 m.
-- click_mouse: mouse remains inside mousepad and display is blue for 10 consecutive control steps.
+Timeouts:
+pinch_tongs 823, hammer_nail 635, click_mouse 1000 post-warm-up control steps.
 
-Primary endpoint:
-3-task macro success
+Stride:
+5
 
-Secondary tactile-active tasks:
-pinch_tongs + click_mouse
+Scientific contract mutation:
+NO
 
-Hammer warning:
-HAMMER_NAIL_MAPPED_TACTILE_INACTIVE
+## 4. AF_UNIX Remediation
 
-Protocol SHA:
-d08eda3a7005981b88f4623f4b4b85f759efd0ff95d32e2f21073469c7edfd20
+Root cause:
+IPC_TRANSPORT_PATH_LENGTH_BUG, independent of checkpoints, task physics, DexJoCo state, Action adaptation, success criteria, and S4.2 representations.
 
-## 5. GPU Execution
+Old construction:
+`$REPOSITORY/.local/tmp/simulation/s4_3_restart/rollout_sockets/<task>_<variant>_seed<seed>.sock`
 
-Eligible GPUs:
-0,1,2,3 under the frozen scheduler; only GPU1 was idle at R0.
+New construction:
+Short private runtime namespace plus a digest, process identity, and nonce.
 
-Jobs:
-36 ACT training jobs; 36 checkpoint offline evaluations; 1 rollout worker launch attempt.
+Runtime root:
+Prefer `$XDG_RUNTIME_DIR/tu3d`; otherwise use `$SYSTEM_TEMP/tu3d-<uid>`.
 
-Per-GPU counts:
-GPU1: all 36 training jobs, all 36 offline checkpoint records, and the single failed rollout worker attempt. GPU0/GPU2/GPU3: zero benchmark jobs.
+Endpoint format:
+`$RUNTIME_TMP/tu3d_<short_hash>_<pid>_<nonce>.sock`
+
+Maximum encoded endpoint length:
+54 bytes in the 36-identity transport audit; 57 bytes in production smoke and scientific workers.
+
+Hard endpoint ceiling:
+80 bytes
+
+Server/client centralized builder:
+PASS
+
+Stale cleanup:
+Private namespace, uid, registered-PID liveness, socket type, and inode ownership are all checked before reclamation; normal and failed startup clean up their own endpoint.
+
+Scientific runtime semantics changed:
+NO
+
+## 5. Transport Regression
+
+Historical long-path regression:
+PASS
+
+36 job endpoint identities:
+36
+
+Unique:
+36
+
+All <=80 bytes:
+YES; maximum 54 bytes in the synthetic identity audit.
+
+Four-worker bind/connect:
+PASS, with no cross-talk.
+
+Cleanup:
+PASS for active, stale, arbitrary-file, failed-connect, failed-startup, and normal-exit cases.
+
+RPC payload parity:
+PASS
+
+Gate:
+PASS
+
+## 6. Production-Path Smoke
+
+Exact production worker:
+YES
+
+Smoke identities:
+6 disjoint `RR_SMOKE` runs, each with 100 post-warm-up control steps.
+
+Tasks:
+pinch_tongs, hammer_nail, click_mouse
+
+Variants:
+P0 and P3 for every task.
+
+Server bind:
+PASS
+
+Client connect:
+PASS
+
+EGL:
+PASS
+
+Checkpoint:
+PASS for all six frozen checkpoint loads.
+
+Action [27,22]:
+PASS
+
+Adapter:
+PASS, central 22D-to-23D Action adapter.
+
+Stride:
+PASS, 5.
+
+Causality:
+PASS; no future read, and P3 Contact-State/auxiliary runtime paths were exercised.
+
+Socket cleanup:
+PASS; no endpoint or process leak.
+
+Gate:
+PASS
+
+## 7. Rollout Harness V2 Freeze
+
+Artifact:
+`.local/artifacts/simulation/s4_3_rr/pre_rollout_freeze_v2.json`
+
+SHA:
+`77752956370a4ca63398dc585c01c5dccf5ffe2803a6cf5187280b189bf8096c`
+
+36 checkpoint hashes:
+PASS; frozen in the artifact.
+
+90 reset manifest hash:
+Evaluation config SHA256 `e04144eef2f5b6914bafb43611ff69821ad1a894e89424af40a7dc0d35063a08`; reset-identity SHA256 `07056988216afee716aca87f73cd599d5bd15957ba585fac599d74575ec22c6d`.
+
+Statistics hash:
+`7fd284bbf8c85ad6c3f78210cb7dff79baa9e3e6b158f9d67e08e2bcd223ab40`
+
+Only transport code changed:
+YES
+
+Scientific rollout performance seen before freeze:
+NO
+
+Gate:
+PASS
+
+## 8. GPU Execution
+
+Eligible physical GPUs:
+0,1,2,3 when genuinely idle.
+
+Workers:
+36 repository-owned scientific jobs, one worker at a time on the only eligible device at each launch.
+
+Per-GPU rollout counts:
+GPU1: 1080 rollouts across 36 jobs; GPU0/GPU2/GPU3: 0.
 
 Busy conflicts:
-GPU0, GPU2, and GPU3 contained unrelated allocations and were not used.
+0; unrelated allocations were excluded.
 
 Lock violations:
 0
@@ -131,412 +226,271 @@ Lock violations:
 Oversubscription:
 NO
 
-## 6. Causal Observation Contract
-
-Vision:
-I_t only; frozen current-frame DINO, shape [8,32]
-
-Proprio:
-22D
-
-P1 tactile:
-[26,30]
-
-P2/P3 Contact-State:
-[256]
-
-Action:
-[27,22]
-
-Replan stride:
-5
-
-Future Vision:
-NO
-
-Future actual Contact at inference:
-NO
-
-Gate:
-PASS
-
-## 7. P3 Tactile-UniT Auxiliary
-
-A0:
-frozen
-
-B3:
-frozen
-
-A+H:
-frozen
-
-Target u_c:
-training only, exact t to t+27 target path
-
-lambda:
-0.1
-
-S4.2 parameter gradients:
-none
-
-ACT gradient:
-Nonzero on every task; L1 totals were 3,832.8285 (pinch_tongs), 32,140.1071 (hammer_nail), and 769.2404 (click_mouse).
-
-Causal gate:
-PASS
-
-## 8. Runtime Smoke
-
-Tasks:
-3
-
-Resets:
-9 total, 3 per task
-
-Steps:
-900 policy control steps
-
-EGL:
-PASS
-
-Action adapter:
-PASS, central 22D-to-23D adapter
-
-Queue/replan:
-180 replans, stride 5, PASS
-
-Causal trace:
-No future read; current RGB, 22D proprio, [26,30] tactile history and 256D Contact-State all PASS.
-
-Gate:
-PASS — S4_3_1_CAUSAL_POLICY_INTERFACE_READY
-
-## 9. ACT Implementation
-
-Provenance:
-Minimal repository-owned ACT reproduction using the standard action-chunking CVAE Transformer structure; no network code fetched.
-
-Architecture:
-4-layer encoder + 4-layer decoder, 8 heads, 1024 FFN, learned positions, 27 queries, dropout 0.1.
-
-Vision:
-Frozen current-frame DINO representation
-
-Hidden:
-256
-
-CVAE:
-latent 32, beta 10, deterministic inference prior mean z=0
-
-Parameters:
-
-P0:
-7,440,470
-
-P1:
-7,504,278; 63,552 tactile-specific parameters
-
-P2:
-7,506,518
-
-P3:
-7,506,518
-
-Fairness:
-PASS; P2/P3 inference architecture, parameter count, and initialization are identical.
-
-## 10. ACT Training
-
-Expected jobs:
-36
-
-Completed:
-36
-
-Infrastructure retries:
-1 exact retry: hammer_nail/P2/seed1 after an external process kill. Step-1000 repeat was exact and partial evidence was preserved.
-
-Scientific-performance retries:
-0
-
-Failures:
-0 canonical training failures
-
-Per task/variant/seed, selected POLICY_DEV normalized full-chunk Action L1:
-
-| Task | Variant | Seed 0 | Seed 1 | Seed 2 | Selected steps |
-|---|---|---:|---:|---:|---|
-| pinch_tongs | P0 | 0.118005 | 0.119306 | 0.119309 | 16000 / 20000 / 19000 |
-| pinch_tongs | P1 | 0.116421 | 0.117257 | 0.119260 | 17000 / 20000 / 14000 |
-| pinch_tongs | P2 | 0.119734 | 0.120301 | 0.120340 | 14000 / 14000 / 20000 |
-| pinch_tongs | P3 | 0.128967 | 0.129246 | 0.128695 | 9000 / 13000 / 12000 |
-| hammer_nail | P0 | 0.099459 | 0.099701 | 0.099664 | 13000 / 17000 / 19000 |
-| hammer_nail | P1 | 0.097249 | 0.101102 | 0.102567 | 12000 / 16000 / 5000 |
-| hammer_nail | P2 | 0.100251 | 0.097907 | 0.096991 | 17000 / 17000 / 16000 |
-| hammer_nail | P3 | 0.111814 | 0.113860 | 0.112558 | 6000 / 1000 / 7000 |
-| click_mouse | P0 | 0.169770 | 0.166947 | 0.169588 | 11000 / 13000 / 12000 |
-| click_mouse | P1 | 0.166137 | 0.169919 | 0.168467 | 12000 / 11000 / 16000 |
-| click_mouse | P2 | 0.171619 | 0.167358 | 0.167512 | 13000 / 17000 / 12000 |
-| click_mouse | P3 | 0.181469 | 0.175640 | 0.175284 | 8000 / 9000 / 15000 |
-
-## 11. Offline POLICY_DEV
-
-Values below are mean normalized full-chunk Action L1, with seed values in parentheses.
-
-### pinch_tongs
-
-P0:
-0.118873 (0.118005, 0.119306, 0.119309)
-
-P1:
-0.117646 (0.116421, 0.117257, 0.119260)
-
-P2:
-0.120125 (0.119734, 0.120301, 0.120340)
-
-P3:
-0.128970 (0.128967, 0.129246, 0.128695)
-
-### hammer_nail
-
-P0:
-0.099608 (0.099459, 0.099701, 0.099664)
-
-P1:
-0.100306 (0.097249, 0.101102, 0.102567)
-
-P2:
-0.098383 (0.100251, 0.097907, 0.096991)
-
-P3:
-0.112744 (0.111814, 0.113860, 0.112558)
-
-### click_mouse
-
-P0:
-0.168768 (0.169770, 0.166947, 0.169588)
-
-P1:
-0.168174 (0.166137, 0.169919, 0.168467)
-
-P2:
-0.168829 (0.171619, 0.167358, 0.167512)
-
-P3:
-0.177464 (0.181469, 0.175640, 0.175284)
-
-Cold reload:
-36/36 PASS
-
-Determinism:
-36/36 PASS with zero repeat difference; all [27,22] predictions finite and bounded. All P3 [8,32] auxiliary predictions were finite.
-
-Gate:
-PASS
-
-Offline values are checkpoint-selection and sanity evidence only; they are not closed-loop effect estimates.
-
-## 12. Closed-Loop Rollouts
+## 9. Closed-Loop Completeness
 
 Expected:
 1080
 
-Completed:
+Canonical completed:
+1080 across 36/36 jobs and 1080 unique canonical identities.
+
+Infrastructure failures:
+Two controller-session exits: one at a completed-job boundary after 600 rollouts and one after 720 rollouts. The latter interrupted a newly launched worker before any reset metadata existed and was relaunched with identical code, checkpoint, configuration, and ordered reset stream.
+
+Exact retries:
+0 canonical scientific retries; 1 exact pre-reset infrastructure relaunch. The controller restart record was reconstructed after queue completion because the original attempt-1 log path was reused.
+
+Scientific failures/timeouts retained:
+YES — all 1062 timeouts were retained; there were 18 successes.
+
+Reset replacements:
 0
 
-Invalid:
-0; no scientific rollout began.
+Duplicate canonical identities:
+0
 
-Same reset specifications:
-PASS at R11 freeze, not exercised in R12.
+Missing identities:
+0
 
-Failure:
-The first click_mouse/P0/seed0 worker launched on GPU1, but the policy server failed while binding its AF_UNIX listener. The production endpoint was 118 bytes versus the 107-byte payload limit, raising `OSError: AF_UNIX path too long` before socket readiness and before the DexJoCo client started.
+Gate:
+PASS
 
-Protocol disposition:
-STRUCTURAL HARD FAILURE. All dependent stages stopped; rollout code remained byte-identical to the R11 freeze and no retuning was performed.
-
-## 13. Success by Task
+## 10. Success by Task
 
 | Task | P0 | P1 | P2 | P3 |
 |---|---:|---:|---:|---:|
-| pinch_tongs | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| hammer_nail | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| click_mouse | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| pinch_tongs | 0/90 (0.00%) | 8/90 (8.89%) | 9/90 (10.00%) | 0/90 (0.00%) |
+| hammer_nail | 0/90 (0.00%) | 1/90 (1.11%) | 0/90 (0.00%) | 0/90 (0.00%) |
+| click_mouse | 0/90 (0.00%) | 0/90 (0.00%) | 0/90 (0.00%) | 0/90 (0.00%) |
 
-Training-seed CIs / variation:
-NOT ESTIMABLE — zero scientific rollouts; no value was imputed from POLICY_DEV.
+Per-training-seed results, in seed0/seed1/seed2 order:
 
-## 14. Primary 3-Task Macro Success
+- pinch_tongs — P0 0/0/0%; P1 16.67/6.67/3.33%; P2 3.33/10.00/16.67%; P3 0/0/0%.
+- hammer_nail — P0 0/0/0%; P1 0/3.33/0%; P2 0/0/0%; P3 0/0/0%.
+- click_mouse — every variant 0/0/0%.
+
+## 11. Primary 3-Task Macro Success
 
 P0:
-NOT RUN
+0.00%
 
 P1:
-NOT RUN
+3.33%
 
 P2:
-NOT RUN
+3.33%
 
 P3:
-NOT RUN
+0.00%
 
 95% CIs:
-NOT ESTIMABLE
+P0 [0.00%, 0.00%]; P1 [0.00%, 9.63%]; P2 [0.00%, 10.74%]; P3 [0.00%, 0.00%].
 
-## 15. Primary Ablations
+## 12. Primary Ablations
 
-### Raw tactile: P1-P0
+### P1-P0 — Raw tactile
 
 Delta:
-NOT ESTIMABLE
++3.33 percentage points
 
-CI:
-NOT ESTIMABLE
+95% CI:
+[0.00, +10.00] percentage points
 
 Classification:
-NOT RUN — R12 structural failure
+NO_MATERIAL_DIFFERENCE
 
-### Contact-State vs raw: P2-P1
+### P2-P1 — Contact-State vs raw
 
-Delta / CI / classification:
-NOT RUN — R12 structural failure
+Delta:
+0.00 percentage points
 
-### Tactile-UniT auxiliary: P3-P2
+95% CI:
+[-5.56, +5.93] percentage points
 
-Delta / CI / classification:
-NOT RUN — R12 structural failure
+Classification:
+NO_MATERIAL_DIFFERENCE
 
-### Full method: P3-P0
+### P3-P2 — Tactile-UniT auxiliary
 
-Delta / CI / classification:
-NOT RUN — R12 structural failure
+Delta:
+-3.33 percentage points
 
-## 16. Tactile-Active Secondary Analysis
+95% CI:
+[-10.37, 0.00] percentage points
+
+Classification:
+NO_MATERIAL_DIFFERENCE
+
+### P3-P0 — Full method
+
+Delta:
+0.00 percentage points
+
+95% CI:
+[0.00, 0.00] percentage points
+
+Classification:
+NO_MATERIAL_DIFFERENCE
+
+## 13. Tactile-Active Secondary Analysis
 
 Tasks:
 pinch_tongs + click_mouse
 
 P0:
-NOT RUN
+0.00%
 
 P1:
-NOT RUN
+4.44%
 
 P2:
-NOT RUN
+5.00%
 
 P3:
-NOT RUN
+0.00%
 
 P1-P0:
-NOT ESTIMABLE
++4.44 pp, 95% CI [0.00, +12.79] pp, NO_MATERIAL_DIFFERENCE.
 
 P2-P1:
-NOT ESTIMABLE
++0.56 pp, 95% CI [-7.22, +8.89] pp, NO_MATERIAL_DIFFERENCE.
 
 P3-P2:
-NOT ESTIMABLE
+-5.00 pp, 95% CI [-13.89, 0.00] pp, NO_MATERIAL_DIFFERENCE.
 
 P3-P0:
-NOT ESTIMABLE
+0.00 pp, 95% CI [0.00, 0.00] pp, NO_MATERIAL_DIFFERENCE.
 
 Interpretation:
-Withheld because the structural failure occurred before the first rollout. No offline surrogate was substituted.
+The pre-registered secondary analysis does not establish a tactile benefit. Pinch alone shows P1-P0 improvement and P3-P2 harm, but click_mouse has zero learning and the overall ACT competence floor is weak.
 
-## 17. Hammer-Nail Control Analysis
+## 14. Hammer-Nail Control Analysis
 
 Mapped tactile active:
 NO
 
 P0:
-NOT RUN
+0.00%
 
 P1:
-NOT RUN
+1.11%
 
 P2:
-NOT RUN
+0.00%
 
 P3:
-NOT RUN
+0.00%
+
+Contrasts:
+P1-P0 +1.11 pp [0.00, +4.44]; P2-P1 -1.11 pp [-4.44, 0.00]; P3-P2 0.00 pp [0.00, 0.00]; P3-P0 0.00 pp [0.00, 0.00]. All are NO_MATERIAL_DIFFERENCE.
 
 Interpretation:
-HAMMER_NAIL_MAPPED_TACTILE_INACTIVE remains the frozen warning; no control-task rollout result exists.
+The mapped-tactile-inactive control remains extremely weak and supplies no evidence of a representation effect; warning `HAMMER_NAIL_MAPPED_TACTILE_INACTIVE` remains active.
 
-## 18. Secondary Metrics
+## 15. Training-Seed Robustness
 
-Time-to-success:
-NOT RUN
+Per task / variant:
+The exact task-level seed rates are reported in Section 10 and `training_seed_robustness.json`.
 
-Timeout:
-NOT RUN
+seed0:
+Primary macro P0/P1/P2/P3 = 0.00/5.56/1.11/0.00%.
 
-Peak normal force:
-NOT RUN
+seed1:
+Primary macro P0/P1/P2/P3 = 0.00/3.33/3.33/0.00%.
 
-Integrated force:
-NOT RUN
+seed2:
+Primary macro P0/P1/P2/P3 = 0.00/1.11/5.56/0.00%.
 
-Tangential:
-NOT RUN
+Mean/std/range:
+P0 0.00/0.00/[0.00,0.00]%; P1 3.33/1.81/[1.11,5.56]%; P2 3.33/1.81/[1.11,5.56]%; P3 0.00/0.00/[0.00,0.00]%.
 
-Action smoothness:
-NOT RUN
-
-TCP jerk:
-NOT RUN
-
-Hand variation:
-NOT RUN
-
-## 19. Training-Seed Robustness
-
-P0:
-NOT ESTIMABLE
-
-P1:
-NOT ESTIMABLE
-
-P2:
-NOT ESTIMABLE
-
-P3:
-NOT ESTIMABLE
+Main effect sign consistency:
+P1-P0 positive in all seeds; P2-P1 mixed (-4.44/0/+4.44 pp); P3-P2 negative in all seeds; P3-P0 zero in all seeds.
 
 Effect dominated by one seed:
-NOT ASSESSED
+YES only for P2-P1; NO for P1-P0, P3-P2, and P3-P0.
 
-All three training seeds and all 36 checkpoints were retained; no rollout seed was discarded.
+## 16. Secondary Metrics
 
-## 20. Uncertainty Diagnostics
+All values below are paired all-task deltas in P1-P0 / P2-P1 / P3-P2 / P3-P0 order; they remain secondary and do not reclassify the primary endpoint.
 
-Success vs failure:
-NOT RUN
+Time-to-success:
+Timeout-imputed completion-time deltas: -0.1776 / +0.0224 / +0.1552 / 0.0000 s. Among actual successes, pinch P1 averaged 11.6525 s, pinch P2 11.8044 s, and hammer P1 3.2200 s; other cells were unavailable.
 
-Contact onset:
-NOT RUN
+Timeout rate:
+-3.33 / 0.00 / +3.33 / 0.00 pp.
 
-High-force:
-NOT RUN
+Peak normal force:
++4.2838 / +2.3600 / -0.0321 / +6.6117.
 
-Timeout:
-NOT RUN
+Integrated force:
++18.9544 / +9.6355 / -1.5892 / +27.0007.
 
-Runtime availability:
-UNAVAILABLE_CAUSAL_INPUT_MISMATCH; the frozen full estimator requires a forbidden future-derived Vision transition representation. Invocations 0; interventions 0.
+Tangential force:
++1.5828 / +0.9204 / +0.3180 / +2.8211.
 
-Scientific status:
-DIAGNOSTIC ONLY
+Contact transition counts:
+free-to-contact +0.4630 / +0.7889 / -0.5074 / +0.7444; contact-to-free +0.3481 / +0.7333 / -0.4778 / +0.6037.
 
-## 21. Experiment Validity
+Action step norm:
++0.011953 / -0.003190 / +0.189108 / +0.197871.
+
+Action acceleration:
++0.014544 / -0.005947 / +0.358457 / +0.367054.
+
+TCP jerk:
++0.003294 / -0.002090 / +0.004790 / +0.005994.
+
+Hand variation:
++19.6615 / +0.2094 / +3.2263 / +23.0973.
+
+## 17. Offline vs Closed-Loop
+
+Offline Action L1 ranking:
+P1 (0.128709) < P0 (0.129083) < P2 (0.129113) < P3 (0.139726); lower is better.
+
+Closed-loop success ranking:
+P1 = P2 (3.33%) > P0 = P3 (0.00%).
+
+P3 offline warning:
+P3 had worse normalized full-chunk Action L1 than P0/P1/P2 on every task, so `OFFLINE_ACTION_ERROR_WARNING` remains active.
+
+Does offline L1 predict closed-loop outcome:
+MIXED — the P3 warning was directionally consistent with zero closed-loop success, but the small P0/P1/P2 ordering was not monotonic.
+
+## 18. Policy Learning Sanity
+
+Classification:
+
+WEAK
+
+Evidence:
+Only 18/1080 rollouts succeeded. No task reached the registered healthy threshold of at least 20% success for any variant, whereas HEALTHY requires that threshold on at least two tasks.
+
+Task ceilings:
+pinch_tongs 10.00%; hammer_nail 1.11%; click_mouse 0.00%. No ceiling-effect warning applies.
+
+## 19. Uncertainty Status
+
+Runtime uncertainty:
+NOT_AVAILABLE_CAUSALLY_FOR_S4_3_2
+
+Future Vision used:
+NO
+
+Intervention:
+NO
+
+Scientific consequence:
+DIAGNOSTIC_UNAVAILABLE_ONLY
+
+## 20. Experiment Validity
 
 Policy data:
 PASS
 
-Same resets:
-PASS at freeze; not exercised
+Same reset specs:
+PASS
 
 Same success:
 PASS
@@ -544,81 +498,96 @@ PASS
 Same timeout:
 PASS
 
-Same Action adapter:
-PASS
+Same warm-up:
+PASS — frozen 0.5 s warm-up, implemented as 25 actions at 20 ms and represented by 26 samples including the initial sample.
 
 Same stride:
 PASS
 
+Same Action adapter:
+PASS
+
 No future leakage:
-PASS in data, training, offline evaluation, and runtime smoke; R12 did not reach inference.
+PASS
 
 No expert Action inference:
 PASS
 
 S4.2 immutable:
-PASS — checkpoints, Vision files, and tracked S4.2 configs are byte-identical.
+PASS
 
-Learning sanity:
-NOT ASSESSED — none of HEALTHY / WEAK / ZERO_LEARNING can be assigned without a scientific rollout.
+All 36 checkpoints unchanged:
+PASS
 
 Overall:
-FAIL — frozen runtime execution failure prevented the benchmark endpoint.
+PASS
 
-## 22. Final S4.3-2 Decision
+## 21. Final S4.3-2 Decision
 
-S4_3_2_ENVIRONMENT_FAIL
+S4_3_2_ACT_BENCHMARK_WEAK
 
 Reasons:
 
-1. The frozen production policy server raised `OSError: AF_UNIX path too long` while binding its 118-byte endpoint.
-2. The server never became ready and the DexJoCo client never started, so zero of 1080 scientific rollouts began or completed.
-3. Protocol rules require stopping dependent analyses on a structural hard failure; no scientific effect was classified or fabricated.
+1. The 1080-rollout benchmark is structurally complete and valid, but no task reached the registered 20% policy-competence threshold.
+2. Only 18 rollouts succeeded: 17 on pinch_tongs, one on hammer_nail, and zero on click_mouse.
+3. All four primary contrasts are NO_MATERIAL_DIFFERENCE, so reliable representation-effect inference is not supported under the WEAK ACT competence floor.
 
-## 23. S4.3-3 Readiness
+## 22. S4.3-3 Diffusion Policy Readiness
 
-Diffusion Policy:
+Decision:
 
 NOT_READY
 
-Reason:
-Runtime execution failure is an explicit structural blocker even though policy data, causality, training, offline evaluation, environment integrity, regressions, and S4.2 immutability otherwise passed.
-
-ACT positive Tactile-UniT result required:
+ACT positive Tactile-UniT effect required:
 NO
 
+Reason:
+The complete and valid ACT benchmark is too weak to establish a reliable policy-competence floor for a Diffusion Policy comparison.
+
+Warnings:
+`ACT_WEAK`, `CLICK_MOUSE_ZERO_SUCCESS`, `P0_ZERO_SUCCESS`, `P3_ZERO_SUCCESS`, `OFFLINE_ACTION_ERROR_WARNING`, `HAMMER_NAIL_MAPPED_TACTILE_INACTIVE`, `FROZEN_CAUSAL_UNCERTAINTY_UNAVAILABLE`, and `CONTROLLER_RESTART_RECORD_RECONSTRUCTED_AFTER_QUEUE_COMPLETION`.
+
 Recommended next:
-Shorten the production AF_UNIX socket endpoint below the platform limit, repeat the production-path runtime integration smoke, re-freeze R11 with corrected rollout code hashes, and start a new clean S4.3-2 rollout execution.
+Pre-register a separate ACT competence remediation/re-baseline with fresh evaluation resets; do not tune on or reuse the exposed `POLICY_EVAL_V1` results for model selection.
 
-Do NOT implement it in this run.
+Do NOT implement S4.3-3.
 
-## 24. Environment / Regression
+## 23. Environment / Regression
 
 unit:
-Python 3.10.20; package-set hash unchanged (`3a119880cd4d661259d9476b0d3224302e086ae899ca77250497b5f42fbf6f9b`).
+Package hash `3a119880cd4d661259d9476b0d3224302e086ae899ca77250497b5f42fbf6f9b`, Python 3.10.20, unchanged.
 
 DexJoCo:
-Python 3.11.16; package-set hash unchanged (`7406008d77c52571b64f2c7fdf36ed35a62da160e2eba4b9d091ac9f85d82f78`).
+Package hash `7406008d77c52571b64f2c7fdf36ed35a62da160e2eba4b9d091ac9f85d82f78`, Python 3.11.16, unchanged.
 
 S4.2 hashes:
-PASS; all nine accepted checkpoint identities, Vision files, and tracked configs are byte-identical.
+PASS; Contact-State, C3, A0, Vision, B3, A+H, fallback, shared/private, uncertainty, and tracked S4.2 configs are byte-identical.
+
+36 ACT checkpoints:
+PASS, byte-identical.
 
 RoboCasa:
-EGL smoke PASS.
+EGL reset/step/RGB/Contact/named-region smoke PASS.
 
 DexJoCo submodule:
-Clean at `8d23b0fab23b17a58c4b55f3942e17013aaf8267`; nested Diffusion Policy remains UNINITIALIZED.
+Clean at `8d23b0fab23b17a58c4b55f3942e17013aaf8267`.
+
+Nested Diffusion Policy:
+UNINITIALIZED
 
 Unit tests:
-560 passed, 1 skipped, 0 failed.
+565 passed, 1 skipped, 0 failed.
 
 DexJoCo tests:
-18 passed, 0 failed.
+23 passed, 0 failed.
 
 Failures:
-One R12 environment failure: AF_UNIX endpoint exceeded the platform limit. Regression failures: 0.
+0
 
-## 25. Milestone Status
+Overall:
+PASS
+
+## 24. Milestone Status
 
 M3:
 UNCHANGED
@@ -626,20 +595,23 @@ UNCHANGED
 S4.2:
 COMPLETE
 
-Historical first S4.3-0:
-FAILED — PRESERVED
-
 S4.3-PD:
 COMPLETE
 
-Restarted S4.3-0:
+S4.3-0:
 COMPLETE
 
 S4.3-1:
 COMPLETE
 
+Historical first S4.3-2 rollout attempt:
+ENVIRONMENT_FAIL — PRESERVED
+
+S4.3-RR:
+COMPLETE
+
 S4.3-2:
-FAILED — S4_3_2_ENVIRONMENT_FAIL
+COMPLETE
 
 S4.3:
 IN PROGRESS
@@ -647,9 +619,9 @@ IN PROGRESS
 M4:
 NOT ESTABLISHED
 
-## 26. Stop Point
+## 25. Stop Point
 
-STOP AFTER S4.3-2.
+STOP AFTER S4.3-RR / S4.3-2 DECISION.
 
 DO NOT TRAIN DIFFUSION POLICY.
 DO NOT START S4.3-3.

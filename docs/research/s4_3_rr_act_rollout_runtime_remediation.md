@@ -76,3 +76,31 @@ uses the same 36 checkpoints, 30 task-specific resets per checkpoint, 0.5-second
 adapter, paired hierarchical bootstrap, seed 43020, and material-effect thresholds.
 No training, checkpoint selection, hyperparameter change, or reset substitution is
 permitted after scientific rollout begins.
+
+## Frozen benchmark result
+
+The resumed queue completed all 36 canonical jobs and all 1080 unique scientific
+rollouts. All 1062 timeouts were retained alongside 18 successes, with no reset
+replacement, dropped failure, duplicate identity, or canonical scientific retry.
+Two controller sessions ended during the long queue: the first at a completed-job
+boundary after 600 rollouts, and the second after 720 rollouts while a new worker
+had launched but before it wrote any reset metadata. The latter was relaunched
+with the same code, checkpoint, scientific configuration, and ordered reset
+stream. This is recorded as one exact pre-reset infrastructure relaunch, not a
+scientific retry. Because the original attempt-1 log path was reused, the
+controller-restart record was reconstructed after queue completion and is
+explicitly warned in the final artifacts.
+
+The experiment-validity gate passes. Primary equally weighted macro success was
+0.00% for P0, 3.33% for P1, 3.33% for P2, and 0.00% for P3. Every registered
+primary contrast is `NO_MATERIAL_DIFFERENCE`. More importantly, no task reached
+the pre-registered 20% competence threshold: task ceilings were 10.00% for
+pinch_tongs, 1.11% for hammer_nail, and 0.00% for click_mouse. The formal decision
+is therefore `S4_3_2_ACT_BENCHMARK_WEAK`, and S4.3-3 readiness is `NOT_READY`.
+
+The complete 25-section result is recorded in
+`docs/research/s4_3_act_policy_benchmark_result.md`; the tracked machine-readable
+decision is `configs/simulation/s4_3_rr_final_decision.json`. Raw rollouts,
+integrity/statistical artifacts, 22 required plots, representative videos, and
+the human-acceptance checklist remain under the ignored local S4.3-RR artifact
+root. No Diffusion Policy, pi0.5, or GR00T training was started.
