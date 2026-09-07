@@ -1,0 +1,97 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi0-official-pi05-protocol.v1",
+  "stage": "S4.3-PI0",
+  "source": {
+    "repository": "https://github.com/brave-eai/dexjoco.git",
+    "commit": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+    "tree": "third_party/dexjoco",
+    "mutation_policy": "frozen read-only submodule"
+  },
+  "scope": {
+    "task": "pinch_tongs",
+    "regime": "rand_obj",
+    "robot": "single_arm",
+    "canonical_runs": 1,
+    "tactile_inputs": false,
+    "previous_act_protocol_reused": false
+  },
+  "model": {
+    "family": "pi0.5",
+    "pi05": true,
+    "action_dim": 32,
+    "dataset_action_dim": 22,
+    "state_dim": 23,
+    "action_horizon": 30,
+    "max_token_len": 250,
+    "paligemma_variant": "gemma_2b_lora",
+    "action_expert_variant": "gemma_300m_lora",
+    "base_model": "pi05_base",
+    "base_model_revision": "8d253e04e1b82c452c5804273939ff7f002f217f",
+    "base_model_44d_used": false
+  },
+  "data": {
+    "repository": "DexJoCo/DexJoCo-Datasets-LeRobot",
+    "revision": "5a57c54e55dc5858dd9fb949c5f67c0c9716e6b3",
+    "subtree": "dexjoco_lerobot_datasets/pinch_tongs/**",
+    "episodes": 100,
+    "frames": 40065,
+    "image_inputs": [
+      "observation.images.front",
+      "observation.images.wrist"
+    ],
+    "camera_mapping": {
+      "base": "observation.images.front",
+      "wrist": "observation.images.wrist"
+    },
+    "prompt": "Grasp the tongs and perform three consecutive open-close motions.",
+    "prompt_from_task": true,
+    "normalization": "official compute_norm_stats.py quantile workflow",
+    "use_quantile_norm": true
+  },
+  "training": {
+    "script": "third_party/dexjoco/openpi/scripts/train.py",
+    "config_name": "pinch_tongs",
+    "seed": 42,
+    "batch_size": 32,
+    "num_workers": 4,
+    "num_train_steps": 30000,
+    "log_interval": 100,
+    "save_interval": 10000,
+    "keep_period": 5000,
+    "ema_decay": null,
+    "fsdp_devices": 1,
+    "runtime_parallelism": {
+      "visible_device_count": 2,
+      "mode": "data_parallel",
+      "data_parallel_replicas": 2,
+      "fsdp_axis_size": 1,
+      "global_batch_size": 32,
+      "per_device_batch_size": 16
+    },
+    "optimizer": {
+      "name": "AdamW",
+      "b1": 0.9,
+      "b2": 0.95,
+      "eps": 1e-08,
+      "weight_decay": 1e-10,
+      "clip_gradient_norm": 1.0
+    },
+    "lr_schedule": {
+      "name": "cosine_decay_with_warmup",
+      "warmup_steps": 10000,
+      "peak_lr": 5e-05,
+      "decay_steps": 1000000,
+      "decay_lr": 5e-05
+    },
+    "checkpoint_rule": "use the final 30000-step run output; no checkpoint shopping",
+    "sweeps": false
+  },
+  "evaluation": {
+    "episodes": 20,
+    "seed": 0,
+    "rand_full": false,
+    "randomize_dynamics": false,
+    "replan_ratio": 0.8,
+    "checkpoint_selection": "final only"
+  }
+}
