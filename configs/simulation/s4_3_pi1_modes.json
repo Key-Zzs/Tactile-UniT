@@ -1,0 +1,55 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi1-modes.v1",
+  "stage": "S4.3-PI1M",
+  "official_source": {
+    "tree": "third_party/dexjoco",
+    "commit": "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
+    "mutation": "forbidden",
+    "writable_clone": ".local/external/simulation/s4_3_pi1/openpi",
+    "versioned_patch": "patches/simulation/s4_3_pi1_openpi_hidden_loss_hook.patch"
+  },
+  "modes": {
+    "NONE": {
+      "implementation": "exact official openpi.models.pi0.Pi0",
+      "inputs": ["front_rgb", "wrist_rgb", "state_23d", "prompt"],
+      "contact_prefix_tokens": 0,
+      "physical_auxiliary": false
+    },
+    "CONTACT_STATE_TOKENS": {
+      "inputs": ["front_rgb", "wrist_rgb", "state_23d", "prompt", "contact_state_256d"],
+      "contact_prefix_tokens": 8,
+      "physical_auxiliary": false
+    },
+    "CONTACT_STATE_TOKENS_PHYSICAL_AUX": {
+      "inference_inputs": ["front_rgb", "wrist_rgb", "state_23d", "prompt", "contact_state_256d"],
+      "contact_prefix_tokens": 8,
+      "physical_auxiliary": "training-only",
+      "future_target_inference_access": false
+    }
+  },
+  "contact_token_adapter": {
+    "architecture": [
+      "LayerNorm(256)",
+      "Linear(256,256)",
+      "GELU",
+      "Linear(256,256)",
+      "reshape(8,32)",
+      "shared Linear(32,2048)"
+    ],
+    "official_prefix_width": 2048,
+    "parameter_count": 199680,
+    "insertion": "append to observation prefix after unchanged official image/language tokens",
+    "attention_mask": "eight valid non-autoregressive prefix tokens"
+  },
+  "physical_auxiliary": {
+    "input": "final official action-expert hidden states at first 27 action positions",
+    "pool": "mean over first 27 positions",
+    "architecture": ["LayerNorm(1024)", "Linear(1024,512)", "GELU", "Linear(512,256)", "reshape(8,32)"],
+    "parameter_count": 658176,
+    "parameter_budget": 1000000,
+    "target": "stop_gradient(precomputed frozen shared Contact transition at t->t+27)",
+    "mask": "physical_aux_valid; invalid samples contribute zero",
+    "loss": "mean masked MSE",
+    "inference_use": false
+  }
+}

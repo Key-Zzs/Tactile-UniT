@@ -1,0 +1,72 @@
+diff --git a/src/openpi/models/pi0.py b/src/openpi/models/pi0.py
+index 6930637..e1531c1 100644
+--- a/src/openpi/models/pi0.py
++++ b/src/openpi/models/pi0.py
+@@ -189,6 +189,18 @@ class Pi0(_model.BaseModel):
+     def compute_loss(
+         self, rng: at.KeyArrayLike, observation: _model.Observation, actions: _model.Actions, *, train: bool = False
+     ) -> at.Float[at.Array, "*b ah"]:
++        loss, _ = self.compute_loss_with_hidden(rng, observation, actions, train=train)
++        return loss
++
++    @at.typecheck
++    def compute_loss_with_hidden(
++        self, rng: at.KeyArrayLike, observation: _model.Observation, actions: _model.Actions, *, train: bool = False
++    ) -> tuple[at.Float[at.Array, "*b ah"], at.Float[at.Array, "*b ah emb"]]:
++        """Official loss path plus its final action-position hidden states.
++
++        The second return value is an observation-only hook for downstream
++        training auxiliaries. ``compute_loss`` remains numerically unchanged.
++        """
+         preprocess_rng, noise_rng, time_rng = jax.random.split(rng, 3)
+         observation = _model.preprocess_observation(preprocess_rng, observation, train=train)
+
+@@ -209,9 +221,10 @@ class Pi0(_model.BaseModel):
+         (prefix_out, suffix_out), _ = self.PaliGemma.llm(
+             [prefix_tokens, suffix_tokens], mask=attn_mask, positions=positions, adarms_cond=[None, adarms_cond]
+         )
+-        v_t = self.action_out_proj(suffix_out[:, -self.action_horizon :])
++        action_hidden = suffix_out[:, -self.action_horizon :]
++        v_t = self.action_out_proj(action_hidden)
+
+-        return jnp.mean(jnp.square(v_t - u_t), axis=-1)
++        return jnp.mean(jnp.square(v_t - u_t), axis=-1), action_hidden
+
+     @override
+     def sample_actions(
+diff --git a/scripts/train.py b/scripts/train.py
+index bd8f233..df0ff25 100644
+--- a/scripts/train.py
++++ b/scripts/train.py
+@@ -147,15 +147,20 @@ def train_step(
+     def loss_fn(
+         model: _model.BaseModel, rng: at.KeyArrayLike, observation: _model.Observation, actions: _model.Actions
+     ):
++        if hasattr(model, "compute_loss_with_info"):
++            return model.compute_loss_with_info(rng, observation, actions, train=True)
+         chunked_loss = model.compute_loss(rng, observation, actions, train=True)
+-        return jnp.mean(chunked_loss)
++        official_loss = jnp.mean(chunked_loss)
++        return official_loss, {"official_loss": official_loss}
+
+     train_rng = jax.random.fold_in(rng, state.step)
+     observation, actions = batch
+
+     # Filter out frozen params.
+     diff_state = nnx.DiffState(0, config.trainable_filter)
+-    loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(model, train_rng, observation, actions)
++    (loss, model_info), grads = nnx.value_and_grad(loss_fn, argnums=diff_state, has_aux=True)(
++        model, train_rng, observation, actions
++    )
+
+     params = state.params.filter(config.trainable_filter)
+     updates, new_opt_state = state.tx.update(grads, state.opt_state, params)
+@@ -187,7 +192,10 @@ def train_step(
+         "loss": loss,
+         "grad_norm": optax.global_norm(grads),
+         "param_norm": optax.global_norm(kernel_params),
++        **model_info,
+     }
++    if hasattr(model, "training_gradient_metrics"):
++        info.update(model.training_gradient_metrics(grads))
+     return new_state, info
