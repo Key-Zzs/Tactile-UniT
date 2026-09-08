@@ -1,0 +1,42 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi1-dataset-tactile-augmentation.v1",
+  "stage": "S4.3-PI1A",
+  "official_dataset": {
+    "repository": "DexJoCo/DexJoCo-Datasets-LeRobot",
+    "revision": "5a57c54e55dc5858dd9fb949c5f67c0c9716e6b3",
+    "subtree": "dexjoco_lerobot_datasets/pinch_tongs/**",
+    "episodes": 100,
+    "frames": 40065,
+    "mutation": "forbidden"
+  },
+  "raw_source": {
+    "repository": "DexJoCo/DexJoCo-Datasets-Raw",
+    "revision": "125df5c1019e97503929ef1a0ad8f90373436afa",
+    "subtree": "dexjoco_raw_datasets/pinch_tongs/**",
+    "episode_directories": 100
+  },
+  "alignment": {
+    "episode_order": "official converter lexicographic raw episode order",
+    "leading_trim": "exact official find_first_non_static_frame(action)",
+    "policy_frame_to_control_tick": "one-to-one after trim",
+    "official_timestamp": "frame_index / 30",
+    "simulation_control_dt_seconds": 0.02,
+    "history_length_control_ticks": 26,
+    "history_bootstrap": "LEFT_REPEAT_FIRST within the post-trim official episode"
+  },
+  "augmentation": {
+    "architecture": "immutable official dataset plus indexed local sidecar",
+    "fields": {
+      "tactile_sim": [30],
+      "tactile_history": [26, 30],
+      "history_bootstrap_count": [],
+      "control_tick_end": [],
+      "contact_state": [256],
+      "contact_shared_target": [8, 32],
+      "physical_aux_valid": []
+    },
+    "physical_target_transition_control_ticks": 27,
+    "invalid_tail_frames_per_episode": 27,
+    "future_target_runtime_access": false
+  }
+}
