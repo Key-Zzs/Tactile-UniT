@@ -1,0 +1,33 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi1c-frozen.v1",
+  "status": "FROZEN_BEFORE_TRAINING",
+  "task": "pinch_tongs",
+  "mode": "CONTACT_STATE_TOKENS_PHYSICAL_AUX",
+  "experiment": "s43_pi1c_contact_tokens_physical_aux_seed42",
+  "session": "s43_pi1c_pinch",
+  "seed": 42,
+  "steps": 30000,
+  "global_batch_size": 32,
+  "initialization": "exact pi05_base",
+  "lambda_phys": 0.020927851827513076,
+  "lambda_phys_raw": 0.020927851827513076,
+  "lambda_formula": "0.1 * mean(L_official_pi05) / mean(L_phys)",
+  "lambda_clamp": [
+    0.001,
+    0.1
+  ],
+  "calibration": {
+    "batches": 4,
+    "split": "TRAIN only",
+    "mean_official_pi05_loss": 0.3358677327632904,
+    "mean_physical_loss": 1.6048839390277863,
+    "artifact": "$REPO_ROOT/.local/artifacts/simulation/s4_3_pi1/lambda_phys_calibration.json",
+    "artifact_sha256": "ff4f05c62a0adda759d18afdeca5e88ba26edd9f694f9efa12d6917a614d9347",
+    "protocol_sha256": "0ccfd4e4b0c795c68f16b808d1513f3fc63fe6ead9e16a0156497e5685fa41db",
+    "rollout_performance_used": false,
+    "dev_or_pi1d_data_used": false,
+    "recalculate_during_training": false
+  },
+  "pi1b_checkpoint_freeze_sha256": "c7dd2a946839e86dcd0518633dfe242ed63d3e1a57fba35b56c1e4fab92b06e5",
+  "training_protocol_sha256": "389a3c265c0f2321ab556de3472a2a5cab252b52564f836dea3388ed8db33900"
+}

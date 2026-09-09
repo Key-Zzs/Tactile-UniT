@@ -61,3 +61,21 @@ def test_frozen_pi1_protocols_are_consistent() -> None:
     assert evaluation["episodes"] == 50
     assert evaluation["evaluator_seed"] == 1
     assert evaluation["evaluation_performance_seen"] is False
+
+
+def test_pi1c_lambda_is_frozen_from_the_preregistered_formula() -> None:
+    frozen = json.loads((ROOT / "configs/simulation/s4_3_pi1c_frozen.json").read_text())
+    calibration = frozen["calibration"]
+    expected = 0.1 * calibration["mean_official_pi05_loss"] / calibration["mean_physical_loss"]
+    expected = min(frozen["lambda_clamp"][1], max(frozen["lambda_clamp"][0], expected))
+    assert frozen["status"] == "FROZEN_BEFORE_TRAINING"
+    assert frozen["mode"] == "CONTACT_STATE_TOKENS_PHYSICAL_AUX"
+    assert frozen["seed"] == 42
+    assert frozen["steps"] == 30_000
+    assert frozen["global_batch_size"] == 32
+    assert frozen["lambda_phys"] == pytest.approx(expected, abs=0.0, rel=1e-15)
+    assert calibration["batches"] == 4
+    assert calibration["split"] == "TRAIN only"
+    assert calibration["rollout_performance_used"] is False
+    assert calibration["dev_or_pi1d_data_used"] is False
+    assert calibration["recalculate_during_training"] is False
