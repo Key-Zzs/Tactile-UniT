@@ -1,0 +1,94 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2a-statistical-confirmation.v1",
+  "stage": "S4.3-PI2A",
+  "status": "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "models": [
+    "B0",
+    "B1",
+    "B2"
+  ],
+  "episodes_per_model": 200,
+  "total_canonical_rollouts": 600,
+  "evaluator_seed": 2,
+  "freshness": {
+    "selection_rule": "smallest nonnegative evaluator seed never used for pi0.5 policy-performance evaluation",
+    "pi0_seed_0_episodes": 20,
+    "pi1d_seed_1_episodes": 50,
+    "seed_2_previously_used_for_pi05_policy_performance": false,
+    "other_project_seed_namespaces_do_not_expose_pi05_policy_performance_resets": true
+  },
+  "paired_reset_contract": {
+    "same_ordered_reset_sequence": true,
+    "fresh_environment_process_per_model": true,
+    "failed_reset_replacement": false,
+    "reset_filtering": false,
+    "rand_full": false,
+    "randomize_dynamics": false
+  },
+  "runtime": {
+    "frozen_pi1d_augmented_runtime": true,
+    "official_prompt": "Grasp the tongs and perform three consecutive open-close motions.",
+    "replan_ratio": 0.8,
+    "policy_state_shape": [23],
+    "policy_action_chunk_shape": [30, 22],
+    "environment_action_shape": [23],
+    "tactile_shape": [30],
+    "history_shape": [26, 30],
+    "history_bootstrap": "LEFT_REPEAT_FIRST",
+    "contact_state_shape": [256],
+    "B0_contact_state_sent": false,
+    "B1_contact_state_sent": true,
+    "B2_contact_state_sent": true,
+    "B2_training_only_target_sent": false
+  },
+  "hypotheses": {
+    "primary": "B2-B0",
+    "key_secondary": "B2-B1",
+    "secondary": "B1-B0"
+  },
+  "statistics": {
+    "alpha": 0.05,
+    "wilson_confidence": 0.95,
+    "paired_bootstrap": {
+      "resamples": 100000,
+      "seed": 4302,
+      "interval": "two-sided percentile 95%"
+    },
+    "exact_mcnemar": "two-sided exact binomial test on discordant pairs",
+    "holm_adjustment_order": [
+      "B2-B0",
+      "B2-B1",
+      "B1-B0"
+    ],
+    "statistically_confirmed_improvement": "delta > 0 AND paired bootstrap 95% CI lower > 0 AND exact McNemar two-sided p < 0.05",
+    "material_improvement": "delta >= 0.10 AND statistically_confirmed_improvement",
+    "material_hurt": "delta <= -0.10 AND paired bootstrap 95% CI upper < 0 AND exact McNemar two-sided p < 0.05",
+    "submaterial_gain": "0 < delta < 0.10 AND statistically_confirmed_improvement",
+    "positive_trend_not_confirmed": "delta > 0 AND either paired CI includes 0 or McNemar p >= 0.05",
+    "no_point_difference": "delta == 0",
+    "negative_trend_not_confirmed": "delta < 0 without material/statistically established hurt",
+    "primary_decision_uses_fresh_200_only": true,
+    "pooled_250_diagnostic_only": true
+  },
+  "protocol_flags": {
+    "training_allowed": false,
+    "model_selection_allowed": false,
+    "checkpoint_switch_allowed": false,
+    "hyperparameter_change_allowed": false,
+    "evaluation_seed_change_allowed": false,
+    "pi2a_performance_seen": false,
+    "interim_decision_allowed": false
+  },
+  "historical_pi1d": {
+    "decision": "S4_3_PI1D_NO_MATERIAL_GAIN",
+    "B0": "7/50",
+    "B1": "7/50",
+    "B2": "12/50",
+    "B1-B0_percentage_points": 0,
+    "B2-B1_percentage_points": 10,
+    "B2-B0_percentage_points": 10,
+    "modified": false
+  }
+}
