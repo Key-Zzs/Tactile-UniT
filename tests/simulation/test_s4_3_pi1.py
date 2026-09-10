@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 
 from gr00t.simulation.s4_3_pi1 import HISTORY_STEPS, OnlineTactileHistory, left_repeat_history
+from gr00t.simulation.pi1d_runtime import CausalContactRuntime
+from scripts.simulation.summarize_s4_3_pi1d import exact_mcnemar, wilson
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -79,3 +81,46 @@ def test_pi1c_lambda_is_frozen_from_the_preregistered_formula() -> None:
     assert calibration["rollout_performance_used"] is False
     assert calibration["dev_or_pi1d_data_used"] is False
     assert calibration["recalculate_during_training"] is False
+
+
+def test_pi1d_causal_runtime_is_cached_and_never_reads_future() -> None:
+    calls: list[np.ndarray] = []
+
+    def encoder(history: np.ndarray) -> np.ndarray:
+        calls.append(history.copy())
+        return np.full(256, history[-1, 0], dtype=np.float32)
+
+    runtime = CausalContactRuntime(encoder)
+    first = np.arange(30, dtype=np.float32)
+    runtime.reset(first)
+    np.testing.assert_array_equal(runtime.current_history(), np.repeat(first[None], 26, axis=0))
+    np.testing.assert_array_equal(runtime.contact_state(), np.zeros(256, dtype=np.float32))
+    runtime.contact_state()
+    assert len(calls) == 1
+
+    second = first + 100
+    runtime.append(second)
+    np.testing.assert_array_equal(runtime.current_history()[-2:], np.stack((first, second)))
+    np.testing.assert_array_equal(runtime.contact_state(), np.full(256, 100, dtype=np.float32))
+    assert len(calls) == 2
+    assert not np.any(calls[-1] == first + 200)
+
+
+def test_pi1d_statistics_primitives_are_exact() -> None:
+    assert wilson(0, 50)[0] == pytest.approx(0.0, abs=1e-16)
+    assert wilson(50, 50)[1] == pytest.approx(1.0, abs=1e-16)
+    assert exact_mcnemar(0, 0) == 1.0
+    assert exact_mcnemar(0, 5) == pytest.approx(0.0625)
+
+
+def test_pi1d_runtime_sources_freeze_exact_evaluation_contract() -> None:
+    evaluation = (ROOT / "scripts/simulation/evaluate_s4_3_pi1d_augmented.py").read_text()
+    serving = (ROOT / "scripts/simulation/serve_s4_3_pi1_policy.py").read_text()
+    runner = (ROOT / "scripts/simulation/run_s4_3_pi1d_evaluation.sh").read_text()
+    assert "args.seed != 1 or args.episodes != 50" in evaluation
+    assert "replan_ratio=0.8" in evaluation
+    assert "rand_full=False" in evaluation
+    assert "randomize_dynamics=False" in evaluation
+    assert 'for model in R0 B0 B1 B2' in runner
+    assert "mode=TactileUnitMode.CONTACT_STATE_TOKENS" in serving
+    assert "The auxiliary target exists only in training" in serving
