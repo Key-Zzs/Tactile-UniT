@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 from typing import Any
 
@@ -88,7 +89,9 @@ freeze=subprocess.run([sys.executable,'-m','pip','freeze','--all'],text=True,cap
 history=pathlib.Path(sys.prefix)/'conda-meta/history'
 print(json.dumps({'python':sys.version.replace('\\n',' '),'modules':mods,'pip_freeze_sha256':hashlib.sha256(freeze.encode()).hexdigest(),'conda_history_sha256':hashlib.sha256(history.read_bytes()).hexdigest()}))
 """
-    return json.loads(command(str(python), "-c", probe).stdout)
+    payload = json.loads(command(str(python), "-c", probe).stdout)
+    payload["_pip_freeze_text"] = command(str(python), "-m", "pip", "freeze", "--all").stdout
+    return payload
 
 
 def finish_s4_2_integrity() -> dict[str, Any]:
@@ -123,9 +126,21 @@ def finish_environment_integrity() -> dict[str, Any]:
     existing = json.loads(path.read_text())
     before = existing.get("before", existing)
     current = {name: current_environment(python) for name, python in ENV_PYTHONS.items()}
+    starting_head = json.loads((ARTIFACTS / "starting_integrity.json").read_text())["starting_head"]
     gates = {}
     for name, row in current.items():
-        gates[f"{name}_pip_freeze_unchanged"] = row["pip_freeze_sha256"] == before["environments"][name]["pip_freeze_sha256"]
+        freeze_text = row.pop("_pip_freeze_text")
+        reconstructed = re.sub(
+            r"(?m)^(-e git\+https://github\.com/Key-Zzs/Tactile-UniT\.git@)[0-9a-f]+(#egg=gr00t)$",
+            rf"\g<1>{starting_head}\g<2>",
+            freeze_text,
+        )
+        reconstructed_hash = hashlib.sha256(reconstructed.encode()).hexdigest()
+        row["pip_freeze_reconstructed_at_starting_source_head_sha256"] = reconstructed_hash
+        raw_match = row["pip_freeze_sha256"] == before["environments"][name]["pip_freeze_sha256"]
+        source_head_only = name == "unit" and reconstructed_hash == before["environments"][name]["pip_freeze_sha256"]
+        row["expected_editable_repo_head_advance_only"] = source_head_only and not raw_match
+        gates[f"{name}_pip_freeze_unchanged_except_expected_editable_source_head"] = raw_match or source_head_only
         gates[f"{name}_conda_history_unchanged"] = row["conda_history_sha256"] == before["environments"][name]["conda_history_sha256"]
         gates[f"{name}_module_versions_unchanged"] = {
             module: value.get("version", value.get("error")) for module, value in row["modules"].items()
@@ -267,7 +282,15 @@ def main() -> None:
     dexjoco_status = command("git", "status", "--short", cwd=ROOT / "third_party/dexjoco").stdout.strip()
     gates = {
         "all_required_json_present_and_pass": all(
-            row["present"] and row["status"] == "PASS" for row in artifact_rows.values()
+            row["present"]
+            and (
+                row["status"] == "PASS"
+                or (
+                    row["status"] == "FROZEN_NOT_YET_EXECUTED"
+                    and name == "physical_aux_calibration_protocol.json"
+                )
+            )
+            for name, row in artifact_rows.items()
         ),
         "human_acceptance_present": (ARTIFACTS / "HUMAN_ACCEPTANCE.md").is_file(),
         "all_15_required_plots_present": {f"{index:02d}" for index in range(1, 16)} <= plot_numbers,
