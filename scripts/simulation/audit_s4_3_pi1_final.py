@@ -104,9 +104,20 @@ def finish_s4_2_integrity() -> dict[str, Any]:
         source.relative_to(ROOT).as_posix(): sha256_file(source)
         for source in sorted((ROOT / "configs/simulation").glob("s4_2*.json"))
     }
+    pi0_after = json.loads(
+        (ROOT / ".local/artifacts/simulation/s4_3_pi0/s4_2_immutability_after.json").read_text()
+    )
+    vision_identity_path = ROOT / pi0_after["Vision_identity_artifact"]
+    vision_identity = json.loads(vision_identity_path.read_text())
+    current_vision_identity_sha256 = sha256_file(vision_identity_path)
+    current_vision_file_hash_contract = vision_identity["checkpoint_file_sha256"]
     gates = {
         "all_S4_2_checkpoints_byte_identical": current_checkpoints == before["checkpoints"],
         "all_S4_2_configs_byte_identical": current_configs == before["tracked_configs"],
+        "Vision_identity_artifact_byte_identical": current_vision_identity_sha256
+        == pi0_after["Vision_identity_artifact_sha256"],
+        "Vision_checkpoint_file_hash_contract_identical": current_vision_file_hash_contract
+        == pi0_after["Vision_checkpoint_files"],
     }
     payload = {
         "schema": "tactile3d-unit.s4-3-pi1-s4-2-immutability.v2",
@@ -115,6 +126,19 @@ def finish_s4_2_integrity() -> dict[str, Any]:
         "mutation": False if all(gates.values()) else True,
         "before": before,
         "after": {"checkpoints": current_checkpoints, "tracked_configs": current_configs},
+        "Vision": {
+            "checkpoint_location_available_for_live_rehash": False,
+            "live_rehashed": False,
+            "reason": "$UNIT_FULLDATA_CKPT is not mounted in the final PI1 environment; PI1 never loads or writes Vision",
+            "identity_artifact": "$REPO_ROOT/" + vision_identity_path.relative_to(ROOT).as_posix(),
+            "identity_artifact_sha256": current_vision_identity_sha256,
+            "checkpoint_file_sha256_contract": current_vision_file_hash_contract,
+            "matches_last_completed_PI0_freeze": all(
+                value
+                for name, value in gates.items()
+                if name.startswith("Vision_")
+            ),
+        },
         "gates": {name: "PASS" if value else "FAIL" for name, value in gates.items()},
     }
     atomic_json(path, payload)
