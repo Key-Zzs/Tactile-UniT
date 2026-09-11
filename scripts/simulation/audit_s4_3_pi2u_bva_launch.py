@@ -94,6 +94,13 @@ def main() -> None:
                     environment[key.decode()] = value.decode()
         except (FileNotFoundError, PermissionError, ProcessLookupError):
             pid = None
+    selection_source = "launch_log"
+    if not physical_gpus and environment.get("CUDA_VISIBLE_DEVICES"):
+        inferred = environment["CUDA_VISIBLE_DEVICES"].split(",")
+        if inferred and all(value.isdigit() and int(value) in range(4) for value in inferred):
+            physical_gpus = [int(value) for value in inferred]
+            device_count = len(physical_gpus)
+            selection_source = "live_process_environment"
     gpu_rows = run("nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader,nounits").stdout.splitlines()
     uuids = {int(row.split(",", 1)[0].strip()): row.split(",", 1)[1].strip() for row in gpu_rows}
     process_rows = run(
@@ -124,7 +131,7 @@ def main() -> None:
         "frozen_BVA_protocol": protocol.get("status") == "FROZEN_BEFORE_TRAINING",
         "training_process_alive": pid is not None,
         "tmux_session_alive": session_alive,
-        "selection_recorded": selection is not None,
+        "selection_recorded": bool(physical_gpus),
         "one_or_two_devices": device_count in {1, 2} and len(physical_gpus) == device_count,
         "global_batch32_divisible": device_count > 0 and 32 % device_count == 0,
         "only_scanned_physical_gpu_range": all(gpu in range(4) for gpu in physical_gpus),
@@ -152,6 +159,7 @@ def main() -> None:
         "global_batch_size": 32,
         "physical_gpus": physical_gpus,
         "logical_gpus": list(range(device_count)),
+        "gpu_selection_evidence": selection_source,
         "pid": pid,
         "process_command": command,
         "process_environment": environment,
