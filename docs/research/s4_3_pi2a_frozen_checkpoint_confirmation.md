@@ -1,6 +1,6 @@
 # S4.3-PI2A Frozen-Checkpoint Statistical Confirmation
 
-Status: frozen before scientific evaluation.
+Status: complete.
 
 PI2A is a no-training, no-retuning, fresh-reset paired closed-loop
 confirmation of the frozen PI1D checkpoints. It does not attempt to improve or
@@ -72,3 +72,75 @@ change after the first scientific rollout is
 PI2A ends after its final decision and PI2B-readiness classification. It does
 not start new training seeds, raw-tactile work, a world model, real-robot work,
 or any push/release action.
+
+## Integrity and completion
+
+All frozen checkpoint, runtime-parity, fresh-seed, reset-identity, environment,
+and S4.2 immutability gates passed. The evaluator completed all 600 canonical
+rollouts: 200 per model and 200/200 triple-aligned reset pairs. There were no
+missing or duplicate tuples, infrastructure retries, reset replacements,
+unresolved policy-server errors, or Contact-State sidecar errors. No training,
+retuning, checkpoint switch, package mutation, or push occurred.
+
+The frozen checkpoint tree hashes were:
+
+- B0: `1e7a6ace5d69a988a8b258e1c56a24d88b077580a05b27be3f510df9ac3864f3`.
+- B1: `04b59cbc3491bf4e88dc75558a08a94e5588e2fbe398d413e1766a87c7ab6f4f`.
+- B2: `86c4908533ca24da06ae66f943e3605b5ccbae455441290ca8fb35514359e949`.
+
+## Fresh 200-reset results
+
+| Model | Successes | Rate | Wilson 95% CI | Mean / median steps |
+|---|---:|---:|---:|---:|
+| B0 | 37/200 | 18.5% | [13.73%, 24.46%] | 941.325 / 1000 |
+| B1 | 30/200 | 15.0% | [10.71%, 20.61%] | 939.645 / 1000 |
+| B2 | 51/200 | 25.5% | [19.96%, 31.96%] | 914.710 / 1000 |
+
+Every non-success terminated at the frozen 1000-step limit. The paired results
+were:
+
+| Contrast | Delta | Paired bootstrap 95% CI | Exact McNemar p | Holm p | Classification |
+|---|---:|---:|---:|---:|---|
+| B1-B0 | -3.5 pp | [-11.0, 4.0] pp | 0.442626 | 0.442626 | `NEGATIVE_TREND_NOT_CONFIRMED` |
+| B2-B1 | +10.5 pp | [3.0, 18.0] pp | 0.011141 | 0.033424 | `MATERIAL_IMPROVEMENT` |
+| B2-B0 (primary) | +7.0 pp | [-1.5, 15.5] pp | 0.130178 | 0.260355 | `POSITIVE_TREND_NOT_CONFIRMED` |
+
+The B2-B1 discordant counts were 42 B2-only successes versus 21 B1-only
+successes (discordant odds ratio 2.0; relative success ratio 1.70). Thus the
+pre-registered key-secondary comparison confirms a material benefit from the
+training-only shared-physical auxiliary beyond Contact-State conditioning.
+The primary B2-B0 comparison remains positive but does not meet the frozen
+statistical-confirmation rule because its interval includes zero and its exact
+p-value exceeds 0.05.
+
+## Replication and diagnostics
+
+The core B2 pattern is stable: B2-B1 remained near +10 pp (+10.5 pp), and
+B2-B0 remained positive and within 5 pp of the PI1D estimate (+7.0 pp versus
++10 pp). The complete three-contrast pattern is not replicated because B1-B0
+reversed from zero to -3.5 pp. This descriptive result does not change the
+pre-registered decision.
+
+The pooled, diagnostic-only 250-reset rates were B0 17.6%, B1 14.8%, and B2
+25.2%. Pooled B2-B0 was +7.6 pp and remained unconfirmed; pooled B2-B1 was
++10.4 pp and confirmed. These pooled results were not used to determine PI2A.
+
+Available contact telemetry showed mean peak normal force of 24.49, 25.44,
+and 25.79 for B0, B1, and B2, respectively, and mean maximum pinch counts of
+1.705, 1.605, and 1.825. Successful episodes reached pinch count 3 in every
+model. Integrated normal force, contact onset, lift height, and explicit cycle
+counts were unavailable in the frozen telemetry and were not inferred.
+
+## Decision
+
+Final PI2A decision:
+`S4_3_PI2A_PHYSICAL_AUX_GAIN_CONFIRMED`.
+
+The primary B2-B0 endpoint is not confirmed, but B2-B1 is a statistically
+confirmed material improvement under the frozen rule. Accordingly, PI2B is
+`PI2B_MULTI_SEED_RECOMMENDED`: a future, separately preregistered study may
+evaluate two additional training seeds across B0/B1/B2 (six 30k runs). PI2A
+does not start those runs.
+
+Post-evaluation regression testing passed with 399 tests passed, one skipped,
+and zero failures. PI2A stops here.
