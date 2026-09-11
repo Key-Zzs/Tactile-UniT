@@ -49,11 +49,13 @@ _HOOKS_INSTALLED = False
 
 @struct.dataclass
 class TactileObservation(_OfficialObservation):
-    """Official observation plus current precomputed Contact-State fields."""
+    """Official observation plus optional training-only physical targets."""
 
     contact_state: Any | None = None
     contact_shared_target: Any | None = None
     physical_aux_valid: Any | None = None
+    va_shared_target: Any | None = None
+    va_aux_valid: Any | None = None
 
     @classmethod
     def from_dict(cls, data: at.PyTree[Any]) -> "TactileObservation":
@@ -69,6 +71,8 @@ class TactileObservation(_OfficialObservation):
             contact_state=data.get("contact_state"),
             contact_shared_target=data.get("contact_shared_target"),
             physical_aux_valid=data.get("physical_aux_valid"),
+            va_shared_target=data.get("va_shared_target"),
+            va_aux_valid=data.get("va_aux_valid"),
         )
 
 
@@ -87,27 +91,38 @@ def _preprocess_preserving_tactile(rng, observation, **kwargs):
         contact_state=observation.contact_state,
         contact_shared_target=observation.contact_shared_target,
         physical_aux_valid=observation.physical_aux_valid,
+        va_shared_target=observation.va_shared_target,
+        va_aux_valid=observation.va_aux_valid,
     )
 
 
 class _SidecarDataset:
     """Strict-superset view over the immutable official LeRobot dataset."""
 
-    def __init__(self, dataset, sidecar_path: Path):
+    def __init__(self, dataset, sidecar_path: Path, mode: TactileUnitMode):
         self._dataset = dataset
+        self._mode = mode
         with np.load(sidecar_path, allow_pickle=False) as source:
             self._index = source["index"].copy()
-            self._contact_state = source["contact_state"].copy()
-            self._contact_shared_target = source["contact_shared_target"].copy()
-            self._physical_aux_valid = source["physical_aux_valid"].copy()
+            if mode is TactileUnitMode.VA_PHYSICAL_AUX:
+                if set(source.files) != {"index", "va_shared_target", "va_aux_valid"}:
+                    raise ValueError(f"BVA sidecar must contain only index/V/A target/validity: {source.files}")
+                self._va_shared_target = source["va_shared_target"].copy()
+                self._va_aux_valid = source["va_aux_valid"].copy()
+                values = (self._index, self._va_shared_target, self._va_aux_valid)
+            else:
+                self._contact_state = source["contact_state"].copy()
+                self._contact_shared_target = source["contact_shared_target"].copy()
+                self._physical_aux_valid = source["physical_aux_valid"].copy()
+                values = (
+                    self._index,
+                    self._contact_state,
+                    self._contact_shared_target,
+                    self._physical_aux_valid,
+                )
         if len(self._index) != len(dataset):
             raise ValueError(f"sidecar/dataset length mismatch: {len(self._index)} != {len(dataset)}")
-        for value in (
-            self._index,
-            self._contact_state,
-            self._contact_shared_target,
-            self._physical_aux_valid,
-        ):
+        for value in values:
             value.flags.writeable = False
 
     def __len__(self) -> int:
@@ -121,6 +136,12 @@ class _SidecarDataset:
             raise RuntimeError(
                 f"sidecar index mismatch: request={position}, official={official_index}, sidecar={self._index[position]}"
             )
+        if self._mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            return {
+                **item,
+                "va_shared_target": self._va_shared_target[position],
+                "va_aux_valid": self._va_aux_valid[position],
+            }
         return {
             **item,
             "contact_state": self._contact_state[position],
@@ -132,6 +153,7 @@ class _SidecarDataset:
 @dataclasses.dataclass(frozen=True)
 class TactileDataConfig(_config.DataConfig):
     sidecar_path: Path | None = None
+    mode: TactileUnitMode = TactileUnitMode.CONTACT_STATE_TOKENS
 
 
 def _create_tactile_dataset(data_config, action_horizon, model_config):
@@ -139,7 +161,7 @@ def _create_tactile_dataset(data_config, action_horizon, model_config):
     if isinstance(data_config, TactileDataConfig):
         if data_config.sidecar_path is None:
             raise ValueError("tactile data config requires a sidecar")
-        dataset = _SidecarDataset(dataset, Path(data_config.sidecar_path))
+        dataset = _SidecarDataset(dataset, Path(data_config.sidecar_path), data_config.mode)
     return dataset
 
 
@@ -158,15 +180,22 @@ def install_openpi_runtime_hooks() -> None:
 @dataclasses.dataclass(frozen=True)
 class TactileSingleArmInputs(_transforms.DataTransformFn):
     model_type: _model.ModelType
-    include_physical_aux: bool = False
+    mode: TactileUnitMode = TactileUnitMode.CONTACT_STATE_TOKENS
 
     def __call__(self, data: dict) -> dict:
         result = single_arm_policy.SingleArmInputs(model_type=self.model_type)(data)
+        if self.mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            target = np.asarray(data["va_shared_target"], dtype=np.float32)
+            if target.shape != (CONTACT_TOKENS, CONTACT_TOKEN_WIDTH):
+                raise ValueError(f"VA target must be [8,32], got {target.shape}")
+            result["va_shared_target"] = target
+            result["va_aux_valid"] = np.asarray(data["va_aux_valid"], dtype=np.bool_)
+            return result
         contact_state = np.asarray(data["contact_state"], dtype=np.float32)
         if contact_state.shape != (CONTACT_STATE_DIM,):
             raise ValueError(f"contact_state must be [{CONTACT_STATE_DIM}], got {contact_state.shape}")
         result["contact_state"] = contact_state
-        if self.include_physical_aux:
+        if self.mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
             target = np.asarray(data["contact_shared_target"], dtype=np.float32)
             if target.shape != (CONTACT_TOKENS, CONTACT_TOKEN_WIDTH):
                 raise ValueError(f"contact target must be [8,32], got {target.shape}")
@@ -193,10 +222,12 @@ class TactileSingleArmDataConfig(_config.DataConfigFactory):
             "state": "observation.state",
             "actions": "action",
             "prompt": "prompt",
-            "contact_state": "contact_state",
         }
-        include_aux = self.mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX
-        if include_aux:
+        if self.mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            mapping.update({"va_shared_target": "va_shared_target", "va_aux_valid": "va_aux_valid"})
+        else:
+            mapping["contact_state"] = "contact_state"
+        if self.mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
             mapping.update(
                 {
                     "contact_shared_target": "contact_shared_target",
@@ -205,7 +236,7 @@ class TactileSingleArmDataConfig(_config.DataConfigFactory):
             )
         repack = _transforms.Group(inputs=[_transforms.RepackTransform(mapping)])
         data_transforms = _transforms.Group(
-            inputs=[TactileSingleArmInputs(model_type=model_config.model_type, include_physical_aux=include_aux)],
+            inputs=[TactileSingleArmInputs(model_type=model_config.model_type, mode=self.mode)],
             outputs=[single_arm_policy.SingleArmOutputs()],
         )
         model_transforms = _config.ModelTransformFactory()(model_config)
@@ -218,6 +249,7 @@ class TactileSingleArmDataConfig(_config.DataConfigFactory):
             action_sequence_keys=self.action_sequence_keys,
             root=self.root,
             sidecar_path=self.sidecar_path,
+            mode=self.mode,
         )
         return TactileDataConfig(**values)
 
@@ -258,7 +290,11 @@ class TactilePi0Config(_pi0_config.Pi0Config):
 
     def __post_init__(self):
         super().__post_init__()
-        if self.tactile_unit_mode is not TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX and self.lambda_phys != 0:
+        physical_modes = {
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+            TactileUnitMode.VA_PHYSICAL_AUX,
+        }
+        if self.tactile_unit_mode not in physical_modes and self.lambda_phys != 0:
             raise ValueError("lambda_phys must be zero unless physical auxiliary mode is active")
         if not 0.0 <= self.lambda_phys <= 0.1:
             raise ValueError("lambda_phys must be in [0, 0.1]")
@@ -272,11 +308,22 @@ class TactilePi0Config(_pi0_config.Pi0Config):
         official_obs, action_spec = super().inputs_spec(batch_size=batch_size)
         if self.tactile_unit_mode is TactileUnitMode.NONE:
             return official_obs, action_spec
-        target = None
-        valid = None
+        contact_target = None
+        contact_valid = None
+        va_target = None
+        va_valid = None
         if self.tactile_unit_mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
-            target = jax.ShapeDtypeStruct([batch_size, CONTACT_TOKENS, CONTACT_TOKEN_WIDTH], jnp.float32)
-            valid = jax.ShapeDtypeStruct([batch_size], jnp.bool_)
+            contact_target = jax.ShapeDtypeStruct([batch_size, CONTACT_TOKENS, CONTACT_TOKEN_WIDTH], jnp.float32)
+            contact_valid = jax.ShapeDtypeStruct([batch_size], jnp.bool_)
+        elif self.tactile_unit_mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            va_target = jax.ShapeDtypeStruct([batch_size, CONTACT_TOKENS, CONTACT_TOKEN_WIDTH], jnp.float32)
+            va_valid = jax.ShapeDtypeStruct([batch_size], jnp.bool_)
+        contact_state = None
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS,
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+        }:
+            contact_state = jax.ShapeDtypeStruct([batch_size, CONTACT_STATE_DIM], jnp.float32)
         return TactileObservation(
             images=official_obs.images,
             image_masks=official_obs.image_masks,
@@ -285,9 +332,11 @@ class TactilePi0Config(_pi0_config.Pi0Config):
             tokenized_prompt_mask=official_obs.tokenized_prompt_mask,
             token_ar_mask=official_obs.token_ar_mask,
             token_loss_mask=official_obs.token_loss_mask,
-            contact_state=jax.ShapeDtypeStruct([batch_size, CONTACT_STATE_DIM], jnp.float32),
-            contact_shared_target=target,
-            physical_aux_valid=valid,
+            contact_state=contact_state,
+            contact_shared_target=contact_target,
+            physical_aux_valid=contact_valid,
+            va_shared_target=va_target,
+            va_aux_valid=va_valid,
         ), action_spec
 
 
@@ -298,14 +347,23 @@ class TactilePi0(_pi0.Pi0):
         super().__init__(config, rngs)
         self.tactile_unit_mode = config.tactile_unit_mode
         self.lambda_phys = config.lambda_phys
-        prefix_width = _gemma.get_config(config.paligemma_variant).width
         action_width = _gemma.get_config(config.action_expert_variant).width
-        self.contact_adapter = ContactTokenAdapter(prefix_width, rngs)
-        if self.tactile_unit_mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS,
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+        }:
+            prefix_width = _gemma.get_config(config.paligemma_variant).width
+            self.contact_adapter = ContactTokenAdapter(prefix_width, rngs)
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+            TactileUnitMode.VA_PHYSICAL_AUX,
+        }:
             self.physical_auxiliary = PhysicalAuxiliaryHead(action_width, rngs)
 
     def embed_prefix(self, obs):
         tokens, input_mask, ar_mask = super().embed_prefix(obs)
+        if self.tactile_unit_mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            return tokens, input_mask, ar_mask
         if obs.contact_state is None:
             raise ValueError("contact_state [B,256] is required in tactile modes")
         contact = jnp.asarray(obs.contact_state, dtype=jnp.float32)
@@ -323,7 +381,10 @@ class TactilePi0(_pi0.Pi0):
         chunked_loss, action_hidden = super().compute_loss_with_hidden(rng, observation, actions, train=train)
         official_loss = jnp.mean(chunked_loss)
         info = {"official_loss": official_loss}
-        if self.tactile_unit_mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+            TactileUnitMode.VA_PHYSICAL_AUX,
+        }:
             physical_loss = self._physical_loss(observation, action_hidden)
             total_loss = official_loss + self.lambda_phys * physical_loss
             info.update(physical_loss=physical_loss, lambda_phys=jnp.asarray(self.lambda_phys))
@@ -331,11 +392,17 @@ class TactilePi0(_pi0.Pi0):
         return official_loss, info
 
     def _physical_loss(self, observation, action_hidden):
-        if observation.contact_shared_target is None or observation.physical_aux_valid is None:
-            raise ValueError("physical auxiliary target and validity mask are required for PI1C training")
+        if self.tactile_unit_mode is TactileUnitMode.VA_PHYSICAL_AUX:
+            target_value, valid_value = observation.va_shared_target, observation.va_aux_valid
+            label = "BVA"
+        else:
+            target_value, valid_value = observation.contact_shared_target, observation.physical_aux_valid
+            label = "PI1C"
+        if target_value is None or valid_value is None:
+            raise ValueError(f"physical auxiliary target and validity mask are required for {label} training")
         prediction = self.physical_auxiliary(action_hidden)
-        target = jax.lax.stop_gradient(jnp.asarray(observation.contact_shared_target, dtype=prediction.dtype))
-        valid = jnp.asarray(observation.physical_aux_valid, dtype=jnp.bool_)
+        target = jax.lax.stop_gradient(jnp.asarray(target_value, dtype=prediction.dtype))
+        valid = jnp.asarray(valid_value, dtype=jnp.bool_)
         per_sample = jnp.mean(jnp.square(prediction - target), axis=(-2, -1))
         valid_float = valid.astype(per_sample.dtype)
         return jnp.sum(per_sample * valid_float) / jnp.maximum(jnp.sum(valid_float), 1.0)
@@ -350,6 +417,10 @@ class TactilePi0(_pi0.Pi0):
             raise ValueError("training-only contact_shared_target is forbidden during inference")
         if getattr(observation, "physical_aux_valid", None) is not None:
             raise ValueError("training-only physical_aux_valid is forbidden during inference")
+        if getattr(observation, "va_shared_target", None) is not None:
+            raise ValueError("training-only va_shared_target is forbidden during inference")
+        if getattr(observation, "va_aux_valid", None) is not None:
+            raise ValueError("training-only va_aux_valid is forbidden during inference")
         return super().sample_actions(rng, observation, **kwargs)
 
     def training_gradient_metrics(self, grads):
@@ -357,11 +428,16 @@ class TactilePi0(_pi0.Pi0):
             selected = grads.filter(nnx_utils.PathRegex(pattern))
             return optax.global_norm(selected) if jax.tree.leaves(selected) else jnp.asarray(0.0)
 
-        metrics = {
-            "contact_adapter_grad_norm": norm(".*contact_adapter.*"),
-            "pi05_trainable_grad_norm": norm(".*(lora|action_(in|out)_proj|time_mlp).*"),
-        }
-        if self.tactile_unit_mode is TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX:
+        metrics = {"pi05_trainable_grad_norm": norm(".*(lora|action_(in|out)_proj|time_mlp).*")}
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS,
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+        }:
+            metrics["contact_adapter_grad_norm"] = norm(".*contact_adapter.*")
+        if self.tactile_unit_mode in {
+            TactileUnitMode.CONTACT_STATE_TOKENS_PHYSICAL_AUX,
+            TactileUnitMode.VA_PHYSICAL_AUX,
+        }:
             metrics["physical_auxiliary_grad_norm"] = norm(".*physical_auxiliary.*")
         return metrics
 

@@ -1,0 +1,120 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-unit-compatibility.v1",
+  "audit_date": "2026-09-11",
+  "authoritative_sources": {
+    "code": {
+      "repository": "https://github.com/xpeng-robotics/UniT.git",
+      "commit": "0d762e32180bddd765694ef3846a3a5053f9d37f",
+      "license": "Apache-2.0"
+    },
+    "checkpoints": {
+      "repository": "https://huggingface.co/xpeng-robotics/VLA-UniT-checkpoints",
+      "revision": "3ceba29d6eb4b184eb81a49e94d387addf9e584a",
+      "license": "apache-2.0",
+      "releases": ["VLA-UniT-3B-fulldata", "VLA-UniT-3B-fewshot"]
+    }
+  },
+  "released_contract": {
+    "tokenizer": {
+      "vision": "DINOv2-large layer -2, current and t+16 goal RGB resized to 224x224",
+      "state_dim": 128,
+      "action_dim": 128,
+      "action_horizon": 16,
+      "query_tokens": 8,
+      "hidden_dim": 1024,
+      "routes": ["vision_only", "action_only", "fused"],
+      "rvq": {"stages": 2, "codes_per_stage": 128, "code_dim": 32},
+      "multi_scenario_cross_reconstruction": true
+    },
+    "vla_target": {
+      "route": "fused pv=1,pa=1",
+      "representation": "RVQ index stack",
+      "shape": [8, 2],
+      "classes_per_stage": 128,
+      "ce_weights": [1.0, 0.5]
+    },
+    "checkpoint_bytes": {
+      "all_hf_tree": 49732598629,
+      "one_vla_tensor_payload": 19369104384,
+      "one_tokenizer_tensor_payload": 5494676608
+    }
+  },
+  "embodiment_boundary": {
+    "shared_and_frozen_for_dexjoco_adapter": [
+      "DINOv2 vision backbone",
+      "vision M-Former",
+      "shared action M-Former",
+      "fusion and alignment projections",
+      "VQ down projection and both RVQ codebooks",
+      "bridge projector",
+      "vision decoder",
+      "shared action-decoder M-Former",
+      "all existing embodiment slices"
+    ],
+    "new_trainable_dexjoco_components": [
+      "state MLP category slice",
+      "action-encoder temporal ResNet/LN category slices",
+      "action-decoder ResNet/LN/output category slices"
+    ],
+    "estimated_new_parameters": 23485568,
+    "id_rule": "allocate a dedicated DexJoCo category id and explicitly expand banks if needed; never reuse GR1 id24 or use released generic id31 against max_num_embodiments=30"
+  },
+  "dexjoco_contract": {
+    "state": {"dim": 23, "layout": "TCP xyz3 + quaternion wxyz4 + Allegro16"},
+    "policy_action": {"dim": 22, "layout": "TCP xyz3 + rotvec3 + Allegro16"},
+    "policy_action_horizon": 30,
+    "cameras": ["front", "wrist"],
+    "direct_shape_probe": "PASS after explicit 16-step selection and masked padding to 128",
+    "direct_semantic_probe": "FAIL",
+    "direct_failure_reasons": [
+      "no released DexJoCo embodiment slice or TRAIN normalization statistics",
+      "GR1 joint meanings differ from Franka TCP and Allegro meanings",
+      "released one-ego-camera/16-step tokenizer contract differs from the two-camera/30-step pi0.5 policy contract",
+      "padding is not semantic adaptation"
+    ]
+  },
+  "compatibility": {
+    "classification": "UNIT_DEXJOCO_ADAPTER_ONLY_COMPATIBLE",
+    "direct_compatible": false,
+    "claim": "The official shared tokenizer and RVQ codebooks can remain frozen while a new DexJoCo-specific action encoder/decoder category slice is trained.",
+    "qualification": "This is an architecture-level minimal adaptation classification; adapter quality has not been demonstrated and BUniT was not trained."
+  },
+  "future_bunit": {
+    "status": "DESIGN_ONLY_NOT_RUN",
+    "policy_backbone": "same official pi0.5 initialization/configuration as B0/BVA/B1/B2",
+    "policy_modalities": ["front RGB", "wrist RGB", "proprioception", "language"],
+    "tactile_or_contact": false,
+    "adapter_data": "TRAIN and source-group-disjoint DEV only",
+    "tokenizer_view": "front current frame and front t+16 goal frame; wrist remains in the pi0.5 policy input but not the tokenizer target path",
+    "tokenizer_state": "TCP xyz + quaternion-to-rotation6d + Allegro16, TRAIN mean/std, masked pad to 128",
+    "tokenizer_action": "first 16 absolute targets from the 30-step chunk, TRAIN mean/std, masked pad to 128",
+    "target": "frozen adapted tokenizer fused RVQ indices [8,2]",
+    "target_loss": "CE(stage0) + 0.5*CE(stage1)",
+    "auxiliary_head": "parameter-matched 666624-parameter factorized categorical head from the same pi0.5 hidden-state source used by comparison auxiliaries",
+    "loss": "L_pi05 + lambda_unit*L_unit",
+    "lambda_calibration": "four deterministic TRAIN-only batches; clamp 0.1*mean(L_pi05)/mean(L_unit) to [1e-3,1e-1], then freeze",
+    "future_information_at_runtime": false,
+    "fair_comparison": "YES_WITH_ADAPTATION",
+    "go_gate": "all frozen hashes unchanged, non-collapsed valid codes, paired controls pass, and both action/vision reconstruction beat preregistered baselines on DEV"
+  },
+  "resources": {
+    "official_default_training_memory_per_device": "120+ GB",
+    "official_example_gpus": 8,
+    "full_official_training_on_four_24gb_gpus": "PROHIBITED",
+    "native_checkpoint_smoke": "PASS_VISION_TRANSITION_ONLY_DURING_BVA_TARGET_BUILD",
+    "adapter_training_on_one_24gb_gpu": "UNCONFIRMED_REQUIRES_LOW_BATCH_MEMORY_SMOKE",
+    "recommended_policy_target_delivery": "precompute uint8 indices; 16 unpacked bytes per sample"
+  },
+  "claim_policy": {
+    "allowed": "Official UniT source/checkpoint initialized, DexJoCo embodiment-adapted, exact official fused RVQ-index auxiliary on the same pi0.5 backbone.",
+    "forbidden": [
+      "released checkpoint is directly DexJoCo compatible",
+      "untouched Original UniT",
+      "official VLA-UniT reproduction on DexJoCo",
+      "primary ablation between GR00T VLA-UniT and pi0.5"
+    ]
+  },
+  "artifacts": "$REPO_ROOT/.local/artifacts/simulation/s4_3_pi2u",
+  "training_performed": false,
+  "large_weights_downloaded": false
+}

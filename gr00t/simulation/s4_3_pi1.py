@@ -12,11 +12,12 @@ import numpy as np
 
 
 class TactileUnitMode(str, Enum):
-    """The three frozen policy interventions used by PI1."""
+    """Frozen PI1 modes plus the contact-free PI2U BVA intervention."""
 
     NONE = "NONE"
     CONTACT_STATE_TOKENS = "CONTACT_STATE_TOKENS"
     CONTACT_STATE_TOKENS_PHYSICAL_AUX = "CONTACT_STATE_TOKENS_PHYSICAL_AUX"
+    VA_PHYSICAL_AUX = "VA_PHYSICAL_AUX"
 
 
 HISTORY_STEPS = 26

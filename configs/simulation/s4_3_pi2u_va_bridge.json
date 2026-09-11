@@ -1,0 +1,40 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-va-bridge.v1",
+  "status": "FROZEN_BEFORE_VA_BRIDGE_TRAINING",
+  "seed": 4242,
+  "inputs": ["z_v", "z_a"],
+  "forbidden_inputs": ["z_c", "h_current", "h_future", "tactile", "contact_state", "contact-derived masks"],
+  "transition_offset_steps": 27,
+  "transition_horizon_seconds": 0.54,
+  "input_shape": [8, 32],
+  "output_shape": [8, 32],
+  "architecture": {
+    "family": "selected S4.2 B3 slot projector",
+    "projectors": ["P_v^VA", "P_a^VA"],
+    "attention_heads": 4,
+    "hidden_width": 64,
+    "recovery_heads": true
+  },
+  "training": {
+    "split": "TRAIN only",
+    "steps": 800,
+    "batch_size": 512,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "gradient_clip": 1.0,
+    "temperature": 0.1,
+    "negative_policy": "different episode only",
+    "loss_weights": {"alignment": 1.0, "native": 5.0, "relational": 0.25, "variance": 0.05},
+    "architecture_sweep": false,
+    "checkpoint_selection": "final only"
+  },
+  "validation": {
+    "split": "DEV representation only",
+    "bootstrap_samples": 5000,
+    "paired_margin_ci_lower_min": 0.0,
+    "retrieval_r10_chance_multiplier_min": 5.0,
+    "recovery_cosine_min": 0.85,
+    "near_zero_variance_fraction_max": 0.5,
+    "policy_rollout_used": false
+  }
+}
