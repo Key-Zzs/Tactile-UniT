@@ -1,0 +1,40 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-formal-ablation.v1",
+  "status": "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "evaluator_seed": 3,
+  "fresh_seed_selection": "smallest nonnegative evaluator seed not previously used for pi0.5 policy performance",
+  "episodes_per_model": 200,
+  "models": ["B0", "BVA", "B1", "B2"],
+  "total_rollouts": 800,
+  "shared_ordered_resets": true,
+  "rand_full": false,
+  "randomize_dynamics": false,
+  "prompt": "Grasp the tongs and perform three consecutive open-close motions.",
+  "replan_ratio": 0.8,
+  "success_definition": "official DexJoCo definition",
+  "runtime": {
+    "B0": "frozen official pi0.5 observations only",
+    "BVA": "exactly B0 observations; no tactile, Contact-State, future Vision, or VA target",
+    "B1": "frozen PI2A Contact-State runtime",
+    "B2": "frozen PI2A Contact-State runtime; no training target"
+  },
+  "comparisons": ["BVA-B0", "B2-BVA", "B2-B1", "B1-B0"],
+  "statistics": {
+    "wilson_confidence": 0.95,
+    "bootstrap_resamples": 100000,
+    "bootstrap_seed": 4303,
+    "mcnemar": "exact two-sided",
+    "multiplicity": "Holm across four preregistered comparisons",
+    "statistically_confirmed": "delta > 0 AND bootstrap_ci_lower > 0 AND raw_mcnemar_p < 0.05",
+    "material": "delta >= 10 percentage points AND statistically confirmed"
+  },
+  "prohibitions": {
+    "checkpoint_switch": true,
+    "rollout_based_tuning": true,
+    "early_stopping": true,
+    "additional_training": true,
+    "reuse_pi2a_seed2_as_formal_bva_test": true
+  }
+}
