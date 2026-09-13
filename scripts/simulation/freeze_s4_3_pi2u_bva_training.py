@@ -27,6 +27,7 @@ def main() -> None:
     tracked = ROOT / "configs/simulation/s4_3_pi2u_bva_protocol.json"
     inputs = {
         "tracked_protocol": tracked,
+        "temporal_remediation": ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json",
         "target_manifest": ARTIFACTS / "bva_target_manifest.json",
         "contact_leakage_audit": ARTIFACTS / "contact_leakage_audit.json",
         "mode_contract": ARTIFACTS / "bva_mode_contract.json",
@@ -50,6 +51,7 @@ def main() -> None:
         "checkpoint_steps": [10000, 20000, 29999],
         "inputs_sha256": {name: sha256(path) for name, path in inputs.items()},
         "implementation_sha256": {
+            "target_builder": sha256(ROOT / "scripts/simulation/build_s4_3_pi2u_bva_targets.py"),
             "model": sha256(ROOT / "gr00t/simulation/pi05_tactile_unit.py"),
             "mode": sha256(ROOT / "gr00t/simulation/s4_3_pi1.py"),
             "entrypoint": sha256(ROOT / "scripts/simulation/train_s4_3_pi2u_bva.py"),
