@@ -38,7 +38,10 @@ def main() -> None:
     values = {name: json.loads(path.read_text()) for name, path in inputs.items()}
     if values["tracked_protocol"]["status"] != "FROZEN_BEFORE_TRAINING":
         raise SystemExit("tracked protocol is not frozen")
-    if any(values[name].get("status") != "PASS" for name in inputs if name != "tracked_protocol"):
+    if values["temporal_remediation"].get("status") != "FROZEN_BEFORE_REMEDIATION_TRAINING":
+        raise SystemExit("temporal remediation is not frozen")
+    pass_prerequisites = set(inputs) - {"tracked_protocol", "temporal_remediation"}
+    if any(values[name].get("status") != "PASS" for name in pass_prerequisites):
         raise SystemExit("one or more BVA prerequisites failed")
     payload = {
         "schema": "tactile3d-unit.s4-3-pi2u-bva-training-protocol.v1",
