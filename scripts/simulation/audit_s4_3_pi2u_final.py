@@ -45,12 +45,12 @@ def main() -> None:
     if (ARTIFACTS / "final_decision.json").exists():
         raise SystemExit("final PI2U audit was already completed")
     required = [
-        "bva_training_completion.json", "bva_checkpoint_manifest.json", "fresh_seed_retry_seed4.json", "pre_eval_retry_seed4.json",
+        "bva_training_completion.json", "bva_checkpoint_manifest.json", "fresh_seed_retry_seed5.json", "pre_eval_retry_seed5.json",
         "b0_eval.json", "bva_eval.json", "b1_eval.json", "b2_eval.json", "paired_ablation_statistics.json", "mechanism_interpretation.json",
     ]
     if any(not (ARTIFACTS / name).is_file() for name in required):
         raise SystemExit("PI2U final audit called before all required evidence exists")
-    completion, freeze, statistics, mechanism = (load(name) for name in ("bva_training_completion.json", "pre_eval_retry_seed4.json", "paired_ablation_statistics.json", "mechanism_interpretation.json"))
+    completion, freeze, statistics, mechanism = (load(name) for name in ("bva_training_completion.json", "pre_eval_retry_seed5.json", "paired_ablation_statistics.json", "mechanism_interpretation.json"))
     source_hashes = freeze["sources_sha256"]
     source_gates = {}
     for symbolic, expected in source_hashes.items():

@@ -1,0 +1,22 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-formal-ablation-retry.v2",
+  "status": "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
+  "supersedes": ["seed3 cross-episode action-queue abort", "seed4 pre-completion temporary-artifact collision"],
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "evaluator_seed": 5,
+  "fresh_seed_selection": "smallest unused seed after all partial PI2U attempts are marked exposed and non-reusable",
+  "episodes_per_model": 200,
+  "models": ["B0", "BVA", "B1", "B2"],
+  "total_rollouts": 800,
+  "shared_ordered_resets": true,
+  "rand_full": false,
+  "randomize_dynamics": false,
+  "replan_ratio": 0.8,
+  "infrastructure_fixes": [
+    "discard only impossible future action chunks crossing an episode timestamp reset",
+    "isolate each worker's temporary evaluator artifact and contact-service artifact until it completes"
+  ],
+  "statistics": {"wilson_confidence": 0.95, "bootstrap_resamples": 100000, "bootstrap_seed": 4305, "mcnemar": "exact two-sided", "multiplicity": "Holm across four preregistered comparisons"},
+  "prohibitions": {"checkpoint_switch": true, "rollout_based_tuning": true, "early_stopping": true, "additional_training": true, "reuse_incomplete_prior_attempt_outcomes": true}
+}

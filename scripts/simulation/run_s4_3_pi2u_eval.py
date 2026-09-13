@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the fresh seed-4 retry after the invalidated seed-3 infrastructure abort."""
+"""Run the fresh seed-5 PI2U retry with isolated evaluator artifacts."""
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ from queue import Empty
 ROOT = Path(__file__).resolve().parents[2]
 DEXJOCO = ROOT / "third_party/dexjoco"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2u"
-LOGS = ROOT / ".local/logs/simulation/s4_3_pi2u/evaluation_seed4"
-CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/evaluation/seed4"
+LOGS = ROOT / ".local/logs/simulation/s4_3_pi2u/evaluation_seed5"
+CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/evaluation/seed5"
 # AF_UNIX socket paths are limited to 108 bytes on this host; keep this short.
-TMP = ROOT / ".local/tmp/s43u4"
-PRE_FREEZE = ARTIFACTS / "pre_eval_retry_seed4.json"
+TMP = ROOT / ".local/tmp/s43u5"
+PRE_FREEZE = ARTIFACTS / "pre_eval_retry_seed5.json"
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 OPENPI_PYTHON = CONDA_ROOT / "envs/openpi/bin/python"
 UNIT_PYTHON = CONDA_ROOT / "envs/unit/bin/python"
@@ -32,7 +32,7 @@ EVAL_PYTHON = ROOT / ".local/external/s4_3_pi0/eval-venv/bin/python"
 MODELS = ("B0", "BVA", "B1", "B2")
 RUNTIME_MODES = {"B0": "NONE", "BVA": "NONE", "B1": "CONTACT_STATE_TOKENS", "B2": "CONTACT_STATE_TOKENS_PHYSICAL_AUX"}
 EPISODES = 200
-EVALUATOR_SEED = 4
+EVALUATOR_SEED = 5
 
 
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -168,8 +168,9 @@ def evaluate_model(model: str, socket_path: Path, output: Path, diagnostics: Pat
     from scripts.simulation import evaluate_s4_3_pi1d_augmented as frozen
 
     raw_artifact = ARTIFACTS / f"{model.lower()}_raw_rollouts.json"
-    temporary_artifact = ARTIFACTS / f"pi1d_{model.lower()}_eval.json"
-    if any(path.exists() for path in (output, diagnostics, raw_artifact, temporary_artifact)):
+    worker_artifacts = TMP / f"{model.lower()}_worker_artifacts"
+    temporary_artifact = worker_artifacts / f"pi1d_{model.lower()}_eval.json"
+    if any(path.exists() for path in (output, diagnostics, raw_artifact, worker_artifacts)):
         raise SystemExit(f"refusing to overwrite canonical PI2U output for {model}")
     frozen.MODEL_ID = model
     # BVA deliberately shares B0's exact observation payload. The frozen evaluator
@@ -181,7 +182,8 @@ def evaluate_model(model: str, socket_path: Path, output: Path, diagnostics: Pat
     frozen.CONTACT_SOCKET = socket_path
     frozen.EXPECTED_EPISODES = EPISODES
     frozen.EVALUATOR_SEED = EVALUATOR_SEED
-    frozen.ARTIFACTS = ARTIFACTS
+    worker_artifacts.mkdir(parents=True, exist_ok=False)
+    frozen.ARTIFACTS = worker_artifacts
     diagnostics.parent.mkdir(parents=True, exist_ok=True)
 
     sys.path.insert(0, str(DEXJOCO / "dexjoco"))
@@ -218,7 +220,7 @@ def run_one(model: str, gpu: int, port: int) -> dict[str, Any]:
     socket_path = TMP / f"{lower}_contact_state.sock"
     output = CACHE / lower
     diagnostics = TMP / f"{lower}_inference.jsonl"
-    contact_artifact = ARTIFACTS / f"{lower}_contact_state_service.json"
+    contact_artifact = TMP / f"{lower}_contact_state_service.json"
     contact_log = LOGS / f"{lower}_contact_state_service.log"
     server_log = LOGS / f"{lower}_server.log"
     client_log = LOGS / f"{lower}_client.log"

@@ -63,11 +63,15 @@ def symbolic(path: Path) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--retry-seed4", action="store_true")
+    parser.add_argument("--retry-seed5", action="store_true")
     args = parser.parse_args()
-    output = ARTIFACTS / ("pre_eval_retry_seed4.json" if args.retry_seed4 else "pre_eval_freeze.json")
-    seeds = ARTIFACTS / ("fresh_seed_retry_seed4.json" if args.retry_seed4 else "fresh_seed_audit.json")
-    protocol_path = ROOT / "configs/simulation/" / ("s4_3_pi2u_ablation_retry_seed4.json" if args.retry_seed4 else "s4_3_pi2u_ablation_protocol.json")
-    selected_seed = 4 if args.retry_seed4 else 3
+    if args.retry_seed4 and args.retry_seed5:
+        raise SystemExit("choose one PI2U retry seed")
+    retry_seed = 5 if args.retry_seed5 else 4 if args.retry_seed4 else None
+    output = ARTIFACTS / (f"pre_eval_retry_seed{retry_seed}.json" if retry_seed else "pre_eval_freeze.json")
+    seeds = ARTIFACTS / (f"fresh_seed_retry_seed{retry_seed}.json" if retry_seed else "fresh_seed_audit.json")
+    protocol_path = ROOT / "configs/simulation/" / (f"s4_3_pi2u_ablation_retry_seed{retry_seed}.json" if retry_seed else "s4_3_pi2u_ablation_protocol.json")
+    selected_seed = retry_seed or 3
     if output.exists() or seeds.exists():
         raise SystemExit("refusing to overwrite PI2U pre-evaluation freeze")
     protocol = json.loads(protocol_path.read_text())
@@ -88,8 +92,10 @@ def main() -> None:
         {"seed": 1, "stage": "PI1D", "episodes": 50, "pi05_policy_performance": True},
         {"seed": 2, "stage": "PI2A", "episodes": 200, "pi05_policy_performance": True},
     ]
-    if args.retry_seed4:
+    if retry_seed:
         exposures.append({"seed": 3, "stage": "PI2U_ABORTED", "episodes": 161, "pi05_policy_performance": True, "formal_usable": False})
+    if args.retry_seed5:
+        exposures.append({"seed": 4, "stage": "PI2U_PRECOMPLETION_ABORT", "episodes": 0, "pi05_policy_performance": True, "formal_usable": False})
     seed_payload = {
         "schema": "tactile3d-unit.s4-3-pi2u-fresh-seed-audit.v1",
         "status": "PASS",
