@@ -124,7 +124,7 @@ def main() -> None:
         raise SystemExit("models did not receive byte-identical ordered fresh resets")
     for model, value in summaries.items():
         atomic(f"{model.lower()}_eval.json", value)
-    rows = {f"{second}-{first}": contrast(first, second, outcomes, 4303 + i) for i, (first, second) in enumerate(CONTRASTS)}
+    rows = {f"{second}-{first}": contrast(first, second, outcomes, 4304 + i) for i, (first, second) in enumerate(CONTRASTS)}
     adjusted = holm(rows)
     for name, value in rows.items():
         value["holm_adjusted_p"] = adjusted[name]

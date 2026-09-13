@@ -5,8 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${UNIT_PYTHON:-${CONDA_PREFIX:+$CONDA_PREFIX/bin/python}}"
 PYTHON="${PYTHON:-python}"
-ARTIFACT="$ROOT/.local/artifacts/simulation/s4_3_pi2u/pre_eval_freeze.json"
-LOG="$ROOT/.local/logs/simulation/s4_3_pi2u/evaluation_launcher.log"
+ARTIFACT="$ROOT/.local/artifacts/simulation/s4_3_pi2u/pre_eval_retry_seed4.json"
+LOG="$ROOT/.local/logs/simulation/s4_3_pi2u/evaluation_seed4_launcher.log"
 
 test -f "$ARTIFACT"
 test "$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$ARTIFACT")" = PASS
@@ -24,5 +24,5 @@ test "${#chosen[@]}" -ge 1
 GPUS="$(IFS=,; echo "${chosen[*]}")"
 
 mkdir -p "$(dirname "$LOG")"
-tmux new-session -d -s s43_pi2u_eval_seed3 "cd '$ROOT' && '$PYTHON' scripts/simulation/run_s4_3_pi2u_eval.py launch --gpus '$GPUS' >> '$LOG' 2>&1"
-echo "tmux=s43_pi2u_eval_seed3 gpus=$GPUS log=$LOG"
+tmux new-session -d -s s43_pi2u_eval_seed4 "cd '$ROOT' && '$PYTHON' scripts/simulation/run_s4_3_pi2u_eval.py launch --gpus '$GPUS' >> '$LOG' 2>&1"
+echo "tmux=s43_pi2u_eval_seed4 gpus=$GPUS log=$LOG"
