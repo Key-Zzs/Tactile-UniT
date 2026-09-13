@@ -18,6 +18,7 @@ MODELS = ("B0", "BVA", "B1", "B2")
 CONTRASTS = (("B0", "BVA"), ("BVA", "B2"), ("B1", "B2"), ("B0", "B1"))
 N = 200
 RESAMPLES = 100_000
+EVALUATOR_SEED = 5
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -132,14 +133,36 @@ def main() -> None:
     b2_bva = rows["B2-BVA"]
     outcome = ("BVA_MATERIAL_GAIN" if bva["material_improvement"] else "BVA_STATISTICAL_GAIN" if bva["statistically_confirmed_improvement"] else "BVA_HURT" if bva["statistically_confirmed_hurt"] else "BVA_POSITIVE_TREND" if bva["success_difference"] > 0 else "BVA_NO_GAIN")
     readiness = "PI2B_READY_B0_BVA_B1_B2" if bva["statistically_confirmed_improvement"] else "PI2B_READY_B0_B1_B2" if b2_bva["statistically_confirmed_improvement"] else "PI2B_MECHANISM_DIAGNOSIS_FIRST"
+    b2_b1 = rows["B2-B1"]
+    b1_b0 = rows["B1-B0"]
+    if bva["statistically_confirmed_improvement"] and b2_bva["statistically_confirmed_improvement"]:
+        pattern = "CASE_B_VA_HELPS_AND_FULL_TACTILE_UNIT_ADDS_VALUE"
+    elif not bva["statistically_confirmed_improvement"] and b2_bva["statistically_confirmed_improvement"]:
+        pattern = "CASE_A_VA_DOES_NOT_EXPLAIN_FULL_TACTILE_UNIT"
+    elif b2_bva["statistically_confirmed_hurt"]:
+        pattern = "CASE_D_VA_EXCEEDS_FULL_TACTILE_UNIT"
+    elif bva["statistically_confirmed_improvement"] and not b2_bva["statistically_confirmed_improvement"]:
+        pattern = "CASE_C_COMPATIBLE_VA_MAY_EXPLAIN_MOST_INCREMENT"
+    else:
+        pattern = "INDETERMINATE_PATTERN"
     mechanism = {
         "schema": "tactile3d-unit.s4-3-pi2u-mechanism-interpretation.v1", "status": "PASS",
+        "evaluator_seed": EVALUATOR_SEED,
         "BVA_outcome": outcome, "VA_explains_incremental_value": bva["statistically_confirmed_improvement"],
         "B2_exceeds_BVA": b2_bva["statistically_confirmed_improvement"], "pi2b_readiness": readiness,
-        "interpretation": "BVA changes training supervision only; its inference payload is exactly B0 and contains no tactile/contact/future target.",
+        "pattern": pattern,
+        "questions": {
+            "BVA_minus_B0_VA_only_supervision": bva["classification"],
+            "B2_minus_BVA_full_Tactile_UniT_vs_VA_only": b2_bva["classification"],
+            "B2_minus_B1_VAC_auxiliary_increment": b2_b1["classification"],
+            "B1_minus_B0_tactile_conditioning_increment": b1_b0["classification"],
+        },
+        "interpretation_boundary": "B2-BVA is full Tactile-UniT versus VA-only supervision, not an isolated Contact-target effect.",
+        "runtime_fact": "BVA changes training supervision only; its inference payload is exactly B0 and contains no tactile/contact/future target.",
     }
     statistics = {
         "schema": "tactile3d-unit.s4-3-pi2u-paired-ablation-statistics.v1", "status": "PASS",
+        "evaluator_seed": EVALUATOR_SEED,
         "episodes_per_model": N, "summaries": summaries, "contrasts": rows,
         "holm_family": list(rows), "BVA_outcome": outcome, "PI2B_readiness": readiness,
         "raw_outcomes_sha256": {model: summaries[model]["raw_artifact_sha256"] for model in MODELS},

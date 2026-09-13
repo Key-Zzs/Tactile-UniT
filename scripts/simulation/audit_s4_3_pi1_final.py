@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 from typing import Any
 
 
@@ -16,10 +17,11 @@ ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi1"
 EVALUATION = ROOT / ".local/experiments/simulation/s4_3_pi1/evaluation/seed1"
 EXPECTED_BRANCH = "develop/sim-benchmark"
 EXPECTED_DEXJOCO = "8d23b0fab23b17a58c4b55f3942e17013aaf8267"
+CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 ENV_PYTHONS = {
-    "unit": Path("/home/wbcd/miniconda3/envs/unit/bin/python"),
-    "tactile-unit-dexjoco": Path("/home/wbcd/miniconda3/envs/tactile-unit-dexjoco/bin/python"),
-    "openpi": Path("/home/wbcd/miniconda3/envs/openpi/bin/python"),
+    "unit": CONDA_ROOT / "envs/unit/bin/python",
+    "tactile-unit-dexjoco": CONDA_ROOT / "envs/tactile-unit-dexjoco/bin/python",
+    "openpi": CONDA_ROOT / "envs/openpi/bin/python",
 }
 REQUIRED_JSON = (
     "starting_integrity.json",
