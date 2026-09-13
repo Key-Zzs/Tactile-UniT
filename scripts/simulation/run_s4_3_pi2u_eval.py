@@ -22,7 +22,8 @@ DEXJOCO = ROOT / "third_party/dexjoco"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2u"
 LOGS = ROOT / ".local/logs/simulation/s4_3_pi2u/evaluation_seed4"
 CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/evaluation/seed4"
-TMP = ROOT / ".local/tmp/simulation/s4_3_pi2u/evaluation_seed4"
+# AF_UNIX socket paths are limited to 108 bytes on this host; keep this short.
+TMP = ROOT / ".local/tmp/s43u4"
 PRE_FREEZE = ARTIFACTS / "pre_eval_retry_seed4.json"
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 OPENPI_PYTHON = CONDA_ROOT / "envs/openpi/bin/python"
