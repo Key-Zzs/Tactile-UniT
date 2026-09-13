@@ -304,7 +304,7 @@ def repository_audit(current_head: str) -> dict[str, Any]:
         "git", "diff", "--name-only", STARTING_HEAD, current_head, "--",
         "configs/simulation/s4_3_pi2a*", "docs/research/s4_3_pi2a*",
     )
-    identity_patterns = ["/home/" + "wbcd/", "/" + "mnt/", "deep" + "cybo", "wbcd" + "@"]
+    identity_patterns = ["/" + "home/", "/" + "mnt/", "deep" + "cybo", "wbcd" + "@"]
     privacy = run("git", "grep", "-n", "-I", "-E", "|".join(identity_patterns))
     changed = output("git", "diff", "--name-only", STARTING_HEAD, current_head).splitlines()
     sensitive_findings = []
