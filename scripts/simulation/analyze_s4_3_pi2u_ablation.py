@@ -132,7 +132,17 @@ def main() -> None:
     bva = rows["BVA-B0"]
     b2_bva = rows["B2-BVA"]
     outcome = ("BVA_MATERIAL_GAIN" if bva["material_improvement"] else "BVA_STATISTICAL_GAIN" if bva["statistically_confirmed_improvement"] else "BVA_HURT" if bva["statistically_confirmed_hurt"] else "BVA_POSITIVE_TREND" if bva["success_difference"] > 0 else "BVA_NO_GAIN")
-    readiness = "PI2B_READY_B0_BVA_B1_B2" if bva["statistically_confirmed_improvement"] else "PI2B_READY_B0_B1_B2" if b2_bva["statistically_confirmed_improvement"] else "PI2B_MECHANISM_DIAGNOSIS_FIRST"
+    bva_competitive = (
+        summaries["BVA"]["success_rate"] >= summaries["B2"]["success_rate"]
+        and not b2_bva["statistically_confirmed_improvement"]
+    )
+    readiness = (
+        "PI2B_READY_B0_BVA_B1_B2"
+        if bva["statistically_confirmed_improvement"] or bva_competitive
+        else "PI2B_READY_B0_B1_B2"
+        if b2_bva["statistically_confirmed_improvement"]
+        else "PI2B_MECHANISM_DIAGNOSIS_FIRST"
+    )
     b2_b1 = rows["B2-B1"]
     b1_b0 = rows["B1-B0"]
     if bva["statistically_confirmed_improvement"] and b2_bva["statistically_confirmed_improvement"]:
@@ -150,6 +160,8 @@ def main() -> None:
         "evaluator_seed": EVALUATOR_SEED,
         "BVA_outcome": outcome, "VA_explains_incremental_value": bva["statistically_confirmed_improvement"],
         "B2_exceeds_BVA": b2_bva["statistically_confirmed_improvement"], "pi2b_readiness": readiness,
+        "BVA_competitive_for_multiseed": bva_competitive,
+        "pi2b_readiness_rationale": "BVA is retained when its point estimate is at least B2 and B2 does not statistically exceed it, as required by the preregistered competitive-BVA guidance.",
         "pattern": pattern,
         "questions": {
             "BVA_minus_B0_VA_only_supervision": bva["classification"],
