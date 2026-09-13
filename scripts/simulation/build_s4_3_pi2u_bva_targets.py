@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Build the contact-free 0.9 s future-Vision target sidecar for BVA."""
+"""Build the contact-free canonical 0.54 s future-Vision target sidecar for BVA.
+
+The simulator representation clock is 50 Hz, while the official policy dataset
+is natively sampled at 30 Hz.  Canonical step ``t+27`` is therefore represented
+by the nearest native observation, dataset frame ``i+16`` (0.533333... s).  The
+6.667 ms discrepancy is the frozen S4.1 sampling-rounding error.  Keeping a
+native frame avoids inventing an interpolated RGB observation.
+"""
 
 from __future__ import annotations
 
@@ -29,8 +36,13 @@ BRIDGE_PATH = ROOT / ".local/experiments/simulation/s4_3_pi2u/va_bridge/frozen.p
 PROTOCOL = ROOT / "configs/simulation/s4_3_pi2u_bva_protocol.json"
 OUTPUT = ROOT / ".local/datasets/simulation/s4_3_pi2u/pinch_tongs_va/sidecar.npz"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2u"
-HORIZON = 27
-FPS = 30.0
+CANONICAL_CONTROL_DT_SECONDS = 0.02
+CANONICAL_HORIZON_STEPS = 27
+CANONICAL_HORIZON_SECONDS = CANONICAL_HORIZON_STEPS * CANONICAL_CONTROL_DT_SECONDS
+SOURCE_FPS = 30.0
+SOURCE_HORIZON_FRAMES = round(CANONICAL_HORIZON_SECONDS * SOURCE_FPS)
+SOURCE_HORIZON_SECONDS = SOURCE_HORIZON_FRAMES / SOURCE_FPS
+SOURCE_TIMING_ERROR_SECONDS = abs(CANONICAL_HORIZON_SECONDS - SOURCE_HORIZON_SECONDS)
 
 
 @dataclass(frozen=True)
@@ -67,7 +79,8 @@ def contact_leakage_payload() -> dict[str, Any]:
         "contact_tactile_force_touch_fields": [],
         "target_lineage": [
             "observation.images.front[t]",
-            "observation.images.front[t+27]",
+            "observation.images.front[nearest native frame to canonical t+27]",
+            "30 Hz dataset frame i+16 (0.533333 s; 0.006667 s from canonical 0.54 s)",
             "frozen official UniT Vision transition encoder",
             "frozen VA-only bridge vision projector",
             "u_v[8,32]",
@@ -132,25 +145,25 @@ def episode_frames(path: Path, pointer) -> Iterator[tuple[int, np.ndarray, float
         stream.thread_type = "AUTO"
         if pointer.from_timestamp > 0 and stream.time_base is not None:
             container.seek(
-                int(max(0.0, pointer.from_timestamp - 2.0 / FPS) / float(stream.time_base)),
+                int(max(0.0, pointer.from_timestamp - 2.0 / SOURCE_FPS) / float(stream.time_base)),
                 stream=stream,
                 any_frame=False,
                 backward=True,
             )
         selected: dict[int, tuple[float, Any, float]] = {}
-        final_time = pointer.from_timestamp + (pointer.length - 1) / FPS
+        final_time = pointer.from_timestamp + (pointer.length - 1) / SOURCE_FPS
         for frame in container.decode(stream):
             if frame.time is None:
                 continue
             timestamp = float(frame.time)
-            if timestamp < pointer.from_timestamp - 0.51 / FPS:
+            if timestamp < pointer.from_timestamp - 0.51 / SOURCE_FPS:
                 continue
-            if timestamp > final_time + 0.51 / FPS:
+            if timestamp > final_time + 0.51 / SOURCE_FPS:
                 break
-            index = int(round((timestamp - pointer.from_timestamp) * FPS))
+            index = int(round((timestamp - pointer.from_timestamp) * SOURCE_FPS))
             if not 0 <= index < pointer.length:
                 continue
-            distance = abs(timestamp - (pointer.from_timestamp + index / FPS))
+            distance = abs(timestamp - (pointer.from_timestamp + index / SOURCE_FPS))
             previous = selected.get(index)
             if previous is None or distance < previous[0]:
                 selected[index] = (distance, frame, timestamp)
@@ -186,6 +199,19 @@ def main() -> None:
     if visible is None or "," in visible or not torch.cuda.is_available() or torch.cuda.device_count() != 1:
         raise SystemExit("BVA target construction requires exactly one explicitly visible GPU")
     protocol = json.loads(PROTOCOL.read_text())
+    temporal = protocol["auxiliary_target"]["temporal_alignment"]
+    expected_temporal = {
+        "canonical_control_dt_seconds": CANONICAL_CONTROL_DT_SECONDS,
+        "canonical_offset_steps": CANONICAL_HORIZON_STEPS,
+        "canonical_horizon_seconds": CANONICAL_HORIZON_SECONDS,
+        "source_dataset_fps": SOURCE_FPS,
+        "source_offset_frames": SOURCE_HORIZON_FRAMES,
+        "source_horizon_seconds": SOURCE_HORIZON_SECONDS,
+        "absolute_timing_error_seconds": SOURCE_TIMING_ERROR_SECONDS,
+        "selection_rule": "nearest native source frame; no RGB interpolation",
+    }
+    if temporal != expected_temporal:
+        raise RuntimeError("BVA temporal-alignment protocol mismatch")
     for name, expected in protocol["official_unit"]["files_sha256"].items():
         actual = sha256_file(UNIT_ROOT / "tokenizer" / name)
         if actual != expected:
@@ -235,16 +261,16 @@ def main() -> None:
         pending_index.clear()
 
     for episode_number, pointer in enumerate(pointers):
-        window: deque[np.ndarray] = deque(maxlen=HORIZON + 1)
+        window: deque[np.ndarray] = deque(maxlen=SOURCE_HORIZON_FRAMES + 1)
         path = DATASET_ROOT / pointer.relative_path
         count = 0
         for frame_index, rgb, timestamp in episode_frames(path, pointer):
             count += 1
-            expected_time = pointer.from_timestamp + frame_index / FPS
+            expected_time = pointer.from_timestamp + frame_index / SOURCE_FPS
             maximum_timestamp_error = max(maximum_timestamp_error, abs(timestamp - expected_time))
             window.append(preprocess_trex_rgb(rgb))
-            if frame_index >= HORIZON:
-                anchor = pointer.dataset_from_index + frame_index - HORIZON
+            if frame_index >= SOURCE_HORIZON_FRAMES:
+                anchor = pointer.dataset_from_index + frame_index - SOURCE_HORIZON_FRAMES
                 pending_current.append(window[0])
                 pending_future.append(window[-1])
                 pending_index.append(anchor)
@@ -255,8 +281,8 @@ def main() -> None:
         flush()
         print(f"episode {episode_number + 1:03d}/{len(pointers):03d} targets={int(valid.sum())}", flush=True)
 
-    expected_valid = sum(pointer.length - HORIZON for pointer in pointers)
-    expected_invalid = HORIZON * len(pointers)
+    expected_valid = sum(pointer.length - SOURCE_HORIZON_FRAMES for pointer in pointers)
+    expected_invalid = SOURCE_HORIZON_FRAMES * len(pointers)
     if int(valid.sum()) != expected_valid or int((~valid).sum()) != expected_invalid:
         raise RuntimeError("BVA validity accounting mismatch")
     if np.any(target[~valid] != 0) or not np.isfinite(target).all():
@@ -279,8 +305,12 @@ def main() -> None:
         "invalid_tail_rows": int((~valid).sum()),
         "episodes": len(pointers),
         "target_shape": [8, 32],
-        "future_offset_frames": HORIZON,
-        "future_offset_seconds": HORIZON / FPS,
+        "canonical_future_offset_steps": CANONICAL_HORIZON_STEPS,
+        "canonical_future_offset_seconds": CANONICAL_HORIZON_SECONDS,
+        "source_future_offset_frames": SOURCE_HORIZON_FRAMES,
+        "source_future_offset_seconds": SOURCE_HORIZON_SECONDS,
+        "absolute_timing_error_seconds": SOURCE_TIMING_ERROR_SECONDS,
+        "source_frame_selection": "nearest native source frame; no RGB interpolation",
         "camera": "observation.images.front",
         "maximum_absolute_decode_timestamp_error_seconds": maximum_timestamp_error,
         "dataset_contract_sha256": {path.relative_to(ROOT).as_posix(): sha256_file(path) for path in source_files},

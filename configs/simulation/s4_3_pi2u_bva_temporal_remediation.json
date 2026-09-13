@@ -1,0 +1,44 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-bva-temporal-remediation.v1",
+  "status": "FROZEN_BEFORE_REMEDIATION_TRAINING",
+  "reason": "The first BVA target cache treated the 30 Hz policy dataset row offset 27 as canonical simulator step t+27, producing a 0.9 s target instead of the preregistered 0.54 s physical horizon.",
+  "discovery_stage": "post-training final completion audit after the first fresh paired evaluation",
+  "superseded_attempt": {
+    "training_seed": 42,
+    "evaluator_seed": 5,
+    "target_source_offset_frames": 27,
+    "target_horizon_seconds": 0.9,
+    "formal_claim_allowed": false,
+    "retention": "preserve checkpoint, logs, targets, rollouts, and derived evidence under ignored superseded_temporal_0p9_v1 archives"
+  },
+  "corrected_temporal_contract": {
+    "canonical_simulator_control_hz": 50.0,
+    "canonical_offset_steps": 27,
+    "canonical_horizon_seconds": 0.54,
+    "policy_dataset_fps": 30.0,
+    "native_frame_selection": "round(0.54 * 30) = 16",
+    "source_offset_frames": 16,
+    "source_horizon_seconds": 0.5333333333333333,
+    "absolute_timing_error_seconds": 0.00666666666666671,
+    "justification": "nearest native observation at the already frozen S4.1 target duration; identical to the repository's established 30 Hz canonical pairing horizon",
+    "rgb_interpolation": false
+  },
+  "frozen_remediation": {
+    "va_bridge_retraining": false,
+    "va_bridge_checkpoint_unchanged": true,
+    "bva_training_seed": 42,
+    "bva_training_steps": 30000,
+    "base_checkpoint_unchanged": true,
+    "optimizer_and_schedule_unchanged": true,
+    "lambda_rule_unchanged": true,
+    "lambda_recalibration_batches": 4,
+    "policy_outcomes_used_to_choose_change": false,
+    "only_intervention": "replace the invalid 0.9 s future-Vision target by the nearest native 30 Hz frame to canonical +0.54 s",
+    "fresh_evaluator_seed_after_retraining": 6,
+    "new_training_seeds": false
+  },
+  "stop_boundary": {
+    "train_bunit": false,
+    "start_pi2b": false
+  }
+}

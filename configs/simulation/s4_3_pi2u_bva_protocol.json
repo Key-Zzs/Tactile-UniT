@@ -30,11 +30,19 @@
     "source": "frozen official UniT fulldata tokenizer Vision transition branch followed by the frozen canonical VA-only bridge",
     "camera": "observation.images.front",
     "current_offset_frames": 0,
-    "future_offset_frames": 27,
-    "future_offset_seconds": 0.9,
+    "temporal_alignment": {
+      "canonical_control_dt_seconds": 0.02,
+      "canonical_offset_steps": 27,
+      "canonical_horizon_seconds": 0.54,
+      "source_dataset_fps": 30.0,
+      "source_offset_frames": 16,
+      "source_horizon_seconds": 0.5333333333333333,
+      "absolute_timing_error_seconds": 0.00666666666666671,
+      "selection_rule": "nearest native source frame; no RGB interpolation"
+    },
     "shape": [8, 32],
     "training_only": true,
-    "tail_policy": "last 27 frames of every episode are invalid and receive an all-zero placeholder",
+    "tail_policy": "last 16 native 30 Hz frames of every episode are invalid and receive an all-zero placeholder because no nearest native observation for canonical t+27 is available",
     "sidecar_allowed_fields": ["index", "va_shared_target", "va_aux_valid"]
   },
   "official_unit": {

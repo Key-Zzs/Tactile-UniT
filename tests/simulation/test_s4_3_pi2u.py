@@ -52,6 +52,14 @@ def test_frozen_bva_protocol_contract() -> None:
         "va_aux_valid",
     ]
     assert protocol["official_policy"]["tactile_or_contact_runtime_input"] is False
+    temporal = protocol["auxiliary_target"]["temporal_alignment"]
+    assert temporal["canonical_offset_steps"] == 27
+    assert temporal["canonical_horizon_seconds"] == pytest.approx(0.54)
+    assert temporal["source_dataset_fps"] == pytest.approx(30.0)
+    assert temporal["source_offset_frames"] == 16
+    assert temporal["source_horizon_seconds"] == pytest.approx(16 / 30)
+    assert temporal["absolute_timing_error_seconds"] == pytest.approx(0.54 - 16 / 30)
+    assert temporal["selection_rule"] == "nearest native source frame; no RGB interpolation"
 
 
 def test_materialized_sidecar_is_exact_and_tail_accounted() -> None:
@@ -64,8 +72,8 @@ def test_materialized_sidecar_is_exact_and_tail_accounted() -> None:
         assert source["va_shared_target"].shape == (40_065, 8, 32)
         valid = source["va_aux_valid"]
         assert valid.dtype == np.bool_
-        assert int(valid.sum()) == 37_365
-        assert int((~valid).sum()) == 2_700
+        assert int(valid.sum()) == 38_465
+        assert int((~valid).sum()) == 1_600
         assert np.all(source["va_shared_target"][~valid] == 0)
 
 
