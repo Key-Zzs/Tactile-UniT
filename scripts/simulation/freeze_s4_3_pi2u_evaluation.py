@@ -88,7 +88,7 @@ def main() -> None:
         "performance_inspected_before_freeze": False,
     }
     gates = {
-        "protocol_frozen": protocol.get("status") == "FROZEN_BEFORE_EVALUATION",
+        "protocol_frozen": protocol.get("status") == "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
         "seed_is_fresh": seed_payload["selected_seed"] == 3,
         "four_models_exact": protocol.get("models") == ["B0", "BVA", "B1", "B2"],
         "200_episodes_each": protocol.get("episodes_per_model") == 200,
