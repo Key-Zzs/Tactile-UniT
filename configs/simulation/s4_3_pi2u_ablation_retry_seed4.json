@@ -1,0 +1,31 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2u-formal-ablation-retry.v1",
+  "status": "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
+  "supersedes": "seed3 infrastructure-aborted before complete four-model outcome set",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "evaluator_seed": 4,
+  "fresh_seed_selection": "smallest nonnegative evaluator seed not previously exposed for pi0.5 performance, including incomplete PI2U seed3",
+  "episodes_per_model": 200,
+  "models": ["B0", "BVA", "B1", "B2"],
+  "total_rollouts": 800,
+  "shared_ordered_resets": true,
+  "rand_full": false,
+  "randomize_dynamics": false,
+  "replan_ratio": 0.8,
+  "infrastructure_fix": "discard only action chunks whose timestamp is greater than the current episode timestamp; such chunks are necessarily late producers from a prior episode after reset",
+  "statistics": {
+    "wilson_confidence": 0.95,
+    "bootstrap_resamples": 100000,
+    "bootstrap_seed": 4304,
+    "mcnemar": "exact two-sided",
+    "multiplicity": "Holm across four preregistered comparisons"
+  },
+  "prohibitions": {
+    "checkpoint_switch": true,
+    "rollout_based_tuning": true,
+    "early_stopping": true,
+    "additional_training": true,
+    "reuse_incomplete_seed3_outcomes": true
+  }
+}

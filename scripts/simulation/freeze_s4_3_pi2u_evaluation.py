@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import argparse
 from pathlib import Path
 import subprocess
 from typing import Any
@@ -60,13 +61,20 @@ def symbolic(path: Path) -> str:
 
 
 def main() -> None:
-    if OUTPUT.exists() or SEEDS.exists():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--retry-seed4", action="store_true")
+    args = parser.parse_args()
+    output = ARTIFACTS / ("pre_eval_retry_seed4.json" if args.retry_seed4 else "pre_eval_freeze.json")
+    seeds = ARTIFACTS / ("fresh_seed_retry_seed4.json" if args.retry_seed4 else "fresh_seed_audit.json")
+    protocol_path = ROOT / "configs/simulation/" / ("s4_3_pi2u_ablation_retry_seed4.json" if args.retry_seed4 else "s4_3_pi2u_ablation_protocol.json")
+    selected_seed = 4 if args.retry_seed4 else 3
+    if output.exists() or seeds.exists():
         raise SystemExit("refusing to overwrite PI2U pre-evaluation freeze")
-    protocol = json.loads((ROOT / "configs/simulation/s4_3_pi2u_ablation_protocol.json").read_text())
+    protocol = json.loads(protocol_path.read_text())
     completion = json.loads((ARTIFACTS / "bva_training_completion.json").read_text())
     pi2a_immutable = json.loads((PI2A / "checkpoint_immutability.json").read_text())
     source_files = [
-        ROOT / "configs/simulation/s4_3_pi2u_ablation_protocol.json",
+        protocol_path,
         ROOT / "scripts/simulation/run_s4_3_pi2u_eval.py",
         ROOT / "scripts/simulation/serve_s4_3_pi2u_policy.py",
         ROOT / "scripts/simulation/evaluate_s4_3_pi1d_augmented.py",
@@ -75,21 +83,24 @@ def main() -> None:
     ]
     checkpoint_hashes = {name: tree_hash(path) for name, path in CHECKPOINTS.items()}
     raw_exists = {name: (ARTIFACTS / f"{name.lower()}_raw_rollouts.json").exists() for name in CHECKPOINTS}
+    exposures = [
+        {"seed": 0, "stage": "PI0", "episodes": 20, "pi05_policy_performance": True},
+        {"seed": 1, "stage": "PI1D", "episodes": 50, "pi05_policy_performance": True},
+        {"seed": 2, "stage": "PI2A", "episodes": 200, "pi05_policy_performance": True},
+    ]
+    if args.retry_seed4:
+        exposures.append({"seed": 3, "stage": "PI2U_ABORTED", "episodes": 161, "pi05_policy_performance": True, "formal_usable": False})
     seed_payload = {
         "schema": "tactile3d-unit.s4-3-pi2u-fresh-seed-audit.v1",
         "status": "PASS",
         "selection_rule": "smallest nonnegative unused pi0.5 policy-performance evaluator seed",
-        "exposure_ledger": [
-            {"seed": 0, "stage": "PI0", "episodes": 20, "pi05_policy_performance": True},
-            {"seed": 1, "stage": "PI1D", "episodes": 50, "pi05_policy_performance": True},
-            {"seed": 2, "stage": "PI2A", "episodes": 200, "pi05_policy_performance": True},
-        ],
-        "selected_seed": 3,
+        "exposure_ledger": exposures,
+        "selected_seed": selected_seed,
         "performance_inspected_before_freeze": False,
     }
     gates = {
         "protocol_frozen": protocol.get("status") == "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
-        "seed_is_fresh": seed_payload["selected_seed"] == 3,
+        "seed_is_fresh": seed_payload["selected_seed"] == selected_seed,
         "four_models_exact": protocol.get("models") == ["B0", "BVA", "B1", "B2"],
         "200_episodes_each": protocol.get("episodes_per_model") == 200,
         "no_prior_pi2u_outcomes": not any(raw_exists.values()),
@@ -104,7 +115,7 @@ def main() -> None:
     freeze = {
         "schema": "tactile3d-unit.s4-3-pi2u-pre-evaluation-freeze.v1",
         "status": status,
-        "evaluator_seed": 3,
+        "evaluator_seed": selected_seed,
         "episodes_per_model": 200,
         "models": ["B0", "BVA", "B1", "B2"],
         "total_episodes": 800,
@@ -114,11 +125,11 @@ def main() -> None:
         "checkpoint_paths": {name: symbolic(path) for name, path in CHECKPOINTS.items()},
         "sources_sha256": {symbolic(path): sha256(path) for path in source_files},
         "pi2a_immutability_artifact_sha256": sha256(PI2A / "checkpoint_immutability.json"),
-        "fresh_seed_audit": "$REPO_ROOT/.local/artifacts/simulation/s4_3_pi2u/fresh_seed_audit.json",
+        "fresh_seed_audit": "$REPO_ROOT/.local/artifacts/simulation/s4_3_pi2u/" + seeds.name,
         "gates": {name: "PASS" if value else "FAIL" for name, value in gates.items()},
     }
-    atomic(SEEDS, seed_payload)
-    atomic(OUTPUT, freeze)
+    atomic(seeds, seed_payload)
+    atomic(output, freeze)
     print(json.dumps({"status": status, "checkpoint_tree_sha256": checkpoint_hashes}, sort_keys=True))
     if status != "PASS":
         raise SystemExit("PI2U_PRE_EVALUATION_FREEZE_FAIL")
