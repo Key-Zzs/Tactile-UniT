@@ -1,0 +1,129 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2v-unit-adapter-protocol.v1",
+  "status": "FROZEN_BEFORE_FORMAL_TRAINING",
+  "seed": 42,
+  "claim": "Original UniT, using the official implementation and released tokenizer initialization, with a DexJoCo-specific embodiment adapter.",
+  "forbidden_claims": [
+    "untouched official UniT checkpoint on DexJoCo",
+    "BUniT is a Tactile-UniT contribution",
+    "official VLA-UniT reproduction on DexJoCo"
+  ],
+  "official_unit": {
+    "repository": "https://github.com/xpeng-robotics/UniT.git",
+    "commit": "0d762e32180bddd765694ef3846a3a5053f9d37f",
+    "source_tree_sha256": "4268e41678c643bb6a5f4e6823cb087707393e9d44ec06035a46e0b6600c8648",
+    "tokenizer_checkpoint_files_sha256": {
+      "config.json": "7a651f488c93521e0d507880fc250a475e6a08aa9307aa1349f9d3509844971e",
+      "model-00001-of-00002.safetensors": "32d5c326f6c83d12185b6954d2a52511f66ad18b6fdf814aecc5726dd39c243c",
+      "model-00002-of-00002.safetensors": "2f8093a900330e511b63e44dc1687b3212bec343e5b3832bf2e40f2bf18a768",
+      "model.safetensors.index.json": "3b6d73d2442ce694287c5cd8b93db1bb232909becf35f08ecabadb614b9a1b86"
+    },
+    "shared_rvq": {
+      "levels": 2,
+      "codes_per_level": 128,
+      "code_dim": 32,
+      "query_tokens": 8,
+      "frozen": true,
+      "quantization_and_vq_loss_active": true,
+      "dead_code_restart_disabled": true,
+      "reason": "the released standard RVQ mutates codebook buffers in train mode even when gradients are disabled"
+    },
+    "defining_objective_routes": [
+      "fused vision-action",
+      "vision-only",
+      "action-only",
+      "vision reconstruction",
+      "action reconstruction",
+      "cross-modal reconstruction"
+    ]
+  },
+  "adapter": {
+    "new_category_id": 30,
+    "official_category_ids": "0..29",
+    "extended_category_count": 31,
+    "trainable_tensor_count": 32,
+    "trainable_parameter_count": 23485568,
+    "optimizer_scope": "new DexJoCo category tensors only",
+    "shared_official_parameter_count_trainable": 0,
+    "initialization": {
+      "W": "normal(0,0.02)",
+      "bias": "zeros",
+      "layer_norm_weight": "ones"
+    }
+  },
+  "data": {
+    "source": "frozen S4.2 representation pairs",
+    "tasks": ["click_mouse", "hammer_nail", "pinch_tongs"],
+    "train": {
+      "pairs": 22680,
+      "source_groups": 42,
+      "sha256": "4d8a739b5455b31af34439ebaeb58db1ec0dbf9ff2c8464dcb30b619cdac824c"
+    },
+    "dev": {
+      "pairs": 4860,
+      "source_groups": 9,
+      "sha256": "d6256ccc47eb231a2f0acc10a0b35293c4b0da2a156a8cce0c9dcfb2dbf575e5"
+    },
+    "source_group_overlap": 0,
+    "normalization_fit": "TRAIN only",
+    "policy_outcomes_used": false,
+    "evaluation_data_used": false
+  },
+  "input_contract": {
+    "vision": "front RGB at t and t+27, paired spatial/color augmentation, ImageNet normalization, resize 224x224",
+    "state": "TCP xyz3 + quaternion-wxyz converted to rotation6d6 + Allegro16; TRAIN-normalized and mask-padded 25->128",
+    "action": "absolute TCP xyz3 + rotvec3 + Allegro16; TRAIN-normalized and mask-padded 22->128",
+    "simulator_control_hz": 50,
+    "future_observation_offset_steps": 27,
+    "future_observation_horizon_seconds": 0.54,
+    "official_action_slots": 16,
+    "action_resample_indices_zero_based": [0, 2, 3, 5, 7, 8, 10, 12, 13, 15, 17, 18, 20, 22, 23, 25],
+    "policy_dataset_future_offset_frames": 16,
+    "policy_dataset_fps": 30,
+    "policy_dataset_horizon_seconds": 0.5333333333333333,
+    "rgb_interpolation": false
+  },
+  "optimization": {
+    "optimizer": "AdamW",
+    "learning_rate": 0.0001,
+    "betas": [0.95, 0.999],
+    "epsilon": 1e-8,
+    "weight_decay": 0.00001,
+    "gradient_clip_norm": 1.0,
+    "warmup_ratio": 0.05,
+    "scheduler": "cosine",
+    "precision": "BF16",
+    "tf32": true,
+    "world_size": 2,
+    "microbatch_per_device": 32,
+    "gradient_accumulation_steps": 4,
+    "effective_global_batch": 256,
+    "optimizer_steps": 80000,
+    "samples_seen": 20480000,
+    "train_pair_epochs_equivalent": 902.9982363315696,
+    "checkpoint_steps": [20000, 40000, 60000, 80000],
+    "selected_checkpoint": "checkpoint-step80000.pt",
+    "resume": "exact same-world-size adapter/optimizer/scheduler/per-rank-RNG restore with deterministic epoch-tagged sampling and augmentation",
+    "estimated_median_seconds_per_step_from_smoke": 1.5532714952714741,
+    "estimated_wall_hours": 34.51714433936609
+  },
+  "augmentation": {
+    "crop": "paired fixed 608x608 crop from 640x640 (0.95 linear scale), resized to 224x224",
+    "color_jitter": {"brightness": 0.3, "contrast": 0.4, "saturation": 0.5, "hue": 0.08},
+    "determinism": "seed42 plus epoch and pair index"
+  },
+  "preregistered_dev_gate": {
+    "all_losses_finite": true,
+    "frozen_official_parameter_digest_unchanged": true,
+    "all_adapter_gradient_tensors_finite_and_nonzero_at_startup": true,
+    "minimum_active_codes_each_level_each_route": 4,
+    "minimum_normalized_code_entropy_each_level_each_route": 0.05,
+    "paired_fused_vs_shuffled_alignment_bootstrap_ci95_lower": 0.0,
+    "fused_action_reconstruction_better_than_train_mean_action": true,
+    "fused_vision_reconstruction_better_than_no_motion_future": true,
+    "cross_modal_reconstruction_better_than_paired_input_shuffle": true,
+    "decision_if_any_gate_fails": "REPRESENTATION_TRAINING_FAILURE"
+  },
+  "formal_selection": "single preregistered step-80000 checkpoint; no DEV checkpoint selection",
+  "next_stage_guard": "BUniT target generation is forbidden until the user sends: 继续 S4.3-PI2V"
+}
