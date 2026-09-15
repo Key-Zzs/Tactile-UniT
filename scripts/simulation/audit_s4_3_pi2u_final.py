@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -16,12 +17,12 @@ ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2u"
 PI1 = ROOT / ".local/artifacts/simulation/s4_3_pi1"
 PI2A = ROOT / ".local/artifacts/simulation/s4_3_pi2a"
-TMP_FAILURE = ROOT / ".local/tmp/s43u5/final_audit_failure.json"
+TMP_FAILURE = ROOT / ".local/tmp/s43u6/final_audit_failure.json"
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 STARTING_HEAD = "5e88dd3eaac708aed572f867d5df8ef489e54017"
 DEXJOCO_COMMIT = "8d23b0fab23b17a58c4b55f3942e17013aaf8267"
 UNIT_COMMIT = "0d762e32180bddd765694ef3846a3a5053f9d37f"
-EVALUATOR_SEED = 5
+EVALUATOR_SEED = 6
 
 CHECKPOINTS = {
     "B0": ROOT / ".local/experiments/simulation/s4_3_pi0/training/pinch_tongs/s43_pi0_official_seed42/29999",
@@ -31,7 +32,7 @@ CHECKPOINTS = {
 }
 EXPECTED_CHECKPOINTS = {
     "B0": "1e7a6ace5d69a988a8b258e1c56a24d88b077580a05b27be3f510df9ac3864f3",
-    "BVA": "13b9ee94c8dea6467ff35223df0d82c3fded5cafa52f4488728473b94db4e6b4",
+    "BVA": "04b609d7cc89e5fffdfab8219bf34da362117a15d0c7e3d5cd4ee20a9ee4770d",
     "B1": "04b59cbc3491bf4e88dc75558a08a94e5588e2fbe398d413e1766a87c7ab6f4f",
     "B2": "86c4908533ca24da06ae66f943e3605b5ccbae455441290ca8fb35514359e949",
 }
@@ -63,9 +64,9 @@ BVA_PREEXISTING_ARTIFACTS = (
     "bva_training_completion.json",
     "bva_checkpoint_manifest.json",
     "fresh_seed_audit.json",
-    "fresh_seed_retry_seed5.json",
+    "fresh_seed_retry_seed6.json",
     "pre_eval_freeze.json",
-    "pre_eval_retry_seed5.json",
+    "pre_eval_retry_seed6.json",
     "b0_eval.json",
     "bva_eval.json",
     "b1_eval.json",
@@ -365,12 +366,33 @@ def main() -> None:
     }
     completion = load(ARTIFACTS / "bva_training_completion.json")
     bva_manifest = load(ARTIFACTS / "bva_checkpoint_manifest.json")
-    freeze = load(ARTIFACTS / "pre_eval_retry_seed5.json")
-    fresh = load(ARTIFACTS / "fresh_seed_retry_seed5.json")
+    freeze = load(ARTIFACTS / "pre_eval_retry_seed6.json")
+    fresh = load(ARTIFACTS / "fresh_seed_retry_seed6.json")
+    canonical_freeze = load(ARTIFACTS / "pre_eval_freeze.json")
+    canonical_fresh = load(ARTIFACTS / "fresh_seed_audit.json")
     statistics = load(ARTIFACTS / "paired_ablation_statistics.json")
     mechanism = load(ARTIFACTS / "mechanism_interpretation.json")
     visual = load(ARTIFACTS / "visualization_manifest.json")
     compatibility = load(ARTIFACTS / "unit_adaptation_classification.json")
+    bva_protocol = load(ROOT / "configs/simulation/s4_3_pi2u_bva_protocol.json")
+    remediation = load(ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json")
+    target_manifest = load(ARTIFACTS / "bva_target_manifest.json")
+
+    temporal = bva_protocol["auxiliary_target"]["temporal_alignment"]
+    corrected = remediation["corrected_temporal_contract"]
+    temporal_gates = {
+        "canonical_control_steps_27": temporal.get("canonical_offset_steps") == corrected.get("canonical_offset_steps") == target_manifest.get("canonical_future_offset_steps") == 27,
+        "canonical_horizon_0p54_seconds": all(math.isclose(float(value), 0.54, abs_tol=1e-12) for value in (temporal.get("canonical_horizon_seconds"), corrected.get("canonical_horizon_seconds"), target_manifest.get("canonical_future_offset_seconds"))),
+        "source_dataset_30hz": math.isclose(float(temporal.get("source_dataset_fps")), 30.0, abs_tol=1e-12) and math.isclose(float(corrected.get("policy_dataset_fps")), 30.0, abs_tol=1e-12),
+        "nearest_source_frame_16": temporal.get("source_offset_frames") == corrected.get("source_offset_frames") == target_manifest.get("source_future_offset_frames") == 16,
+        "source_horizon_16_over_30": all(math.isclose(float(value), 16 / 30, abs_tol=1e-12) for value in (temporal.get("source_horizon_seconds"), corrected.get("source_horizon_seconds"), target_manifest.get("source_future_offset_seconds"))),
+        "rounding_error_below_half_frame": float(target_manifest.get("absolute_timing_error_seconds")) < 1 / 60,
+        "no_rgb_interpolation": temporal.get("selection_rule") == "nearest native source frame; no RGB interpolation" and corrected.get("rgb_interpolation") is False and target_manifest.get("source_frame_selection") == "nearest native source frame; no RGB interpolation",
+        "target_rows_and_tail_exact": target_manifest.get("rows") == 40065 and target_manifest.get("valid_rows") == 38465 and target_manifest.get("invalid_tail_rows") == 1600,
+        "corrected_target_hash": target_manifest.get("sidecar_sha256") == "c596b2f56880a969148f7cf06268ecfa9ad23bac01014be6c73ad20afd0d0612",
+        "remediation_frozen_before_retraining": remediation.get("status") == "FROZEN_BEFORE_REMEDIATION_TRAINING" and remediation["frozen_remediation"].get("fresh_evaluator_seed_after_retraining") == EVALUATOR_SEED,
+        "bva_checkpoint_bound_to_corrected_target": bva_manifest.get("checkpoint_tree_sha256") == EXPECTED_CHECKPOINTS["BVA"] and completion.get("checkpoint_tree_sha256") == EXPECTED_CHECKPOINTS["BVA"],
+    }
 
     source_gates = {}
     for symbolic, expected in freeze["sources_sha256"].items():
@@ -391,13 +413,25 @@ def main() -> None:
             )
     runtime_gates["same_ordered_reset_sequence"] = len(reset_hashes) == 1
     quarantine_counts = {}
+    malformed_diagnostic_rows = {}
     for model in ("b0", "bva", "b1", "b2"):
-        path = ROOT / f".local/tmp/s43u5/{model}_inference.jsonl"
+        path = ROOT / f".local/tmp/s43u6/{model}_inference.jsonl"
         count = 0
+        malformed = 0
         if path.is_file():
-            count = sum('"event": "stale_cross_episode_action_discarded"' in line for line in path.read_text(errors="replace").splitlines())
+            for line in path.read_text(errors="replace").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    malformed += 1
+                    continue
+                count += event.get("type") == "stale_cross_episode_action_discarded"
         quarantine_counts[model.upper()] = count
+        malformed_diagnostic_rows[model.upper()] = malformed
     runtime_gates["no_cross_episode_action_quarantine_events"] = not any(quarantine_counts.values())
+    runtime_gates["diagnostic_jsonl_well_formed"] = not any(malformed_diagnostic_rows.values())
 
     checkpoints = checkpoint_audit()
     s42 = s4_2_immutability_audit()
@@ -412,9 +446,10 @@ def main() -> None:
         "all_named_preexisting_artifacts_present": not missing,
         "va_bridge_protocol_frozen": bridge_protocol["protocol"].get("status") == "FROZEN_BEFORE_VA_BRIDGE_TRAINING",
         "bva_training_complete": completion.get("status") == "PASS" and bva_manifest.get("optimizer_steps") == 30000 and bva_manifest.get("seed") == 42,
+        "corrected_temporal_contract": all(temporal_gates.values()),
         "bva_checkpoint_and_all_controls_byte_identical": checkpoints["status"] == "PASS",
-        "fresh_seed5_freeze": freeze.get("status") == "PASS" and fresh.get("selected_seed") == EVALUATOR_SEED,
-        "formal_analysis_seed5": statistics.get("status") == "PASS" and statistics.get("evaluator_seed") == EVALUATOR_SEED and mechanism.get("evaluator_seed") == EVALUATOR_SEED,
+        "fresh_seed6_freeze": freeze.get("status") == "PASS" and fresh.get("selected_seed") == EVALUATOR_SEED and canonical_freeze == freeze and canonical_fresh == fresh,
+        "formal_analysis_seed6": statistics.get("status") == "PASS" and statistics.get("evaluator_seed") == EVALUATOR_SEED and mechanism.get("evaluator_seed") == EVALUATOR_SEED,
         "frozen_evaluator_sources_unchanged": all(source_gates.values()),
         "formal_runtime_integrity": all(runtime_gates.values()),
         "required_visuals": visual.get("status") == "PASS" and len(visual.get("required_visuals", [])) >= 17,
@@ -453,6 +488,8 @@ def main() -> None:
         "frozen_source_gates": {key: "PASS" if value else "FAIL" for key, value in source_gates.items()},
         "runtime_gates": {key: "PASS" if value else "FAIL" for key, value in runtime_gates.items()},
         "quarantine_event_counts": quarantine_counts,
+        "malformed_diagnostic_rows": malformed_diagnostic_rows,
+        "temporal_contract_gates": {key: "PASS" if value else "FAIL" for key, value in temporal_gates.items()},
         "pi2a_protected_inputs": protected_rows,
         "repository": repository,
         "gates": decision["gates"],
@@ -468,7 +505,7 @@ def main() -> None:
         ("VA bridge structural gates", load(ARTIFACTS / "va_bridge_metrics.json")["status"], "va_bridge_metrics.json"),
         ("Contact leakage", load(ARTIFACTS / "contact_leakage_audit.json")["status"], "contact_leakage_audit.json"),
         ("BVA seed42 30k", completion["status"], EXPECTED_CHECKPOINTS["BVA"]),
-        ("Fresh seed5 / 800 rollouts", "PASS", next(iter(reset_hashes))),
+        ("Fresh seed6 / 800 rollouts", "PASS", next(iter(reset_hashes))),
         ("S4.2/B0/B1/B2 immutability", "PASS", "s4_2_immutability.json"),
         ("Environment integrity", environment["status"], "environment_integrity.json"),
         ("Full regression suite", regressions["status"], f"{regressions['pytest']['passed']} passed; {regressions['pytest']['skipped']} skipped; 0 failed"),

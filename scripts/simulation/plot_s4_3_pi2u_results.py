@@ -33,7 +33,7 @@ LOG = ROOT / ".local/logs/simulation/s4_3_pi2u/bva/train.log"
 VA_CONFIG = ROOT / "configs/simulation/s4_3_pi2u_va_bridge.json"
 VA_CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/va_bridge/validation.npz"
 VA_CHECKPOINT = ROOT / ".local/experiments/simulation/s4_3_pi2u/va_bridge/frozen.pt"
-SEED = 5
+SEED = 6
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -200,8 +200,8 @@ def va_bridge_visuals() -> list[str]:
     metrics = load_json(ARTIFACTS / "va_bridge_metrics.json")
 
     figure, axis = diagram("Clean VA-only continuous bridge", (11, 4.5))
-    box(axis, (.4, 3.0), 1.6, .8, "RGB t→t+27\nfrozen Vision", "#bbdefb")
-    box(axis, (.4, 1.0), 1.6, .8, "action t→t+27\nfrozen Action", "#ffe0b2")
+    box(axis, (.4, 3.0), 1.6, .8, "RGB t→t+27\n0.54 s Vision", "#bbdefb")
+    box(axis, (.4, 1.0), 1.6, .8, "action t→t+27\n0.54 s Action", "#ffe0b2")
     box(axis, (2.7, 3.0), 1.6, .8, "z_v [8,32]\nP_v^VA", "#90caf9")
     box(axis, (2.7, 1.0), 1.6, .8, "z_a [8,32]\nP_a^VA", "#ffcc80")
     box(axis, (5.2, 2.0), 1.6, .8, "shared alignment\nInfoNCE + retention", "#c5e1a5")
@@ -252,7 +252,7 @@ def va_bridge_visuals() -> list[str]:
 def bva_visuals(stats: dict[str, Any]) -> list[str]:
     created: list[str] = []
     figure, axis = diagram("BVA training-only physical auxiliary dataflow", (12, 4.8))
-    box(axis, (.2, 3.1), 1.8, .8, "demo RGB t,t+27\nTRAIN only", "#bbdefb")
+    box(axis, (.2, 3.1), 1.8, .8, "canonical +27 @50Hz\nsource +16 @30Hz", "#bbdefb")
     box(axis, (2.5, 3.1), 1.8, .8, "frozen Vision +\nfrozen P_v^VA", "#90caf9")
     box(axis, (4.8, 3.1), 1.5, .8, "stop-grad\nu_v [8,32]", "#ce93d8")
     box(axis, (.2, 1.0), 1.8, .8, "official pi0.5\nB0 observations", "#c8e6c9")

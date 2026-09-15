@@ -14,6 +14,30 @@ from gr00t.simulation.s4_3_pi2u_va import VAOnlyBridge, different_episode_info_n
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_formal_seed6_is_consistent_across_protocol_and_scripts() -> None:
+    protocol = json.loads((ROOT / "configs/simulation/s4_3_pi2u_ablation_retry_seed6.json").read_text())
+    assert protocol["evaluator_seed"] == 6
+    assert protocol["temporal_remediation"]["canonical_control_steps"] == 27
+    assert protocol["temporal_remediation"]["canonical_horizon_seconds"] == pytest.approx(0.54)
+    assert protocol["temporal_remediation"]["source_dataset_offset_frames"] == 16
+    assert protocol["temporal_remediation"]["bva_checkpoint_tree_sha256"] == "04b609d7cc89e5fffdfab8219bf34da362117a15d0c7e3d5cd4ee20a9ee4770d"
+    sources = {
+        name: (ROOT / f"scripts/simulation/{name}").read_text()
+        for name in (
+            "run_s4_3_pi2u_eval.py",
+            "analyze_s4_3_pi2u_ablation.py",
+            "plot_s4_3_pi2u_results.py",
+            "audit_s4_3_pi2u_final.py",
+        )
+    }
+    assert "EVALUATOR_SEED = 6" in sources["run_s4_3_pi2u_eval.py"]
+    assert "EVALUATOR_SEED = 6" in sources["analyze_s4_3_pi2u_ablation.py"]
+    assert "SEED = 6" in sources["plot_s4_3_pi2u_results.py"]
+    assert "EVALUATOR_SEED = 6" in sources["audit_s4_3_pi2u_final.py"]
+    assert ".local/tmp/s43u6" in sources["audit_s4_3_pi2u_final.py"]
+    assert 'event.get("type") == "stale_cross_episode_action_discarded"' in sources["audit_s4_3_pi2u_final.py"]
+
+
 def test_bva_mode_is_explicit_and_contact_free() -> None:
     assert TactileUnitMode.VA_PHYSICAL_AUX.value == "VA_PHYSICAL_AUX"
     source = (ROOT / "gr00t/simulation/pi05_tactile_unit.py").read_text()

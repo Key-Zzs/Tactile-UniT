@@ -19,6 +19,10 @@ CONTRASTS = (("B0", "BVA"), ("BVA", "B2"), ("B1", "B2"), ("B0", "B1"))
 N = 200
 RESAMPLES = 100_000
 EVALUATOR_SEED = 6
+CANONICAL_FREEZE_ALIASES = {
+    "fresh_seed_audit.json": "fresh_seed_retry_seed6.json",
+    "pre_eval_freeze.json": "pre_eval_retry_seed6.json",
+}
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -36,6 +40,20 @@ def atomic(name: str, value: dict[str, Any]) -> None:
     tmp = out.with_suffix(out.suffix + ".tmp")
     tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
     tmp.replace(out)
+
+
+def materialize_canonical_freeze_aliases() -> None:
+    """Preserve the exact preregistered seed6 payloads under required artifact names."""
+    for canonical_name, remediation_name in CANONICAL_FREEZE_ALIASES.items():
+        canonical = ARTIFACTS / canonical_name
+        remediation = ARTIFACTS / remediation_name
+        if canonical.exists():
+            raise SystemExit(f"refusing to overwrite {canonical}")
+        if not remediation.is_file():
+            raise SystemExit(f"missing preregistered remediation freeze: {remediation}")
+        temporary = canonical.with_suffix(canonical.suffix + ".tmp")
+        temporary.write_bytes(remediation.read_bytes())
+        temporary.replace(canonical)
 
 
 def wilson(k: int, n: int) -> list[float]:
@@ -123,6 +141,7 @@ def main() -> None:
         }
     if len({value["ordered_reset_identities_sha256"] for value in summaries.values()}) != 1:
         raise SystemExit("models did not receive byte-identical ordered fresh resets")
+    materialize_canonical_freeze_aliases()
     for model, value in summaries.items():
         atomic(f"{model.lower()}_eval.json", value)
     rows = {f"{second}-{first}": contrast(first, second, outcomes, 4306 + i) for i, (first, second) in enumerate(CONTRASTS)}
