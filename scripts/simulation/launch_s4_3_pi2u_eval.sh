@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Launch fresh PI2U seed-3 evaluation on up to three genuinely idle GPUs.
+# Launch fresh PI2U seed-6 evaluation on up to three genuinely idle GPUs.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="${UNIT_PYTHON:-${CONDA_PREFIX:+$CONDA_PREFIX/bin/python}}"
 PYTHON="${PYTHON:-python}"
-ARTIFACT="$ROOT/.local/artifacts/simulation/s4_3_pi2u/pre_eval_retry_seed5.json"
-LOG="$ROOT/.local/logs/simulation/s4_3_pi2u/evaluation_seed5_launcher.log"
+ARTIFACT="$ROOT/.local/artifacts/simulation/s4_3_pi2u/pre_eval_retry_seed6.json"
+LOG="$ROOT/.local/logs/simulation/s4_3_pi2u/evaluation_seed6_launcher.log"
 
 test -f "$ARTIFACT"
 test "$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$ARTIFACT")" = PASS
@@ -24,5 +24,5 @@ test "${#chosen[@]}" -ge 1
 GPUS="$(IFS=,; echo "${chosen[*]}")"
 
 mkdir -p "$(dirname "$LOG")"
-tmux new-session -d -s s43_pi2u_eval_seed5 "cd '$ROOT' && '$PYTHON' scripts/simulation/run_s4_3_pi2u_eval.py launch --gpus '$GPUS' >> '$LOG' 2>&1"
-echo "tmux=s43_pi2u_eval_seed5 gpus=$GPUS log=$LOG"
+tmux new-session -d -s s43_pi2u_eval_seed6 "cd '$ROOT' && '$PYTHON' scripts/simulation/run_s4_3_pi2u_eval.py launch --gpus '$GPUS' >> '$LOG' 2>&1"
+echo "tmux=s43_pi2u_eval_seed6 gpus=$GPUS log=$LOG"

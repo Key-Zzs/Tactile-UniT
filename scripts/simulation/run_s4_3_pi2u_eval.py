@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the fresh seed-5 PI2U retry with isolated evaluator artifacts."""
+"""Run the fresh seed-6 PI2U temporal-remediation evaluation."""
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ from queue import Empty
 ROOT = Path(__file__).resolve().parents[2]
 DEXJOCO = ROOT / "third_party/dexjoco"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2u"
-LOGS = ROOT / ".local/logs/simulation/s4_3_pi2u/evaluation_seed5"
-CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/evaluation/seed5"
+LOGS = ROOT / ".local/logs/simulation/s4_3_pi2u/evaluation_seed6"
+CACHE = ROOT / ".local/cache/simulation/s4_3_pi2u/evaluation/seed6"
 # AF_UNIX socket paths are limited to 108 bytes on this host; keep this short.
-TMP = ROOT / ".local/tmp/s43u5"
-PRE_FREEZE = ARTIFACTS / "pre_eval_retry_seed5.json"
+TMP = ROOT / ".local/tmp/s43u6"
+PRE_FREEZE = ARTIFACTS / "pre_eval_retry_seed6.json"
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 OPENPI_PYTHON = CONDA_ROOT / "envs/openpi/bin/python"
 UNIT_PYTHON = CONDA_ROOT / "envs/unit/bin/python"
@@ -32,7 +32,7 @@ EVAL_PYTHON = ROOT / ".local/external/s4_3_pi0/eval-venv/bin/python"
 MODELS = ("B0", "BVA", "B1", "B2")
 RUNTIME_MODES = {"B0": "NONE", "BVA": "NONE", "B1": "CONTACT_STATE_TOKENS", "B2": "CONTACT_STATE_TOKENS_PHYSICAL_AUX"}
 EPISODES = 200
-EVALUATOR_SEED = 5
+EVALUATOR_SEED = 6
 
 
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:

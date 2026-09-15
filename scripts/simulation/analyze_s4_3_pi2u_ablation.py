@@ -18,7 +18,7 @@ MODELS = ("B0", "BVA", "B1", "B2")
 CONTRASTS = (("B0", "BVA"), ("BVA", "B2"), ("B1", "B2"), ("B0", "B1"))
 N = 200
 RESAMPLES = 100_000
-EVALUATOR_SEED = 5
+EVALUATOR_SEED = 6
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -125,7 +125,7 @@ def main() -> None:
         raise SystemExit("models did not receive byte-identical ordered fresh resets")
     for model, value in summaries.items():
         atomic(f"{model.lower()}_eval.json", value)
-    rows = {f"{second}-{first}": contrast(first, second, outcomes, 4305 + i) for i, (first, second) in enumerate(CONTRASTS)}
+    rows = {f"{second}-{first}": contrast(first, second, outcomes, 4306 + i) for i, (first, second) in enumerate(CONTRASTS)}
     adjusted = holm(rows)
     for name, value in rows.items():
         value["holm_adjusted_p"] = adjusted[name]

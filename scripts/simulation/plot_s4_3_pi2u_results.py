@@ -317,7 +317,7 @@ def bva_visuals(stats: dict[str, Any]) -> list[str]:
     reasons = ["BVA no meaningful gain; B2 strongest", "BVA contributes and belongs in multi-seed", "low-cost BUniT gate first", "pattern is unresolved or adverse"]
     figure, axis = plt.subplots(figsize=(11, 4)); axis.axis("off")
     rows = [[choice, reason, "SELECTED" if choice == readiness else "—"] for choice, reason in zip(choices, reasons)]
-    table = axis.table(cellText=rows, colLabels=["readiness state", "decision rule", "seed5 decision"], loc="center", cellLoc="left")
+    table = axis.table(cellText=rows, colLabels=["readiness state", "decision rule", "seed6 decision"], loc="center", cellLoc="left")
     table.auto_set_font_size(False); table.set_fontsize(9); table.scale(1, 1.7)
     for col in range(3): table[(0, col)].set_facecolor("#b3e5fc")
     for row_index, choice in enumerate(choices, start=1):
@@ -334,7 +334,7 @@ def main() -> None:
         raise SystemExit("refusing to overwrite PI2U visual evidence")
     stats = load_json(ARTIFACTS / "paired_ablation_statistics.json")
     if stats.get("status") != "PASS" or stats.get("evaluator_seed") != SEED:
-        raise SystemExit("formal seed5 statistics are not complete")
+        raise SystemExit("formal seed6 statistics are not complete")
     PLOTS_TMP.mkdir(parents=True)
     try:
         created = architecture_visuals() + va_bridge_visuals() + bva_visuals(stats)

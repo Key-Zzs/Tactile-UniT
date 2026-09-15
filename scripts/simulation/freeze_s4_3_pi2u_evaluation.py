@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze the fresh PI2U evaluation inputs before any seed-3 rollout runs."""
+"""Freeze fresh PI2U evaluation inputs before any selected-seed rollout runs."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ CHECKPOINTS = {
 }
 EXPECTED = {
     "B0": "1e7a6ace5d69a988a8b258e1c56a24d88b077580a05b27be3f510df9ac3864f3",
-    "BVA": "13b9ee94c8dea6467ff35223df0d82c3fded5cafa52f4488728473b94db4e6b4",
+    "BVA": "04b609d7cc89e5fffdfab8219bf34da362117a15d0c7e3d5cd4ee20a9ee4770d",
     "B1": "04b59cbc3491bf4e88dc75558a08a94e5588e2fbe398d413e1766a87c7ab6f4f",
     "B2": "86c4908533ca24da06ae66f943e3605b5ccbae455441290ca8fb35514359e949",
 }
@@ -64,10 +64,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--retry-seed4", action="store_true")
     parser.add_argument("--retry-seed5", action="store_true")
+    parser.add_argument("--retry-seed6", action="store_true")
     args = parser.parse_args()
-    if args.retry_seed4 and args.retry_seed5:
+    selected_retries = [seed for seed, enabled in ((4, args.retry_seed4), (5, args.retry_seed5), (6, args.retry_seed6)) if enabled]
+    if len(selected_retries) > 1:
         raise SystemExit("choose one PI2U retry seed")
-    retry_seed = 5 if args.retry_seed5 else 4 if args.retry_seed4 else None
+    retry_seed = selected_retries[0] if selected_retries else None
     output = ARTIFACTS / (f"pre_eval_retry_seed{retry_seed}.json" if retry_seed else "pre_eval_freeze.json")
     seeds = ARTIFACTS / (f"fresh_seed_retry_seed{retry_seed}.json" if retry_seed else "fresh_seed_audit.json")
     protocol_path = ROOT / "configs/simulation/" / (f"s4_3_pi2u_ablation_retry_seed{retry_seed}.json" if retry_seed else "s4_3_pi2u_ablation_protocol.json")
@@ -84,6 +86,8 @@ def main() -> None:
         ROOT / "scripts/simulation/evaluate_s4_3_pi1d_augmented.py",
         ROOT / "scripts/simulation/serve_s4_3_pi1_contact_state.py",
         ROOT / "third_party/dexjoco/configs/rand_obj/pinch_tongs.yaml",
+        ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json",
+        ARTIFACTS / "bva_checkpoint_manifest.json",
     ]
     checkpoint_hashes = {name: tree_hash(path) for name, path in CHECKPOINTS.items()}
     raw_exists = {name: (ARTIFACTS / f"{name.lower()}_raw_rollouts.json").exists() for name in CHECKPOINTS}
@@ -92,17 +96,19 @@ def main() -> None:
         {"seed": 1, "stage": "PI1D", "episodes": 50, "pi05_policy_performance": True},
         {"seed": 2, "stage": "PI2A", "episodes": 200, "pi05_policy_performance": True},
     ]
-    if retry_seed:
+    if retry_seed and retry_seed >= 4:
         exposures.append({"seed": 3, "stage": "PI2U_ABORTED", "episodes": 161, "pi05_policy_performance": True, "formal_usable": False})
-    if args.retry_seed5:
+    if retry_seed and retry_seed >= 5:
         exposures.append({"seed": 4, "stage": "PI2U_PRECOMPLETION_ABORT", "episodes": 0, "pi05_policy_performance": True, "formal_usable": False})
+    if retry_seed and retry_seed >= 6:
+        exposures.append({"seed": 5, "stage": "PI2U_TEMPORAL_INVALID", "episodes": 800, "pi05_policy_performance": True, "formal_usable": False, "reason": "BVA was trained against a 0.9 s target rather than the canonical 0.54 s target"})
     seed_payload = {
         "schema": "tactile3d-unit.s4-3-pi2u-fresh-seed-audit.v1",
         "status": "PASS",
         "selection_rule": "smallest nonnegative unused pi0.5 policy-performance evaluator seed",
         "exposure_ledger": exposures,
         "selected_seed": selected_seed,
-        "performance_inspected_before_freeze": False,
+        "selected_seed_performance_inspected_before_freeze": False,
     }
     gates = {
         "protocol_frozen": protocol.get("status") == "FROZEN_BEFORE_SCIENTIFIC_EVALUATION",
