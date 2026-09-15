@@ -23,6 +23,12 @@ STARTING_HEAD = "5e88dd3eaac708aed572f867d5df8ef489e54017"
 DEXJOCO_COMMIT = "8d23b0fab23b17a58c4b55f3942e17013aaf8267"
 UNIT_COMMIT = "0d762e32180bddd765694ef3846a3a5053f9d37f"
 EVALUATOR_SEED = 6
+EXPECTED_MODES = {
+    "B0": "NONE",
+    "BVA": "NONE",
+    "B1": "CONTACT_STATE_TOKENS",
+    "B2": "CONTACT_STATE_TOKENS_PHYSICAL_AUX",
+}
 
 CHECKPOINTS = {
     "B0": ROOT / ".local/experiments/simulation/s4_3_pi0/training/pinch_tongs/s43_pi0_official_seed42/29999",
@@ -407,6 +413,19 @@ def main() -> None:
     for model, payload in raw.items():
         rows = payload.get("episode_results", [])
         runtime_gates[f"{model}_complete_200"] = payload.get("status") == "PASS" and len(rows) == 200
+        runtime_gates[f"{model}_exact_frozen_protocol"] = (
+            payload.get("model") == model
+            and payload.get("mode") == EXPECTED_MODES[model]
+            and payload.get("task") == "pinch_tongs"
+            and payload.get("regime") == "rand_obj"
+            and payload.get("evaluator_seed") == EVALUATOR_SEED
+            and payload.get("rand_full") is False
+            and payload.get("randomize_dynamics") is False
+            and payload.get("replan_ratio") == 0.8
+            and payload.get("physics_action_success_reset_camera_prompt_modified") is False
+            and not payload.get("server_client_errors")
+            and all(value == "PASS" for value in payload.get("gates", {}).values())
+        )
         reset_hashes.add(hashlib.sha256("\n".join(str(row.get("reset_identity")) for row in rows).encode()).hexdigest())
         if model in ("B0", "BVA"):
             runtime_gates[f"{model}_no_contact_or_training_field_delivery"] = all(

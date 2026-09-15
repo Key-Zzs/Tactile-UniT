@@ -19,6 +19,12 @@ CONTRASTS = (("B0", "BVA"), ("BVA", "B2"), ("B1", "B2"), ("B0", "B1"))
 N = 200
 RESAMPLES = 100_000
 EVALUATOR_SEED = 6
+EXPECTED_MODES = {
+    "B0": "NONE",
+    "BVA": "NONE",
+    "B1": "CONTACT_STATE_TOKENS",
+    "B2": "CONTACT_STATE_TOKENS_PHYSICAL_AUX",
+}
 CANONICAL_FREEZE_ALIASES = {
     "fresh_seed_audit.json": "fresh_seed_retry_seed6.json",
     "pre_eval_freeze.json": "pre_eval_retry_seed6.json",
@@ -123,6 +129,21 @@ def main() -> None:
         rows = data.get("episode_results", [])
         if data.get("status") != "PASS" or data.get("episodes") != N or len(rows) != N:
             raise SystemExit(f"incomplete raw outcomes for {model}")
+        exact_protocol = (
+            data.get("model") == model
+            and data.get("mode") == EXPECTED_MODES[model]
+            and data.get("task") == "pinch_tongs"
+            and data.get("regime") == "rand_obj"
+            and data.get("evaluator_seed") == EVALUATOR_SEED
+            and data.get("rand_full") is False
+            and data.get("randomize_dynamics") is False
+            and data.get("replan_ratio") == 0.8
+            and data.get("physics_action_success_reset_camera_prompt_modified") is False
+            and not data.get("server_client_errors")
+            and all(value == "PASS" for value in data.get("gates", {}).values())
+        )
+        if not exact_protocol:
+            raise SystemExit(f"raw outcome protocol mismatch for {model}")
         reset_ids = [row.get("episode_index", index) for index, row in enumerate(rows)]
         if reset_ids != list(range(N)):
             raise SystemExit(f"noncanonical reset ordering for {model}")
@@ -131,6 +152,7 @@ def main() -> None:
         terminations = Counter(row.get("termination", "UNKNOWN") for row in rows)
         summaries[model] = {
             "schema": "tactile3d-unit.s4-3-pi2u-model-evaluation.v1", "status": "PASS", "model": model,
+            "mode": EXPECTED_MODES[model], "evaluator_seed": EVALUATOR_SEED,
             "episodes": N, "successes": int(values.sum()), "success_rate": float(values.mean()),
             "wilson_95ci": wilson(int(values.sum()), N), "termination_breakdown": dict(sorted(terminations.items())),
             "raw_artifact": f"$REPO_ROOT/.local/artifacts/simulation/s4_3_pi2u/{model.lower()}_raw_rollouts.json",
