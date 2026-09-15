@@ -377,6 +377,7 @@ def main() -> None:
     bva_protocol = load(ROOT / "configs/simulation/s4_3_pi2u_bva_protocol.json")
     remediation = load(ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json")
     target_manifest = load(ARTIFACTS / "bva_target_manifest.json")
+    native_smoke = load(ARTIFACTS / "native_unit_smoke.json")
 
     temporal = bva_protocol["auxiliary_target"]["temporal_alignment"]
     corrected = remediation["corrected_temporal_contract"]
@@ -390,6 +391,7 @@ def main() -> None:
         "no_rgb_interpolation": temporal.get("selection_rule") == "nearest native source frame; no RGB interpolation" and corrected.get("rgb_interpolation") is False and target_manifest.get("source_frame_selection") == "nearest native source frame; no RGB interpolation",
         "target_rows_and_tail_exact": target_manifest.get("rows") == 40065 and target_manifest.get("valid_rows") == 38465 and target_manifest.get("invalid_tail_rows") == 1600,
         "corrected_target_hash": target_manifest.get("sidecar_sha256") == "c596b2f56880a969148f7cf06268ecfa9ad23bac01014be6c73ad20afd0d0612",
+        "native_vision_smoke_bound_to_corrected_target": native_smoke.get("status") == "PASS_VISION_TRANSITION_ONLY_DURING_BVA_TARGET_BUILD" and native_smoke["native_forward"].get("samples") == 38465 and native_smoke["native_forward"].get("bva_target_sidecar_sha256") == target_manifest.get("sidecar_sha256"),
         "remediation_frozen_before_retraining": remediation.get("status") == "FROZEN_BEFORE_REMEDIATION_TRAINING" and remediation["frozen_remediation"].get("fresh_evaluator_seed_after_retraining") == EVALUATOR_SEED,
         "bva_checkpoint_bound_to_corrected_target": bva_manifest.get("checkpoint_tree_sha256") == EXPECTED_CHECKPOINTS["BVA"] and completion.get("checkpoint_tree_sha256") == EXPECTED_CHECKPOINTS["BVA"],
     }
