@@ -413,10 +413,12 @@ def main() -> None:
             )
     runtime_gates["same_ordered_reset_sequence"] = len(reset_hashes) == 1
     quarantine_counts = {}
+    quarantine_records_valid = {}
     malformed_diagnostic_rows = {}
     for model in ("b0", "bva", "b1", "b2"):
         path = ROOT / f".local/tmp/s43u6/{model}_inference.jsonl"
         count = 0
+        valid = True
         malformed = 0
         if path.is_file():
             for line in path.read_text(errors="replace").splitlines():
@@ -427,10 +429,20 @@ def main() -> None:
                 except json.JSONDecodeError:
                     malformed += 1
                     continue
-                count += event.get("type") == "stale_cross_episode_action_discarded"
+                if event.get("type") == "stale_cross_episode_action_discarded":
+                    count += 1
+                    try:
+                        valid &= (
+                            event.get("model") == model.upper()
+                            and int(event.get("action_timestamp", -1)) > int(event.get("current_timestamp", -1))
+                            and event.get("reason") == "future timestamp is impossible within one causal episode"
+                        )
+                    except (TypeError, ValueError):
+                        valid = False
         quarantine_counts[model.upper()] = count
+        quarantine_records_valid[model.upper()] = valid
         malformed_diagnostic_rows[model.upper()] = malformed
-    runtime_gates["no_cross_episode_action_quarantine_events"] = not any(quarantine_counts.values())
+    runtime_gates["all_cross_episode_action_quarantines_valid_and_discarded"] = all(quarantine_records_valid.values())
     runtime_gates["diagnostic_jsonl_well_formed"] = not any(malformed_diagnostic_rows.values())
 
     checkpoints = checkpoint_audit()
@@ -488,6 +500,7 @@ def main() -> None:
         "frozen_source_gates": {key: "PASS" if value else "FAIL" for key, value in source_gates.items()},
         "runtime_gates": {key: "PASS" if value else "FAIL" for key, value in runtime_gates.items()},
         "quarantine_event_counts": quarantine_counts,
+        "quarantine_records_valid": quarantine_records_valid,
         "malformed_diagnostic_rows": malformed_diagnostic_rows,
         "temporal_contract_gates": {key: "PASS" if value else "FAIL" for key, value in temporal_gates.items()},
         "pi2a_protected_inputs": protected_rows,

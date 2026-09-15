@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections import deque
 import json
 from pathlib import Path
+from queue import SimpleQueue
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -9,6 +12,7 @@ import torch
 
 from gr00t.simulation.s4_3_pi1 import TactileUnitMode
 from gr00t.simulation.s4_3_pi2u_va import VAOnlyBridge, different_episode_info_nce
+from scripts.simulation.run_s4_3_pi2u_eval import install_cross_episode_action_quarantine
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,6 +40,34 @@ def test_formal_seed6_is_consistent_across_protocol_and_scripts() -> None:
     assert "EVALUATOR_SEED = 6" in sources["audit_s4_3_pi2u_final.py"]
     assert ".local/tmp/s43u6" in sources["audit_s4_3_pi2u_final.py"]
     assert 'event.get("type") == "stale_cross_episode_action_discarded"' in sources["audit_s4_3_pi2u_final.py"]
+    assert '"all_cross_episode_action_quarantines_valid_and_discarded"' in sources["audit_s4_3_pi2u_final.py"]
+
+
+def test_cross_episode_future_action_chunk_is_discarded(tmp_path: Path) -> None:
+    diagnostics = tmp_path / "inference.jsonl"
+    official = SimpleNamespace(
+        _interp_single_arm_action=lambda left, right, ratio: (1 - ratio) * left + ratio * right,
+        _interp_dual_arm_action=lambda left, right, ratio: (1 - ratio) * left + ratio * right,
+        Action=lambda action, timestamp: SimpleNamespace(action=action, timestamp=timestamp),
+    )
+    install_cross_episode_action_quarantine(official, diagnostics, "B0")
+    action_queue = SimpleQueue()
+    action_queue.put(SimpleNamespace(timestamp=602, action=np.full((2, 1), 99.0)))
+    action_queue.put(SimpleNamespace(timestamp=0, action=np.asarray([[1.0], [2.0]])))
+    actions_buffer = deque()
+
+    official.receive_actions(action_queue, actions_buffer, now_timestamp=0, dual_arm=False)
+
+    assert [row.timestamp for row in actions_buffer] == [0, 1]
+    assert [float(row.action[0]) for row in actions_buffer] == [1.0, 2.0]
+    events = [json.loads(line) for line in diagnostics.read_text().splitlines()]
+    assert events == [{
+        "action_timestamp": 602,
+        "current_timestamp": 0,
+        "model": "B0",
+        "reason": "future timestamp is impossible within one causal episode",
+        "type": "stale_cross_episode_action_discarded",
+    }]
 
 
 def test_bva_mode_is_explicit_and_contact_free() -> None:
