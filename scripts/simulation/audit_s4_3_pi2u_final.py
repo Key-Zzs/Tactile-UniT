@@ -73,6 +73,11 @@ BVA_PREEXISTING_ARTIFACTS = (
     "fresh_seed_retry_seed6.json",
     "pre_eval_freeze.json",
     "pre_eval_retry_seed6.json",
+    "gpu_execution.json",
+    "b0_raw_rollouts.json",
+    "bva_raw_rollouts.json",
+    "b1_raw_rollouts.json",
+    "b2_raw_rollouts.json",
     "b0_eval.json",
     "bva_eval.json",
     "b1_eval.json",
@@ -384,6 +389,7 @@ def main() -> None:
     remediation = load(ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json")
     target_manifest = load(ARTIFACTS / "bva_target_manifest.json")
     native_smoke = load(ARTIFACTS / "native_unit_smoke.json")
+    gpu_execution = load(ARTIFACTS / "gpu_execution.json")
 
     temporal = bva_protocol["auxiliary_target"]["temporal_alignment"]
     corrected = remediation["corrected_temporal_contract"]
@@ -485,6 +491,7 @@ def main() -> None:
         "formal_analysis_seed6": statistics.get("status") == "PASS" and statistics.get("evaluator_seed") == EVALUATOR_SEED and mechanism.get("evaluator_seed") == EVALUATOR_SEED,
         "frozen_evaluator_sources_unchanged": all(source_gates.values()),
         "formal_runtime_integrity": all(runtime_gates.values()),
+        "gpu_execution_guardrails": gpu_execution.get("status") == "PASS" and gpu_execution.get("maximum_heavy_workers") == 3 and gpu_execution.get("unrelated_gpu_processes_killed_or_preempted") is False,
         "required_visuals": visual.get("status") == "PASS" and len(visual.get("required_visuals", [])) >= 17,
         "s4_2_and_m3_immutable": s42["status"] == "PASS",
         "pi2a_protected_inputs_immutable": all(row["expected"] == row["current"] for row in protected_rows.values()),
@@ -518,6 +525,7 @@ def main() -> None:
         "required_official_audit_artifacts": list(OFFICIAL_AUDIT_ARTIFACTS),
         "required_bva_artifacts": ["va_bridge_protocol.json", *BVA_PREEXISTING_ARTIFACTS, "s4_2_immutability.json", "environment_integrity.json", "regression_tests.json", "final_decision.json", "HUMAN_ACCEPTANCE.md"],
         "checkpoint_audit": checkpoints,
+        "gpu_execution": gpu_execution,
         "frozen_source_gates": {key: "PASS" if value else "FAIL" for key, value in source_gates.items()},
         "runtime_gates": {key: "PASS" if value else "FAIL" for key, value in runtime_gates.items()},
         "quarantine_event_counts": quarantine_counts,
