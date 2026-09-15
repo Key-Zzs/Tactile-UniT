@@ -146,10 +146,12 @@ def main() -> None:
         "mode_contract": ARTIFACTS / "bva_mode_contract.json",
         "none_parity": ARTIFACTS / "bva_none_parity.json",
         "target_manifest": ARTIFACTS / "bva_target_manifest.json",
+        "temporal_remediation": ROOT / "configs/simulation/s4_3_pi2u_bva_temporal_remediation.json",
         "tracked_protocol": TRAINING_PROTOCOL,
         "va_bridge_manifest": ARTIFACTS / "va_bridge_checkpoint_manifest.json",
     }
     implementation = {
+        "target_builder": ROOT / "scripts/simulation/build_s4_3_pi2u_bva_targets.py",
         "model": ROOT / "gr00t/simulation/pi05_tactile_unit.py",
         "mode": ROOT / "gr00t/simulation/s4_3_pi1.py",
         "entrypoint": ROOT / "scripts/simulation/train_s4_3_pi2u_bva.py",
