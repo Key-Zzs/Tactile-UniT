@@ -1,0 +1,23 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2m-statistical-protocol.v1",
+  "status": "FROZEN_BEFORE_BHVA_TRAINING",
+  "analysis_unit": "one aligned reset tuple across B1/B_HVA/B2",
+  "n_aligned_resets": 200,
+  "bootstrap_resamples": 100000,
+  "bootstrap_seed": 4317,
+  "bootstrap_method": "paired reset-tuple percentile 95% interval",
+  "marginal_interval": "Wilson 95%",
+  "paired_test": "exact two-sided McNemar",
+  "multiplicity": "Holm adjustment across all three frozen comparisons",
+  "comparisons": [
+    {"name": "B2-B_HVA", "role": "PRIMARY_TARGET_EFFECT"},
+    {"name": "B_HVA-B1", "role": "VA_AUX_VS_NO_AUX"},
+    {"name": "B2-B1", "role": "CONTACT_AUX_REPLICATION"}
+  ],
+  "confirmation_rule": "directional point estimate, paired 95% CI excludes 0, and Holm-adjusted p < 0.05",
+  "material_point_threshold_percentage_points": 10.0,
+  "equivalence_test": null,
+  "inconclusive_is_not_equivalence": true,
+  "claim_level": "FIXED_SEED_ONLY",
+  "historical_BVA": "context only; target horizon 0.32 s; excluded from fresh paired tests"
+}

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,10 +15,21 @@ BHVA_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_bhva_protocol.json"
 MODE_SOURCE = ROOT / "gr00t/simulation/pi05_tactile_unit.py"
 MODE_ENUM = ROOT / "gr00t/simulation/s4_3_pi1.py"
 TRAINER = ROOT / "scripts/simulation/train_s4_3_pi2m_bhva.py"
+ANALYZER = ROOT / "scripts/simulation/analyze_s4_3_pi2m.py"
+EVAL_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_evaluation_protocol.json"
+STAT_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_statistical_protocol.json"
 
 
 def load_builder():
     spec = importlib.util.spec_from_file_location("build_s4_3_pi2m_bhva_targets", BUILDER)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_analyzer():
+    spec = importlib.util.spec_from_file_location("analyze_s4_3_pi2m", ANALYZER)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -108,3 +120,36 @@ def test_bhva_training_recipe_is_unique_seed42_30k_global_batch32() -> None:
     assert "num_train_steps=30_000" in trainer
     assert "resume=False" in trainer
     assert "overwrite=False" in trainer
+
+
+def test_evaluation_and_statistics_are_frozen_for_fresh_seed7() -> None:
+    evaluation = json.loads(EVAL_PROTOCOL.read_text())
+    statistics = json.loads(STAT_PROTOCOL.read_text())
+    assert evaluation["models"] == ["B1", "B_HVA", "B2"]
+    assert evaluation["episodes_per_model"] == 200
+    assert evaluation["total_rollouts"] == 600
+    assert evaluation["evaluator_seed"] == 7
+    assert evaluation["runtime_mode_all_models"] == "CONTACT_STATE_TOKENS"
+    assert statistics["bootstrap_resamples"] == 100_000
+    assert statistics["bootstrap_seed"] == 4317
+    assert [row["name"] for row in statistics["comparisons"]] == [
+        "B2-B_HVA",
+        "B_HVA-B1",
+        "B2-B1",
+    ]
+    assert statistics["comparisons"][0]["role"] == "PRIMARY_TARGET_EFFECT"
+    assert statistics["historical_BVA"].startswith("context only")
+
+
+def test_exact_paired_statistics_helpers() -> None:
+    analyzer = load_analyzer()
+    assert analyzer.exact_mcnemar(0, 0) == 1.0
+    assert analyzer.exact_mcnemar(10, 0) == pytest.approx(2 / 2**10)
+    assert analyzer.holm_adjust({"a": 0.01, "b": 0.03, "c": 0.2}) == {
+        "a": pytest.approx(0.03),
+        "b": pytest.approx(0.06),
+        "c": pytest.approx(0.2),
+    }
+    left = np.ones(200, dtype=np.bool_)
+    right = np.zeros(200, dtype=np.bool_)
+    assert analyzer.paired_bootstrap(left, right, resamples=1_000, seed=4317) == (1.0, 1.0)

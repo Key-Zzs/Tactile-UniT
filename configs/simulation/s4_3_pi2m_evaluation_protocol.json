@@ -1,0 +1,38 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2m-evaluation-protocol.v1",
+  "status": "FROZEN_BEFORE_BHVA_TRAINING",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "models": ["B1", "B_HVA", "B2"],
+  "episodes_per_model": 200,
+  "total_rollouts": 600,
+  "evaluator_seed": 7,
+  "evaluator_seed_rule": "smallest nonnegative seed with no prior pi0.5 performance exposure after auditing seeds 0-6",
+  "same_ordered_reset_sequence_for_all_models": true,
+  "rand_full": false,
+  "randomize_dynamics": false,
+  "replan_ratio": 0.8,
+  "state_dim": 23,
+  "action_output_dim": 22,
+  "action_horizon": 30,
+  "contact_history": {
+    "samples": 26,
+    "bootstrap": "LEFT_REPEAT_FIRST",
+    "current_only": true
+  },
+  "runtime_mode_all_models": "CONTACT_STATE_TOKENS",
+  "training_only_fields_forbidden": [
+    "va_shared_target",
+    "va_aux_valid",
+    "contact_shared_target",
+    "physical_aux_valid",
+    "reward",
+    "success",
+    "future action"
+  ],
+  "checkpoint_selection": "final step only",
+  "infrastructure_retry": "same reset identity, same code, same checkpoint; preserve original failure record",
+  "no_early_stopping_or_interim_significance": true,
+  "formal_smoke_fixture": "separate non-performance TRAIN/infrastructure fixture",
+  "PI2B": "NOT_AUTHORIZED"
+}
