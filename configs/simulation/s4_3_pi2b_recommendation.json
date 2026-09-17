@@ -1,0 +1,68 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-recommendation-draft.v1",
+  "status": "DRAFT_NOT_EXECUTED",
+  "training_authorized": false,
+  "decision": "PI2B_MECHANISM_DIAGNOSIS_FIRST",
+  "reason": "In the formal common seed6 evaluation, BVA is 24.0% and B2 is 21.0%; B2-BVA is -3.0 pp with paired 95% CI [-11.5, 5.5] pp. Generic physical supervision remains a serious alternative explanation, so PI2B must not start until the intended mechanism claim is resolved.",
+  "immediate_new_runs": 0,
+  "conditional_protocol_after_claim_resolution": {
+    "models": [
+      "B0",
+      "BVA",
+      "B1",
+      "B2"
+    ],
+    "existing_training_seed": 42,
+    "additional_training_seeds": [
+      43,
+      44
+    ],
+    "training_seed_rule": "the next two consecutive integers after the sole canonical seed42; chosen without observing outcomes",
+    "new_30k_runs": 8,
+    "optimizer_steps": 30000,
+    "global_batch_size": 32,
+    "initialization": "independent exact frozen official pi0.5 base for each model and seed",
+    "dataset": "same frozen official 100-episode pinch_tongs dataset and existing frozen sidecars/targets",
+    "recipe": "same official pi0.5 optimization recipe; final checkpoint only; no rollout-based selection",
+    "fresh_evaluator_seed": 7,
+    "episodes_per_checkpoint": 200,
+    "reset_rule": "one preregistered seed7 reset sequence shared by all checkpoints",
+    "primary_comparison": "B2-B1",
+    "key_secondary_comparison": "B2-B0",
+    "mechanism_secondary_comparison": "B2-BVA",
+    "statistical_hierarchy": "paired effect per training seed followed by a training-seed hierarchical bootstrap or hierarchical binary model; never pool all rollouts as independent"
+  },
+  "precision_basis": {
+    "observed_paired_discordance_range": [
+      0.29,
+      0.37
+    ],
+    "episodes_100_approx_full_95ci_width_pp": [
+      20.7,
+      23.8
+    ],
+    "episodes_200_approx_full_95ci_width_pp": [
+      14.8,
+      16.8
+    ],
+    "pi2a_like_b2_b1_power_at_100": 0.478,
+    "pi2a_like_b2_b1_power_at_200": 0.768
+  },
+  "compute_estimate_if_conditionally_authorized": {
+    "observed_seconds_per_step": {
+      "B0_derived": 2.63,
+      "B2": 2.7,
+      "BVA": 3.9
+    },
+    "sequential_wall_hours_approx": 198,
+    "gpu_hours_approx_at_two_gpus_per_run": 396
+  },
+  "prohibitions": {
+    "start_pi2b": true,
+    "train_any_model": true,
+    "change_existing_checkpoints": true,
+    "reuse_exposed_evaluator_seeds_0_through_6": true,
+    "pool_rollouts_across_training_seeds_as_independent": true,
+    "checkpoint_shop": true
+  }
+}
