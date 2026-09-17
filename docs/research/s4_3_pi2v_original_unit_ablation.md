@@ -27,5 +27,35 @@ gates before the formal result is observed. The 80k training run uses the
 official effective global batch of 256 on two GPUs. Only the final step-80000
 adapter is eligible for BUniT target generation after mandatory user approval.
 
-At this stage B0, BVA, B1, and B2 remain immutable; BUniT policy training,
-five-model evaluation, PI2V conclusions, and PI2B are not started.
+## Formal adapter result
+
+The frozen adapter run completed all 80,000 optimizer steps (20,480,000
+samples) with effective global batch 256. Its final checkpoint is
+`f507a5ff6e8ac02af22f26360947135b91c9745f23092c73ea9dff346fe260dc`.
+All 32 adapter gradient tensors were finite and nonzero, and the frozen
+official-parameter digest was identical before and after training.
+
+The final checkpoint was cold-loaded and evaluated once on all 4,860 examples
+from the nine-group frozen DEV split. Nine of ten preregistered structural
+checks passed: all outputs were finite and nonzero; the RVQ did not collapse;
+paired V/A relation exceeded a source-group-disjoint shuffle; all four
+cross-reconstruction routes beat their shuffled controls; fused action
+reconstruction beat the TRAIN-mean baseline; and official frozen weights and
+checkpoint parent remained unchanged.
+
+The single hard failure was future-vision reconstruction. Lower is better, but
+the fused representation obtained cosine loss `0.09790460765361786`, compared
+with `0.08125562965869904` for the preregistered no-motion (copy-current)
+baseline. The learned route was therefore about 20.5% worse than the baseline.
+This is a representation-training failure under the frozen protocol, not an
+infrastructure failure or codebook-collapse failure.
+
+Decision:
+`S4_3_PI2V_UNIT_ADAPTER_REPRESENTATION_FAIL`.
+
+Per protocol, execution stopped at PI2V-8. No BUniT target cache was generated,
+no BUniT mode or policy was trained, no five-model policy evaluation was run,
+and PI2B was not started. Consequently this result cannot support a policy-level
+comparison among BUniT, B0, BVA, B1, and B2; it only rejects this frozen adapter
+checkpoint as a valid BUniT teacher. Thresholds were not changed, no alternate
+checkpoint was selected, and no rollout result was used.

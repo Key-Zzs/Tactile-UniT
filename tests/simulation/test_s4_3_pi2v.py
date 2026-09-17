@@ -81,3 +81,29 @@ def test_train_and_dev_pair_sources_remain_disjoint() -> None:
         dev_groups = set(dev["source_trajectory_id"].tolist())
     assert len(train_groups) == 42 and len(dev_groups) == 9
     assert train_groups.isdisjoint(dev_groups)
+
+
+def test_final_decision_enforces_preregistered_early_stop() -> None:
+    decision = json.loads(
+        (ROOT / "configs/simulation/s4_3_pi2v_final_decision.json").read_text()
+    )
+    assert decision["decision"] == "S4_3_PI2V_UNIT_ADAPTER_REPRESENTATION_FAIL"
+    assert decision["failure_class"] == "REPRESENTATION_TRAINING_FAILURE"
+    gates = decision["representation_validation"]["gates"]
+    assert list(gates.values()).count("PASS") == 9
+    assert [name for name, status in gates.items() if status == "FAIL"] == [
+        "fused_vision_better_than_no_motion"
+    ]
+    reconstruction = decision["representation_validation"]["reconstruction"]
+    assert reconstruction["fused_action_smooth_l1"] < reconstruction[
+        "train_mean_action_smooth_l1"
+    ]
+    assert reconstruction["fused_vision_cosine_loss"] > reconstruction[
+        "no_motion_vision_cosine_loss"
+    ]
+    assert not any(decision["downstream_guard"].values())
+    assert decision["protocol_integrity"] == {
+        "thresholds_changed_after_training": False,
+        "checkpoint_shopping": False,
+        "downstream_rollout_used": False,
+    }

@@ -1,0 +1,92 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2v-final-decision.v1",
+  "status": "STOPPED_AT_PREREGISTERED_REPRESENTATION_GATE",
+  "decision": "S4_3_PI2V_UNIT_ADAPTER_REPRESENTATION_FAIL",
+  "failure_class": "REPRESENTATION_TRAINING_FAILURE",
+  "reason": "The final step-80000 adapter's fused future-vision cosine loss (0.09790460765361786) is not lower than the preregistered no-motion baseline (0.08125562965869904).",
+  "claim_boundary": "This rejects this frozen DexJoCo Original-UniT adapter checkpoint as a valid BUniT teacher; it is not a five-model policy comparison.",
+  "official_unit": {
+    "source_commit": "0d762e32180bddd765694ef3846a3a5053f9d37f",
+    "frozen_parameter_digest_before": "1836a821dbcc23c18c1a237f14cf3bc2b9e7a9a541d55ddf15b82dce6504a091",
+    "frozen_parameter_digest_after": "1836a821dbcc23c18c1a237f14cf3bc2b9e7a9a541d55ddf15b82dce6504a091",
+    "frozen_parameters_unchanged": true
+  },
+  "adapter_training": {
+    "status": "PASS",
+    "checkpoint_rule": "single preregistered step-80000 checkpoint; no DEV checkpoint selection",
+    "optimizer_steps": 80000,
+    "samples_seen": 20480000,
+    "effective_global_batch": 256,
+    "trainable_parameters": 23485568,
+    "checkpoint_sha256": "f507a5ff6e8ac02af22f26360947135b91c9745f23092c73ea9dff346fe260dc",
+    "adapter_state_sha256": "08960d85f7f860f5af09705203515c5213264bd53dbae0b0c92c9ceff23b0040"
+  },
+  "representation_validation": {
+    "split": "frozen source-group-disjoint DEV",
+    "rows": 4860,
+    "source_groups": 9,
+    "gate_summary": {
+      "passed": 9,
+      "failed": 1,
+      "total": 10
+    },
+    "gates": {
+      "full_frozen_dev_4860": "PASS",
+      "all_outputs_finite": "PASS",
+      "vision_action_fusion_branches_finite_nonzero": "PASS",
+      "no_catastrophic_codebook_collapse": "PASS",
+      "paired_relation_bootstrap_ci95_lower_above_zero": "PASS",
+      "cross_reconstruction_better_than_group_shuffled": "PASS",
+      "fused_action_better_than_train_mean_action": "PASS",
+      "fused_vision_better_than_no_motion": "FAIL",
+      "frozen_official_parameters_unchanged": "PASS",
+      "official_parent_matches": "PASS"
+    },
+    "reconstruction": {
+      "fused_action_smooth_l1": 0.0022861966863274574,
+      "train_mean_action_smooth_l1": 0.7233108878135681,
+      "fused_vision_cosine_loss": 0.09790460765361786,
+      "no_motion_vision_cosine_loss": 0.08125562965869904
+    },
+    "paired_vs_group_shuffled_relation": {
+      "paired_mean_cosine": 0.7813209295272827,
+      "group_shuffled_mean_cosine": 0.7734354138374329,
+      "paired_minus_shuffled_mean": 0.007885467261075974,
+      "bootstrap_ci95": [
+        0.0060680372640490535,
+        0.009800880774855612
+      ],
+      "bootstrap_resamples": 10000,
+      "bootstrap_seed": 42
+    },
+    "rvq_minimums": {
+      "active_codes_observed": 31,
+      "active_codes_required": 4,
+      "normalized_entropy_observed": 0.5431227230412224,
+      "normalized_entropy_required": 0.05
+    }
+  },
+  "evidence_sha256": {
+    "adapter_checkpoint_manifest.json": "1af45b819595e7fc2a6f1c2504d7047050ebe8db737e219ccbf6e28c0826cc02",
+    "adapter_representation_metrics.json": "debb4ecd7f15de5ca9fc7ef6964b29e54be1a49813f813383a70738836a42e29",
+    "adapter_codebook_usage.json": "5b84326cdce6fad134d075ddede3f04afc08df6af45fc549c9fb5932b387dc04",
+    "adapter_cross_reconstruction.json": "5e7805a2d9fb1ffffda334d045a8cb65c7e28252b58275b20665f63b4d0eebda"
+  },
+  "protocol_integrity": {
+    "thresholds_changed_after_training": false,
+    "checkpoint_shopping": false,
+    "downstream_rollout_used": false
+  },
+  "downstream_guard": {
+    "bunit_targets_generated": false,
+    "bunit_implemented": false,
+    "bunit_training_started": false,
+    "five_model_evaluation_started": false,
+    "pi2b_started": false
+  },
+  "milestone": {
+    "pi2v": "FAILED_AT_REPRESENTATION_GATE",
+    "pi2b": "NOT_STARTED",
+    "m4": "NOT_ESTABLISHED"
+  }
+}
