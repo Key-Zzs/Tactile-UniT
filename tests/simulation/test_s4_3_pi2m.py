@@ -10,6 +10,10 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_bhva_target_protocol.json"
 BUILDER = ROOT / "scripts/simulation/build_s4_3_pi2m_bhva_targets.py"
+BHVA_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_bhva_protocol.json"
+MODE_SOURCE = ROOT / "gr00t/simulation/pi05_tactile_unit.py"
+MODE_ENUM = ROOT / "gr00t/simulation/s4_3_pi1.py"
+TRAINER = ROOT / "scripts/simulation/train_s4_3_pi2m_bhva.py"
 
 
 def load_builder():
@@ -58,3 +62,49 @@ def test_builder_uses_only_clean_vision_teacher_path() -> None:
     assert "contact_shared_target" not in source
     assert "FrozenS42PolicyStack" not in source
     assert "refusing to overwrite frozen PI2M target output" in source
+
+
+def test_bhva_mode_is_contact_conditioned_but_uses_only_va_target() -> None:
+    protocol = json.loads(BHVA_PROTOCOL.read_text())
+    assert protocol["model_id"] == "B_HVA"
+    assert protocol["mode"] == "CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX"
+    assert protocol["online_inputs"]["identical_to_B2"] is True
+    assert protocol["training_target"]["field"] == "va_shared_target"
+    assert protocol["training_target"]["valid_field"] == "va_aux_valid"
+    assert protocol["training_target"]["mask_equal_B2"] is True
+    assert protocol["contact_input_sidecar"]["field_read"] == "contact_state"
+    assert protocol["contact_input_sidecar"]["contact_target_fields_read"] is False
+    assert protocol["historical_BVA"]["actual_physical_horizon_seconds"] == 0.32
+    assert protocol["historical_BVA"]["matched_horizon_control_for_B2"] is False
+
+
+def test_bhva_training_wiring_preserves_b2_input_and_separate_target_cache() -> None:
+    enum_source = MODE_ENUM.read_text()
+    mode_source = MODE_SOURCE.read_text()
+    trainer = TRAINER.read_text()
+    assert 'CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX = "CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX"' in enum_source
+    assert "target_sidecar_path=VA_TARGET_SIDECAR" in trainer
+    assert "sidecar_path=CONTACT_SIDECAR" in trainer
+    assert "TactileUnitMode.CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX" in trainer
+    assert '"contact_state": self._contact_state[position]' in mode_source
+    assert '"va_shared_target": self._va_shared_target[position]' in mode_source
+    assert '"va_aux_valid": self._va_aux_valid[position]' in mode_source
+    combined_branch = mode_source.split(
+        "elif mode is TactileUnitMode.CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX:", 1
+    )[1].split("else:", 1)[0]
+    assert 'source["contact_shared_target"]' not in combined_branch
+    assert 'source["physical_aux_valid"]' not in combined_branch
+
+
+def test_bhva_training_recipe_is_unique_seed42_30k_global_batch32() -> None:
+    protocol = json.loads(BHVA_PROTOCOL.read_text())
+    trainer = TRAINER.read_text()
+    assert protocol["seed"] == 42
+    assert protocol["steps"] == 30_000
+    assert protocol["global_batch_size"] == 32
+    assert protocol["allowed_device_counts"] == [1, 2, 4]
+    assert "seed=42" in trainer
+    assert "batch_size=32" in trainer
+    assert "num_train_steps=30_000" in trainer
+    assert "resume=False" in trainer
+    assert "overwrite=False" in trainer
