@@ -203,6 +203,7 @@ def test_formal_evaluation_launcher_is_persistent_and_gpu_gated() -> None:
     assert "acquire_gpu_lock(gpu)" in launcher
     assert '"orchestrate"' in launcher
     assert '"--gpus"' in launcher
-    assert '"all_workers_advanced"' in auditor
+    assert 'first_wave = MODELS[: len(launch["physical_gpu_ids"])]' in auditor
+    assert '"all_active_workers_advanced"' in auditor
     assert '"training_targets_absent"' in auditor
     assert '"interim_success_analysis_performed": False' in auditor

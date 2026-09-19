@@ -87,6 +87,8 @@ def main() -> None:
         }
         for model in MODELS
     }
+    first_wave = MODELS[: len(launch["physical_gpu_ids"])]
+    active_models = tuple(model for model in MODELS if servers[model])
     source_hashes = freeze["sources_sha256"]
     source_integrity = all(
         sha256_file(ROOT / symbolic_path.removeprefix("$REPO_ROOT/")) == expected
@@ -139,21 +141,22 @@ def main() -> None:
         ).returncode
         == 0,
         "orchestrator_alive": len(orchestrators) == 1,
-        "three_policy_servers_alive": all(len(rows) == 1 for rows in servers.values()),
+        "active_policy_servers_match_first_wave": active_models == first_wave
+        and all(len(servers[model]) == 1 for model in first_wave),
         "one_to_three_frozen_gpus": 1 <= len(launch["physical_gpu_ids"]) <= 3,
         "selected_gpu_uuids_active": all(
             uuid in active_uuids for uuid in launch["physical_gpu_uuids"]
         ),
         "gpu_locks_held": locks_held,
-        "all_workers_advanced": all(count > 0 for count in counts.values()),
-        "all_workers_emitted_finite_actions": all(
-            row["all_finite_30x22"] for row in diagnostics.values()
+        "all_active_workers_advanced": all(counts[model] > 0 for model in first_wave),
+        "all_active_workers_emitted_finite_actions": all(
+            diagnostics[model]["all_finite_30x22"] for model in first_wave
         ),
         "matched_contact_state_delivery": all(
-            row["contact_state_sent"] for row in diagnostics.values()
+            diagnostics[model]["contact_state_sent"] for model in first_wave
         ),
         "training_targets_absent": all(
-            row["training_only_fields_absent"] for row in diagnostics.values()
+            diagnostics[model]["training_only_fields_absent"] for model in first_wave
         ),
         "frozen_scientific_sources_unchanged": source_integrity,
         "no_canonical_raw_completed_early": not any(
@@ -180,6 +183,8 @@ def main() -> None:
         "policy_server_pids": {
             model: sorted(rows) for model, rows in servers.items()
         },
+        "first_wave_models": list(first_wave),
+        "active_models": list(active_models),
         "physical_gpu_ids": launch["physical_gpu_ids"],
         "physical_gpu_uuids": launch["physical_gpu_uuids"],
         "completed_or_active_episode_directories": counts,
