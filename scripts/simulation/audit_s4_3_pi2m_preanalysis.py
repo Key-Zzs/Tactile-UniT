@@ -26,25 +26,18 @@ RECOVERY_ARCHIVE = (
     / "evaluation_recovery/event_001/interruption_archive_manifest.json"
 )
 OUTPUT = ARTIFACTS / "preanalysis_completeness_audit.json"
-FAILED_EVENT = ARTIFACTS / "preanalysis_completeness_audit_event_001.json"
 MODELS = ("B1", "B_HVA", "B2")
 EXPECTED_CONTROL_RAW = {
     "B1": "8e6ac39c60d6a84e0df953f6c4076ebd55e0680b312b486a0814699e346680cf",
     "B_HVA": "078d8abb6fd933a9b4a42053212ec808098c6111de2e309e06599bc6bf69a18e",
 }
 EXPECTED_SIDECARS = {
-    "B2_contact": (
-        ROOT / ".local/datasets/simulation/s4_3_pi1/pinch_tongs_official_tactile/sidecar.npz",
-        "833db9ddb4d37534bf38a7ed0b214fee2f000bb4e489d3fa9507b4e7bca5bd8e",
-    ),
-    "B_HVA_corrected_VA": (
-        ROOT / ".local/datasets/simulation/s4_3_pi2m/pinch_tongs_va_t27/sidecar.npz",
-        "7d51a23672273ec3ea46f947080c0c3ea66f947080c0c3ea66db55332522b199caab00ad4fc2126",
-    ),
-    "historical_BVA_0p32s": (
-        ROOT / ".local/datasets/simulation/s4_3_pi2u/pinch_tongs_va/sidecar.npz",
-        "c596b2f56880a969148f7cf06268ecfa9ad23bac01014be6c73ad20afd0d0612",
-    ),
+    "B2_contact": ROOT
+    / ".local/datasets/simulation/s4_3_pi1/pinch_tongs_official_tactile/sidecar.npz",
+    "B_HVA_corrected_VA": ROOT
+    / ".local/datasets/simulation/s4_3_pi2m/pinch_tongs_va_t27/sidecar.npz",
+    "historical_BVA_0p32s": ROOT
+    / ".local/datasets/simulation/s4_3_pi2u/pinch_tongs_va/sidecar.npz",
 }
 EPISODE_PATTERN = re.compile(r"^episode_(\d+)_(success|failure)$")
 
@@ -125,9 +118,15 @@ def diagnostics_rows(model: str) -> list[dict[str, Any]]:
 def main() -> None:
     if OUTPUT.exists():
         previous = read_json(OUTPUT)
-        if previous.get("status") != "FAIL" or FAILED_EVENT.exists():
+        if previous.get("status") != "FAIL":
             raise SystemExit(f"refusing to overwrite {OUTPUT}")
-        OUTPUT.rename(FAILED_EVENT)
+        for index in range(1, 100):
+            failed_event = ARTIFACTS / f"preanalysis_completeness_audit_event_{index:03d}.json"
+            if not failed_event.exists():
+                OUTPUT.rename(failed_event)
+                break
+        else:
+            raise SystemExit("too many preserved preanalysis audit failures")
     for forbidden in (
         ARTIFACTS / "rollout_completeness.json",
         ARTIFACTS / "paired_statistics.json",
@@ -137,6 +136,10 @@ def main() -> None:
             raise SystemExit(f"statistics/completeness already exists before preanalysis audit: {forbidden}")
 
     pre = read_json(PRE_FREEZE)
+    target_protocol = read_json(
+        ROOT / "configs/simulation/s4_3_pi2m_bhva_target_protocol.json"
+    )
+    training_protocol = read_json(ARTIFACTS / "training_protocol_freeze.json")
     recovery_launch = read_json(RECOVERY_LAUNCH)
     recovery_completion = read_json(RECOVERY_COMPLETION)
     recovery_archive = read_json(RECOVERY_ARCHIVE)
@@ -156,8 +159,13 @@ def main() -> None:
         model: checkpoint_tree_hash(checkpoint_path(pre["checkpoint_paths"][model]))
         for model in MODELS
     }
-    sidecar_hashes = {
-        name: sha256_file(path) for name, (path, _) in EXPECTED_SIDECARS.items()
+    sidecar_hashes = {name: sha256_file(path) for name, path in EXPECTED_SIDECARS.items()}
+    expected_sidecar_hashes = {
+        "B2_contact": target_protocol["parity_reference"]["B2_sidecar_sha256"],
+        "B_HVA_corrected_VA": training_protocol["target_sidecar_sha256"],
+        "historical_BVA_0p32s": target_protocol["historical_BVA"][
+            "target_sidecar_sha256"
+        ],
     }
 
     cache_by_model: dict[str, dict[int, bool]] = {}
@@ -272,10 +280,7 @@ def main() -> None:
             source_hashes[symbolic] == expected
             for symbolic, expected in pre["sources_sha256"].items()
         ),
-        "sidecar_hashes_exact": all(
-            sidecar_hashes[name] == expected
-            for name, (_, expected) in EXPECTED_SIDECARS.items()
-        ),
+        "sidecar_hashes_exact": sidecar_hashes == expected_sidecar_hashes,
         "dexjoco_revision_exact": dexjoco_head
         == "8d23b0fab23b17a58c4b55f3942e17013aaf8267",
         "branch_exact": repo_branch == "develop/sim-benchmark",
@@ -327,6 +332,7 @@ def main() -> None:
         "checkpoint_tree_sha256": checkpoint_hashes,
         "source_sha256": source_hashes,
         "sidecar_sha256": sidecar_hashes,
+        "expected_sidecar_sha256_from_frozen_protocols": expected_sidecar_hashes,
         "reset_identity_sequence_canonical_sha256": canonical_sha256(identities["B1"]),
         "action_chunk_counts": {model: len(chunks_by_model[model]) for model in MODELS},
         "termination_counts": {
