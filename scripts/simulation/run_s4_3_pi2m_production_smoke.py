@@ -18,6 +18,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 DEXJOCO = ROOT / "third_party/dexjoco"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2m"
 RAW = ARTIFACTS / "production_smoke_raw"
