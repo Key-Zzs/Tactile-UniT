@@ -19,6 +19,8 @@ ANALYZER = ROOT / "scripts/simulation/analyze_s4_3_pi2m.py"
 EVAL_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_evaluation_protocol.json"
 STAT_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_statistical_protocol.json"
 COMPLETION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_bhva_completion.py"
+PRODUCTION_SMOKE = ROOT / "scripts/simulation/run_s4_3_pi2m_production_smoke.py"
+EVALUATION_FREEZER = ROOT / "scripts/simulation/freeze_s4_3_pi2m_evaluation.py"
 
 
 def load_builder():
@@ -165,3 +167,26 @@ def test_completion_auditor_requires_restored_step_and_protected_hashes() -> Non
     assert '"protected_E_T_unchanged"' in source
     assert '"protected_S4_2_trees_unchanged"' in source
     assert '"no_formal_evaluation_before_completion"' in source
+
+
+def test_production_smoke_is_disjoint_and_reuses_formal_paths() -> None:
+    source = PRODUCTION_SMOKE.read_text()
+    assert "SMOKE_SEED = 700_042" in source
+    assert "formal.evaluate_model(" in source
+    assert "serve_s4_3_pi2m_policy.py" in source
+    assert "run_s4_3_pi2u_eval.py" in source
+    assert '"same_disjoint_reset_identity"' in source
+    assert '"formal_seed7_outputs_absent"' in source
+    assert '"training_targets_never_sent"' in source
+    assert '"action_horizon30"' in source
+
+
+def test_final_evaluation_freeze_binds_all_three_checkpoints_before_performance() -> None:
+    source = EVALUATION_FREEZER.read_text()
+    assert '"B_HVA": "82469f1d48b09f1c6152019512dba82f0f899f07bb0aab76bb58c0e0ba1e3a8b"' in source
+    assert '"checkpoint_hashes_exact"' in source
+    assert '"no_formal_performance_seen"' in source
+    assert '"production_smoke_PASS"' in source
+    assert '"200_each_600_total"' in source
+    assert '"fresh_seed7"' in source
+    assert '"PI2B_not_started"' in source
