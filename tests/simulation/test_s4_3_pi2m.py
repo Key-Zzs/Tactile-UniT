@@ -21,6 +21,8 @@ STAT_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_statistical_protocol.json"
 COMPLETION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_bhva_completion.py"
 PRODUCTION_SMOKE = ROOT / "scripts/simulation/run_s4_3_pi2m_production_smoke.py"
 EVALUATION_FREEZER = ROOT / "scripts/simulation/freeze_s4_3_pi2m_evaluation.py"
+EVALUATION_LAUNCHER = ROOT / "scripts/simulation/launch_s4_3_pi2m_evaluation.py"
+EVALUATION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_evaluation_launch.py"
 
 
 def load_builder():
@@ -190,3 +192,17 @@ def test_final_evaluation_freeze_binds_all_three_checkpoints_before_performance(
     assert '"200_each_600_total"' in source
     assert '"fresh_seed7"' in source
     assert '"PI2B_not_started"' in source
+
+
+def test_formal_evaluation_launcher_is_persistent_and_gpu_gated() -> None:
+    launcher = EVALUATION_LAUNCHER.read_text()
+    auditor = EVALUATION_AUDITOR.read_text()
+    assert 'SESSION = "s43_pi2m_eval_s7"' in launcher
+    assert "gpu_is_idle(gpu, snapshot1)" in launcher
+    assert "gpu_is_idle(gpu, snapshot2)" in launcher
+    assert "acquire_gpu_lock(gpu)" in launcher
+    assert '"orchestrate"' in launcher
+    assert '"--gpus"' in launcher
+    assert '"all_workers_advanced"' in auditor
+    assert '"training_targets_absent"' in auditor
+    assert '"interim_success_analysis_performed": False' in auditor
