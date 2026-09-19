@@ -24,6 +24,7 @@ EVALUATION_FREEZER = ROOT / "scripts/simulation/freeze_s4_3_pi2m_evaluation.py"
 EVALUATION_LAUNCHER = ROOT / "scripts/simulation/launch_s4_3_pi2m_evaluation.py"
 EVALUATION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_evaluation_launch.py"
 B2_RECOVERY = ROOT / "scripts/simulation/recover_s4_3_pi2m_b2_evaluation.py"
+B2_RECOVERY_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_b2_recovery_launch.py"
 
 
 def load_builder():
@@ -227,3 +228,17 @@ def test_b2_recovery_preserves_controls_and_replays_only_b2() -> None:
     assert '"PI2B_started": False' in source
     assert "run_one('B1'" not in source
     assert "run_one('B_HVA'" not in source
+
+
+def test_b2_recovery_auditor_requires_live_frozen_runtime_and_no_interim_analysis() -> None:
+    source = B2_RECOVERY_AUDITOR.read_text()
+    assert '"B2_only"' in source
+    assert '"B1_B_HVA_raw_hashes_unchanged"' in source
+    assert '"frozen_sources_unchanged"' in source
+    assert '"selected_GPU_lock_held"' in source
+    assert '"all_seen_reset_identities_match_controls"' in source
+    assert '"all_action_chunks_finite_30x22"' in source
+    assert '"contact_state_sent_for_every_chunk"' in source
+    assert '"training_targets_absent"' in source
+    assert '"interim_success_analysis_performed": False' in source
+    assert '"PI2B_started": False' in source
