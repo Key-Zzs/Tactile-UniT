@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import statistics
 import subprocess
 import time
 from typing import Any
@@ -167,12 +168,18 @@ def main() -> None:
     per_model_seconds = {
         model: elapsed / count if count else None for model, count in counts.items()
     }
-    eta_candidates = [
-        (200 - counts[model]) * per_model_seconds[model]
-        for model in MODELS
+    active_seconds = [
+        per_model_seconds[model]
+        for model in first_wave
         if per_model_seconds[model] is not None
     ]
-    eta_seconds = max(eta_candidates) if len(eta_candidates) == len(MODELS) else None
+    representative_seconds = statistics.median(active_seconds) if active_seconds else None
+    remaining_episode_slots = 600 - sum(counts.values())
+    eta_seconds = (
+        remaining_episode_slots * representative_seconds / len(first_wave)
+        if representative_seconds is not None
+        else None
+    )
     payload = {
         "schema": "tactile3d-unit.s4-3-pi2m-evaluation-job-manifest.v1",
         "status": "RUNNING_STABLE" if all(gates.values()) else "FAIL",
@@ -191,6 +198,8 @@ def main() -> None:
         "diagnostics": diagnostics,
         "elapsed_seconds": elapsed,
         "observed_seconds_per_episode": per_model_seconds,
+        "representative_seconds_per_episode": representative_seconds,
+        "remaining_episode_slots": remaining_episode_slots,
         "eta_hours": eta_seconds / 3600 if eta_seconds is not None else None,
         "expected_completion_utc": (now + timedelta(seconds=eta_seconds)).isoformat()
         if eta_seconds is not None
