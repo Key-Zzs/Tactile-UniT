@@ -392,7 +392,7 @@ def main() -> None:
     args = parse_args()
     formal = configure_smoke()
     if args.command == "evaluate-model":
-        formal.evaluate_model(
+        formal.configure_frozen_runtime().evaluate_model(
             args.model, args.contact_socket, args.output, args.diagnostics, args.port
         )
     else:

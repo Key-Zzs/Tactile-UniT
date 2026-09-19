@@ -172,7 +172,7 @@ def test_completion_auditor_requires_restored_step_and_protected_hashes() -> Non
 def test_production_smoke_is_disjoint_and_reuses_formal_paths() -> None:
     source = PRODUCTION_SMOKE.read_text()
     assert "SMOKE_SEED = 700_042" in source
-    assert "formal.evaluate_model(" in source
+    assert "formal.configure_frozen_runtime().evaluate_model(" in source
     assert "serve_s4_3_pi2m_policy.py" in source
     assert "run_s4_3_pi2u_eval.py" in source
     assert '"same_disjoint_reset_identity"' in source
