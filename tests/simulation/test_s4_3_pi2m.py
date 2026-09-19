@@ -23,6 +23,7 @@ PRODUCTION_SMOKE = ROOT / "scripts/simulation/run_s4_3_pi2m_production_smoke.py"
 EVALUATION_FREEZER = ROOT / "scripts/simulation/freeze_s4_3_pi2m_evaluation.py"
 EVALUATION_LAUNCHER = ROOT / "scripts/simulation/launch_s4_3_pi2m_evaluation.py"
 EVALUATION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_evaluation_launch.py"
+B2_RECOVERY = ROOT / "scripts/simulation/recover_s4_3_pi2m_b2_evaluation.py"
 
 
 def load_builder():
@@ -207,3 +208,22 @@ def test_formal_evaluation_launcher_is_persistent_and_gpu_gated() -> None:
     assert '"all_active_workers_advanced"' in auditor
     assert '"training_targets_absent"' in auditor
     assert '"interim_success_analysis_performed": False' in auditor
+
+
+def test_b2_recovery_preserves_controls_and_replays_only_b2() -> None:
+    source = B2_RECOVERY.read_text()
+    assert 'SESSION = "s43_pi2m_eval_s7_b2r1"' in source
+    assert '"models_relaunched": ["B2"]' in source
+    assert '"models_not_relaunched": ["B1", "B_HVA"]' in source
+    assert 'formal.run_one("B2"' in source
+    assert "verify_frozen_sources()" in source
+    assert "verify_completed_controls()" in source
+    assert "verify_interrupted_boundary" in source
+    assert "gpu_is_idle(gpu, snapshots[0])" in source
+    assert "gpu_is_idle(gpu, snapshots[1])" in source
+    assert "acquire_gpu_lock(gpu)" in source
+    assert '"B2_ONLY_CLEAN_REPLAY"' in source
+    assert '"reset_identity_parity_B1_B_HVA_B2": True' in source
+    assert '"PI2B_started": False' in source
+    assert "run_one('B1'" not in source
+    assert "run_one('B_HVA'" not in source
