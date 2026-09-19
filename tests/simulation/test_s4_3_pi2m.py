@@ -25,6 +25,7 @@ EVALUATION_LAUNCHER = ROOT / "scripts/simulation/launch_s4_3_pi2m_evaluation.py"
 EVALUATION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_evaluation_launch.py"
 B2_RECOVERY = ROOT / "scripts/simulation/recover_s4_3_pi2m_b2_evaluation.py"
 B2_RECOVERY_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_b2_recovery_launch.py"
+PREANALYSIS_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_preanalysis.py"
 
 
 def load_builder():
@@ -241,4 +242,19 @@ def test_b2_recovery_auditor_requires_live_frozen_runtime_and_no_interim_analysi
     assert '"contact_state_sent_for_every_chunk"' in source
     assert '"training_targets_absent"' in source
     assert '"interim_success_analysis_performed": False' in source
+    assert '"PI2B_started": False' in source
+
+
+def test_preanalysis_auditor_proves_completeness_and_discloses_retry_nondeterminism() -> None:
+    source = PREANALYSIS_AUDITOR.read_text()
+    assert '"exactly_600_complete"' in source
+    assert '"triple_aligned_200_unique_resets"' in source
+    assert '"checkpoint_hashes_exact"' in source
+    assert '"frozen_sources_exact"' in source
+    assert '"cache_outcomes_equal_raw"' in source
+    assert '"contact_sent_no_training_targets"' in source
+    assert '"recovery_decision_frozen_before_completion"' in source
+    assert '"interrupted_prefix_nondeterminism_measured_not_hidden"' in source
+    assert '"no_splicing_final_B2_is_one_clean_200_run"' in source
+    assert '"statistics_performed": False' in source
     assert '"PI2B_started": False' in source
