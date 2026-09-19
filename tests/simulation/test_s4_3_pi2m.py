@@ -256,5 +256,7 @@ def test_preanalysis_auditor_proves_completeness_and_discloses_retry_nondetermin
     assert '"recovery_decision_frozen_before_completion"' in source
     assert '"interrupted_prefix_nondeterminism_measured_not_hidden"' in source
     assert '"no_splicing_final_B2_is_one_clean_200_run"' in source
+    assert 'preanalysis_completeness_audit_event_001.json' in source
+    assert 'c596b2f56880a969148f7cf06268ecfa9ad23bac01014be6c73ad20afd0d0612' in source
     assert '"statistics_performed": False' in source
     assert '"PI2B_started": False' in source

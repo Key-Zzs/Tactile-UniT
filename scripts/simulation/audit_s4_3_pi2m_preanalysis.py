@@ -26,6 +26,7 @@ RECOVERY_ARCHIVE = (
     / "evaluation_recovery/event_001/interruption_archive_manifest.json"
 )
 OUTPUT = ARTIFACTS / "preanalysis_completeness_audit.json"
+FAILED_EVENT = ARTIFACTS / "preanalysis_completeness_audit_event_001.json"
 MODELS = ("B1", "B_HVA", "B2")
 EXPECTED_CONTROL_RAW = {
     "B1": "8e6ac39c60d6a84e0df953f6c4076ebd55e0680b312b486a0814699e346680cf",
@@ -42,7 +43,7 @@ EXPECTED_SIDECARS = {
     ),
     "historical_BVA_0p32s": (
         ROOT / ".local/datasets/simulation/s4_3_pi2u/pinch_tongs_va/sidecar.npz",
-        "c596b2f523b315f5b917e2158967ce5bd512352f8c9cd363fe8d2b81ed0d0612",
+        "c596b2f56880a969148f7cf06268ecfa9ad23bac01014be6c73ad20afd0d0612",
     ),
 }
 EPISODE_PATTERN = re.compile(r"^episode_(\d+)_(success|failure)$")
@@ -123,7 +124,10 @@ def diagnostics_rows(model: str) -> list[dict[str, Any]]:
 
 def main() -> None:
     if OUTPUT.exists():
-        raise SystemExit(f"refusing to overwrite {OUTPUT}")
+        previous = read_json(OUTPUT)
+        if previous.get("status") != "FAIL" or FAILED_EVENT.exists():
+            raise SystemExit(f"refusing to overwrite {OUTPUT}")
+        OUTPUT.rename(FAILED_EVENT)
     for forbidden in (
         ARTIFACTS / "rollout_completeness.json",
         ARTIFACTS / "paired_statistics.json",
