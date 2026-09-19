@@ -18,6 +18,7 @@ TRAINER = ROOT / "scripts/simulation/train_s4_3_pi2m_bhva.py"
 ANALYZER = ROOT / "scripts/simulation/analyze_s4_3_pi2m.py"
 EVAL_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_evaluation_protocol.json"
 STAT_PROTOCOL = ROOT / "configs/simulation/s4_3_pi2m_statistical_protocol.json"
+COMPLETION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_bhva_completion.py"
 
 
 def load_builder():
@@ -153,3 +154,14 @@ def test_exact_paired_statistics_helpers() -> None:
     left = np.ones(200, dtype=np.bool_)
     right = np.zeros(200, dtype=np.bool_)
     assert analyzer.paired_bootstrap(left, right, resamples=1_000, seed=4317) == (1.0, 1.0)
+
+
+def test_completion_auditor_requires_restored_step_and_protected_hashes() -> None:
+    source = COMPLETION_AUDITOR.read_text()
+    assert "restore_train_step()" in source
+    assert '"restored_train_state_step_30000"' in source
+    assert '"all_checkpoint_arrays_finite"' in source
+    assert '"protected_B0_B1_B2_BVA_unchanged"' in source
+    assert '"protected_E_T_unchanged"' in source
+    assert '"protected_S4_2_trees_unchanged"' in source
+    assert '"no_formal_evaluation_before_completion"' in source
