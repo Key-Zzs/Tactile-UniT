@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -106,6 +107,52 @@ def test_completion_manifest_binds_model_step_hash_and_checkpoint(tmp_path: Path
         changed = dict(payload)
         changed[key] = value
         assert not module.completion_manifest_valid(changed, spec, checkpoint)
+
+
+def test_completion_status_requires_exact_referenced_pass_chain(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    spec = module.MODEL_SPECS[0]
+    checkpoint = tmp_path / spec.experiment / "29999"
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    completion_path = artifacts / "b_va27_training_completion.json"
+    completion = {
+        "status": "PASS",
+        "model_id": "B_VA27",
+        "optimizer_steps": 30_000,
+        "gates": {"cold_load": "PASS", "finite": "PASS"},
+    }
+    completion_path.write_text(json.dumps(completion))
+    manifest = {
+        "status": "PASS",
+        "frozen": True,
+        "model_id": "B_VA27",
+        "optimizer_steps": 30_000,
+        "checkpoint": str(checkpoint),
+        "checkpoint_tree_sha256": "a" * 64,
+        "training_completion": "$REPO_ROOT/artifacts/b_va27_training_completion.json",
+        "training_completion_sha256": hashlib.sha256(
+            completion_path.read_bytes()
+        ).hexdigest(),
+        "gates": {"manifest": "PASS"},
+    }
+    assert module.completion_chain_status_valid(
+        manifest, completion, completion_path, spec, checkpoint
+    )
+    manifest["training_completion_sha256"] = "0" * 64
+    assert not module.completion_chain_status_valid(
+        manifest, completion, completion_path, spec, checkpoint
+    )
+    manifest["training_completion_sha256"] = hashlib.sha256(
+        completion_path.read_bytes()
+    ).hexdigest()
+    completion["gates"]["finite"] = "FAIL"
+    assert not module.completion_chain_status_valid(
+        manifest, completion, completion_path, spec, checkpoint
+    )
 
 
 def test_training_freeze_binds_the_final_only_candidate_contract() -> None:

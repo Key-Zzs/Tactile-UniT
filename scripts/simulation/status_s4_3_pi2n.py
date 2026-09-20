@@ -262,6 +262,39 @@ def completion_manifest_valid(
     ) == 64
 
 
+def completion_chain_status_valid(
+    manifest: dict[str, Any] | None,
+    completion: dict[str, Any] | None,
+    completion_path: Path,
+    spec: ModelSpec,
+    final_checkpoint: Path,
+) -> bool:
+    if not completion_manifest_valid(manifest, spec, final_checkpoint):
+        return False
+    if not manifest or manifest.get("frozen") is not True or not completion:
+        return False
+    manifest_gates = manifest.get("gates")
+    completion_gates = completion.get("gates")
+    if not (
+        isinstance(manifest_gates, dict)
+        and manifest_gates
+        and all(value == "PASS" for value in manifest_gates.values())
+        and completion.get("status") == "PASS"
+        and completion.get("model_id") == spec.model_id
+        and completion.get("optimizer_steps") == 30_000
+        and isinstance(completion_gates, dict)
+        and completion_gates
+        and all(value == "PASS" for value in completion_gates.values())
+    ):
+        return False
+    expected_reference = "$REPO_ROOT/" + completion_path.relative_to(ROOT).as_posix()
+    return bool(
+        manifest.get("training_completion") == expected_reference
+        and manifest.get("training_completion_sha256")
+        == small_file_sha256(completion_path)
+    )
+
+
 def training_freeze_valid(payload: dict[str, Any] | None, spec: ModelSpec) -> bool:
     return bool(
         payload
@@ -537,12 +570,12 @@ def summarize_candidate_audits(now: datetime) -> list[dict[str, Any]]:
                 / spec.experiment
                 / "29999"
             )
-            canonical_outputs_valid = bool(
-                completion
-                and completion.get("status") == "PASS"
-                and completion.get("optimizer_steps") == 30_000
-                and manifest
-                and completion_manifest_valid(manifest, spec, final_checkpoint)
+            canonical_outputs_valid = completion_chain_status_valid(
+                manifest,
+                completion,
+                completion_path,
+                spec,
+                final_checkpoint,
             )
             if all(running_gates.values()):
                 state = "RUNNING"
@@ -622,8 +655,18 @@ def summarize_model(
     freeze_valid = training_freeze_valid(training_freeze, spec)
     completion_path = ARTIFACTS / spec.completion_manifest
     completion, completion_error = read_json(completion_path)
-    completion_passed = completion_manifest_valid(
-        completion, spec, final_checkpoint
+    training_completion_path = (
+        ARTIFACTS / f"{spec.model_id.lower()}_training_completion.json"
+    )
+    training_completion, training_completion_error = read_json(
+        training_completion_path
+    )
+    completion_passed = completion_chain_status_valid(
+        completion,
+        training_completion,
+        training_completion_path,
+        spec,
+        final_checkpoint,
     )
     session = tmux_session_exists(spec.session)
     expected_checkpoint = str(final_checkpoint)
@@ -696,6 +739,8 @@ def summarize_model(
         "final_checkpoint_present": final_checkpoint.is_dir(),
         "completion_manifest": str(completion_path),
         "completion_manifest_read_error": completion_error,
+        "training_completion": str(training_completion_path),
+        "training_completion_read_error": training_completion_error,
         "completion_audit_passed": completion_passed,
     }
 
