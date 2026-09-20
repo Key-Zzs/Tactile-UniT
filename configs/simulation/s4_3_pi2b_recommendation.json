@@ -1,15 +1,35 @@
 {
-  "schema": "tactile3d-unit.s4-3-pi2b-recommendation-draft.v1",
+  "schema": "tactile3d-unit.s4-3-pi2b-recommendation-draft.v2",
   "status": "DRAFT_NOT_EXECUTED",
   "training_authorized": false,
-  "decision": "PI2B_MECHANISM_DIAGNOSIS_FIRST",
-  "reason": "In the formal common seed6 evaluation, BVA is 24.0% and B2 is 21.0%; B2-BVA is -3.0 pp with paired 95% CI [-11.5, 5.5] pp. Generic physical supervision remains a serious alternative explanation, so PI2B must not start until the intended mechanism claim is resolved.",
   "immediate_new_runs": 0,
-  "conditional_protocol_after_claim_resolution": {
+  "decision_basis": {
+    "stage": "S4.3-PI2M",
+    "training_seed": 42,
+    "evaluation_seed": 7,
+    "primary_result": "VA_TARGET_ADVANTAGE_CONFIRMED",
+    "primary_contrast": "B2-B_HVA",
+    "primary_delta_pp": -19.5,
+    "primary_ci95_pp": [
+      -29.0,
+      -10.0
+    ],
+    "primary_raw_p": 0.00013082231066914517,
+    "primary_holm_p": 0.00026164462133829034,
+    "claim_level": "FIXED_SEED_ONLY"
+  },
+  "historical_bva_constraint": {
+    "model": "BVA",
+    "actual_target_offset_rows": 16,
+    "actual_physical_horizon_seconds": 0.32,
+    "status": "HISTORICAL_CONTEXT_ONLY",
+    "prohibition": "Do not call historical BVA a matched-horizon VA-vs-VAC control and do not overwrite, relabel, or reuse its cache as a +27 cache."
+  },
+  "option_a_minimum_matched_target_confirmation": {
+    "purpose": "Confirm the already matched B1/B_HVA/B2 fixed-seed result across training seeds without introducing a new model identity.",
     "models": [
-      "B0",
-      "BVA",
       "B1",
+      "B_HVA",
       "B2"
     ],
     "existing_training_seed": 42,
@@ -17,51 +37,70 @@
       43,
       44
     ],
-    "training_seed_rule": "the next two consecutive integers after the sole canonical seed42; chosen without observing outcomes",
-    "new_30k_runs": 8,
+    "new_30k_runs": 6,
+    "primary_comparison": "B2-B_HVA",
+    "key_secondary_comparison": "B_HVA-B1",
+    "replication_comparison": "B2-B1"
+  },
+  "option_b_full_online_input_by_target_matrix": {
+    "purpose": "Estimate both online Contact-State and matched-horizon target effects with a clean no-contact VA control.",
+    "models": [
+      "B0",
+      "B_VA27",
+      "B1",
+      "B_HVA",
+      "B2"
+    ],
+    "new_model_identity": {
+      "id": "B_VA27",
+      "online_contact_state": false,
+      "target": "corrected clean VA-only t-to-t+27 target",
+      "must_not_be_named": "BVA",
+      "reason": "Historical BVA has a different +16-row / 0.32 s target contract."
+    },
+    "training_seeds": [
+      42,
+      43,
+      44
+    ],
+    "new_30k_runs": 11,
+    "run_accounting": "B_VA27 at seeds42/43/44 (3) plus B0/B1/B_HVA/B2 at seeds43/44 (8). Existing seed42 B0/B1/B_HVA/B2 remain frozen."
+  },
+  "shared_training_contract_if_separately_authorized": {
+    "training_seed_rule": "Use the preregistered seeds 43 and 44, selected without observing their outcomes.",
     "optimizer_steps": 30000,
     "global_batch_size": 32,
-    "initialization": "independent exact frozen official pi0.5 base for each model and seed",
-    "dataset": "same frozen official 100-episode pinch_tongs dataset and existing frozen sidecars/targets",
-    "recipe": "same official pi0.5 optimization recipe; final checkpoint only; no rollout-based selection",
-    "fresh_evaluator_seed": 7,
+    "initialization": "independent exact frozen official pi0.5 base for every new model/seed",
+    "dataset": "same frozen official 100-episode pinch_tongs dataset",
+    "target_contract": "All VA/VAC target comparisons use episode-local raw/control t-to-t+27 (approximately 0.54 s), the B2 valid-row identity, and no cross-episode transition or future-RGB interpolation.",
+    "recipe": "same frozen official pi0.5 optimization recipe; final checkpoint only; no rollout-based selection"
+  },
+  "evaluation_contract_if_separately_authorized": {
+    "candidate_fresh_evaluator_seed": 8,
+    "seed_status": "candidate only; must be re-audited and frozen before any evaluation",
     "episodes_per_checkpoint": 200,
-    "reset_rule": "one preregistered seed7 reset sequence shared by all checkpoints",
-    "primary_comparison": "B2-B1",
-    "key_secondary_comparison": "B2-B0",
-    "mechanism_secondary_comparison": "B2-BVA",
-    "statistical_hierarchy": "paired effect per training seed followed by a training-seed hierarchical bootstrap or hierarchical binary model; never pool all rollouts as independent"
+    "reset_rule": "one preregistered seed8 reset sequence shared across every checkpoint in the selected option",
+    "runtime_rule": "Preserve the seed42 cohort's evaluator semantics if comparing cohorts. The observed asynchronous retry nondeterminism must be preregistered and disclosed; exact retry policy is fixed before outcomes.",
+    "alternative_runtime_rule": "A new synchronous deterministic cohort requires rerunning every group in that cohort and separate authorization; it cannot be mixed silently with seed42."
   },
-  "precision_basis": {
-    "observed_paired_discordance_range": [
-      0.29,
-      0.37
-    ],
-    "episodes_100_approx_full_95ci_width_pp": [
-      20.7,
-      23.8
-    ],
-    "episodes_200_approx_full_95ci_width_pp": [
-      14.8,
-      16.8
-    ],
-    "pi2a_like_b2_b1_power_at_100": 0.478,
-    "pi2a_like_b2_b1_power_at_200": 0.768
+  "statistical_contract_if_separately_authorized": {
+    "unit": "paired reset within training seed",
+    "outer_unit": "training seed",
+    "method": "report each seed's paired effect, then use a hierarchical bootstrap with training seed as the outer resampling unit or a preregistered hierarchical binary model",
+    "prohibition": "Do not pool rollout outcomes across training seeds as independent observations.",
+    "limitation": "Three training seeds still provide a limited estimate of training randomness."
   },
-  "compute_estimate_if_conditionally_authorized": {
-    "observed_seconds_per_step": {
-      "B0_derived": 2.63,
-      "B2": 2.7,
-      "BVA": 3.9
-    },
-    "sequential_wall_hours_approx": 198,
-    "gpu_hours_approx_at_two_gpus_per_run": 396
+  "known_runtime_limitation": {
+    "event": "During PI2M B2 recovery, the first 31 completed outcomes from the interrupted attempt agreed with the clean replay on 18 resets and differed on 13, despite identical reset IDs.",
+    "consequence": "The asynchronous evaluator is reset-identity reproducible but not bit/outcome deterministic across retries. PI2M used one complete clean 200-reset replay as canonical and did not splice or select per-reset outcomes."
   },
   "prohibitions": {
     "start_pi2b": true,
-    "train_any_model": true,
+    "train_any_model_under_this_draft": true,
     "change_existing_checkpoints": true,
-    "reuse_exposed_evaluator_seeds_0_through_6": true,
+    "rewrite_historical_bva_artifacts": true,
+    "call_historical_bva_matched_horizon": true,
+    "reuse_exposed_evaluator_seeds_0_through_7": true,
     "pool_rollouts_across_training_seeds_as_independent": true,
     "checkpoint_shop": true
   }

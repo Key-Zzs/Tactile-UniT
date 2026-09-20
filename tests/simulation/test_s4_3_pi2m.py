@@ -28,6 +28,7 @@ B2_RECOVERY_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_b2_recovery_lau
 PREANALYSIS_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_preanalysis.py"
 STATISTICS_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_statistics.py"
 VISUALIZER = ROOT / "scripts/simulation/visualize_s4_3_pi2m.py"
+FINALIZER = ROOT / "scripts/simulation/finalize_s4_3_pi2m.py"
 
 
 def load_builder():
@@ -293,3 +294,17 @@ def test_visualizer_covers_all_minimum_pi2m_figures_from_artifacts() -> None:
     assert "claim_freeze.json" in source
     assert "all_values_from_local_artifacts" in source
     assert "historical_BVA_labeled_0p32s_and_context_only" in source
+
+
+def test_finalizer_freezes_integrity_claims_and_keeps_pi2b_unexecuted() -> None:
+    source = FINALIZER.read_text()
+    assert '"PRIMARY_TARGET_EFFECT": claim["PRIMARY_TARGET_EFFECT"]' in source
+    assert '"protected_integrity_after.json"' in source
+    assert '"pi2b_recommendation_draft.json"' in source
+    assert '"minimum_new_runs": 6' in source
+    assert '"full_matrix_new_runs": 11' in source
+    assert '"started": False' in source
+    assert "checkpoint_hashes == EXPECTED_CHECKPOINTS" in source
+    assert "sidecar_hashes == EXPECTED_SIDECARS" in source
+    assert "raw_hashes == EXPECTED_RAW" in source
+    assert "Historical BVA remains byte-identical" in source
