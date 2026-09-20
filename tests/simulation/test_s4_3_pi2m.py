@@ -26,6 +26,8 @@ EVALUATION_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_evaluation_launc
 B2_RECOVERY = ROOT / "scripts/simulation/recover_s4_3_pi2m_b2_evaluation.py"
 B2_RECOVERY_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_b2_recovery_launch.py"
 PREANALYSIS_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_preanalysis.py"
+STATISTICS_AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2m_statistics.py"
+VISUALIZER = ROOT / "scripts/simulation/visualize_s4_3_pi2m.py"
 
 
 def load_builder():
@@ -261,3 +263,33 @@ def test_preanalysis_auditor_proves_completeness_and_discloses_retry_nondetermin
     assert 'training_protocol["target_sidecar_sha256"]' in source
     assert '"statistics_performed": False' in source
     assert '"PI2B_started": False' in source
+
+
+def test_statistics_auditor_is_independent_and_preserves_fixed_seed_scope() -> None:
+    source = STATISTICS_AUDITOR.read_text()
+    assert "from scipy.stats import binomtest" in source
+    assert 'method="wilson"' in source
+    assert "paired_bootstrap" in source
+    assert '"all_paired_statistics_match"' in source
+    assert '"primary_negative_confirmed"' in source
+    assert '"claim_level_fixed_seed_only"' in source
+    assert "13/31 interrupted-prefix outcomes differed" in source
+    assert '"PI2B_started": False' in source
+
+
+def test_visualizer_covers_all_minimum_pi2m_figures_from_artifacts() -> None:
+    source = VISUALIZER.read_text()
+    for filename in (
+        "design_matrix.png",
+        "physical_time_alignment.png",
+        "training_losses.png",
+        "success_wilson_ci.png",
+        "paired_differences.png",
+        "paired_outcome_counts.png",
+        "claim_status_table.png",
+    ):
+        assert filename in source
+    assert "paired_statistics.json" in source
+    assert "claim_freeze.json" in source
+    assert "all_values_from_local_artifacts" in source
+    assert "historical_BVA_labeled_0p32s_and_context_only" in source
