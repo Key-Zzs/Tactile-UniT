@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -349,3 +350,29 @@ def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
     assert len(final.MODELS) == 6
     assert len(final.SEED_BLOCKS) == 4
     assert np.prod([len(final.MODELS), len(final.SEED_BLOCKS), 50]) == 1200
+
+
+def test_final_candidate_completion_chain_rejects_hash_or_gate_drift(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(freeze, "ROOT", tmp_path)
+    completion_path = tmp_path / "candidate_completion.json"
+    completion = {
+        "status": "PASS",
+        "optimizer_steps": 30_000,
+        "gates": {"cold_load": "PASS"},
+    }
+    completion_path.write_text(json.dumps(completion))
+    manifest = {
+        "training_completion": "$REPO_ROOT/candidate_completion.json",
+        "training_completion_sha256": hashlib.sha256(
+            completion_path.read_bytes()
+        ).hexdigest(),
+        "gates": {"manifest": "PASS"},
+    }
+    assert freeze.completion_chain_valid(manifest)
+    manifest["gates"]["manifest"] = "FAIL"
+    assert not freeze.completion_chain_valid(manifest)
+    manifest["gates"]["manifest"] = "PASS"
+    manifest["training_completion_sha256"] = "f" * 64
+    assert not freeze.completion_chain_valid(manifest)

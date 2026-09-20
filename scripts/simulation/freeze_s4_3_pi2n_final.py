@@ -142,6 +142,37 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
 
 
+def completion_chain_valid(manifest: dict[str, Any]) -> bool:
+    reference = manifest.get("training_completion")
+    expected_hash = manifest.get("training_completion_sha256")
+    manifest_gates = manifest.get("gates")
+    if not (
+        isinstance(reference, str)
+        and reference.startswith("$REPO_ROOT/")
+        and isinstance(expected_hash, str)
+        and len(expected_hash) == 64
+        and isinstance(manifest_gates, dict)
+        and manifest_gates
+        and all(value == "PASS" for value in manifest_gates.values())
+    ):
+        return False
+    relative = Path(reference.removeprefix("$REPO_ROOT/"))
+    if relative.is_absolute() or ".." in relative.parts:
+        return False
+    completion_path = ROOT / relative
+    if not completion_path.is_file() or sha256_file(completion_path) != expected_hash:
+        return False
+    completion = read_json(completion_path)
+    completion_gates = completion.get("gates")
+    return bool(
+        completion.get("status") == "PASS"
+        and completion.get("optimizer_steps") == 30_000
+        and isinstance(completion_gates, dict)
+        and completion_gates
+        and all(value == "PASS" for value in completion_gates.values())
+    )
+
+
 def normalized_pip_freeze_sha256(python: Path) -> str:
     output = subprocess.check_output(
         [str(python), "-m", "pip", "freeze"], cwd=ROOT, text=True
@@ -277,6 +308,14 @@ def main() -> None:
             and checkpoint_manifests[model].get("optimizer_steps") == 30_000
             for model in ("B_VA27", "B_VAC_V")
         ),
+        "candidate_completion_artifact_chains_exact": all(
+            completion_chain_valid(checkpoint_manifests[model])
+            for model in ("B_VA27", "B_VAC_V")
+        ),
+        "pre_dev_completion_chains_frozen": pre_dev_freeze.get("gates", {}).get(
+            "all_training_completion_artifacts_exact"
+        )
+        == "PASS",
         "historical_checkpoint_manifests_PASS": all(
             checkpoint_manifests[model].get("status") == "PASS"
             and checkpoint_manifests[model].get("frozen") is True

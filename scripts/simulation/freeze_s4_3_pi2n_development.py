@@ -106,6 +106,37 @@ def load_pass(path: Path, accepted: tuple[str, ...] = ("PASS",)) -> dict[str, An
     return payload
 
 
+def completion_chain_valid(manifest: dict[str, Any]) -> bool:
+    reference = manifest.get("training_completion")
+    expected_hash = manifest.get("training_completion_sha256")
+    manifest_gates = manifest.get("gates")
+    if not (
+        isinstance(reference, str)
+        and reference.startswith("$REPO_ROOT/")
+        and isinstance(expected_hash, str)
+        and len(expected_hash) == 64
+        and isinstance(manifest_gates, dict)
+        and manifest_gates
+        and all(value == "PASS" for value in manifest_gates.values())
+    ):
+        return False
+    relative = Path(reference.removeprefix("$REPO_ROOT/"))
+    if relative.is_absolute() or ".." in relative.parts:
+        return False
+    completion_path = ROOT / relative
+    if not completion_path.is_file() or sha256_file(completion_path) != expected_hash:
+        return False
+    completion = json.loads(completion_path.read_text())
+    completion_gates = completion.get("gates")
+    return bool(
+        completion.get("status") == "PASS"
+        and completion.get("optimizer_steps") == 30_000
+        and isinstance(completion_gates, dict)
+        and completion_gates
+        and all(value == "PASS" for value in completion_gates.values())
+    )
+
+
 def no_development_performance_outputs() -> bool:
     protected = (
         ARTIFACTS / "development_gpu_execution.json",
@@ -201,6 +232,9 @@ def main() -> None:
             and len(payload["checkpoint_tree_sha256"]) == 64
             for payload in checkpoint_payloads.values()
         ),
+        "all_training_completion_artifacts_exact": all(
+            completion_chain_valid(payload) for payload in checkpoint_payloads.values()
+        ),
         "all_live_checkpoint_trees_match_manifests": all(
             live_checkpoint_hashes[model]
             == checkpoint_payloads[model]["checkpoint_tree_sha256"]
@@ -271,6 +305,12 @@ def main() -> None:
                 "checkpoint": checkpoint_payloads[model]["checkpoint"],
                 "checkpoint_tree_sha256": checkpoint_payloads[model][
                     "checkpoint_tree_sha256"
+                ],
+                "training_completion": checkpoint_payloads[model][
+                    "training_completion"
+                ],
+                "training_completion_sha256": checkpoint_payloads[model][
+                    "training_completion_sha256"
                 ],
                 "live_checkpoint_path": str(CHECKPOINT_PATHS[model]),
                 "live_checkpoint_tree_sha256": live_checkpoint_hashes[model],

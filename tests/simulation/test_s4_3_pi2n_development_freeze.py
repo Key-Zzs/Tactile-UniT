@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import sys
 
@@ -59,3 +61,37 @@ def test_pre_dev_freeze_is_non_overwriting_and_performance_blind() -> None:
     assert "fresh_policy_server_per_model_seed_block" in source
     assert "no_best_of_retry_splicing" in source
     assert "all_live_checkpoint_trees_match_manifests" in source
+    assert "all_training_completion_artifacts_exact" in source
+
+
+def test_completion_chain_requires_exact_hash_and_all_pass_gates(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    completion_path = tmp_path / "completion.json"
+    completion = {
+        "status": "PASS",
+        "optimizer_steps": 30_000,
+        "gates": {"cold_load": "PASS", "finite": "PASS"},
+    }
+    completion_path.write_text(json.dumps(completion))
+    manifest = {
+        "training_completion": "$REPO_ROOT/completion.json",
+        "training_completion_sha256": hashlib.sha256(
+            completion_path.read_bytes()
+        ).hexdigest(),
+        "gates": {"checkpoint": "PASS"},
+    }
+    assert module.completion_chain_valid(manifest)
+    manifest["training_completion_sha256"] = "0" * 64
+    assert not module.completion_chain_valid(manifest)
+    manifest["training_completion_sha256"] = hashlib.sha256(
+        completion_path.read_bytes()
+    ).hexdigest()
+    completion["gates"]["finite"] = "FAIL"
+    completion_path.write_text(json.dumps(completion))
+    manifest["training_completion_sha256"] = hashlib.sha256(
+        completion_path.read_bytes()
+    ).hexdigest()
+    assert not module.completion_chain_valid(manifest)
