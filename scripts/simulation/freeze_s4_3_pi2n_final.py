@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any
 
 
@@ -68,6 +69,7 @@ SOURCE_FILES = (
     "scripts/simulation/analyze_s4_3_pi2n_final.py",
     "scripts/simulation/audit_s4_3_pi2n_final_statistics.py",
     "scripts/simulation/visualize_s4_3_pi2n_final.py",
+    "scripts/simulation/finalize_s4_3_pi2n.py",
     "scripts/simulation/serve_s4_3_pi2n_policy.py",
     "scripts/simulation/run_s4_3_pi2u_eval.py",
     "scripts/simulation/evaluate_s4_3_pi1d_augmented.py",
@@ -94,6 +96,12 @@ FROZEN_INPUTS = {
         f"{model}_checkpoint_manifest": path
         for model, path in CHECKPOINT_MANIFESTS.items()
     },
+}
+CONDA_ROOT = Path(sys.executable).resolve().parents[3]
+ENVIRONMENTS = {
+    "unit": CONDA_ROOT / "envs/unit/bin/python",
+    "openpi": CONDA_ROOT / "envs/openpi/bin/python",
+    "tactile-unit-dexjoco": CONDA_ROOT / "envs/tactile-unit-dexjoco/bin/python",
 }
 
 
@@ -130,6 +138,31 @@ def symbolic(path: Path) -> str:
 
 def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
+
+
+def normalized_pip_freeze_sha256(python: Path) -> str:
+    output = subprocess.check_output(
+        [str(python), "-m", "pip", "freeze"], cwd=ROOT, text=True
+    ).splitlines()
+    normalized = sorted(line for line in output if not line.startswith("-e "))
+    return hashlib.sha256(("\n".join(normalized) + "\n").encode()).hexdigest()
+
+
+def environment_snapshot() -> dict[str, Any]:
+    snapshot = {}
+    for name, python in ENVIRONMENTS.items():
+        prefix = python.parents[1]
+        history = prefix / "conda-meta/history"
+        snapshot[name] = {
+            "python": str(python),
+            "python_version": subprocess.check_output(
+                [str(python), "--version"], text=True, stderr=subprocess.STDOUT
+            ).strip(),
+            "conda_history_sha256": sha256_file(history),
+            "normalized_pip_freeze_sha256": normalized_pip_freeze_sha256(python),
+            "editable_entries_excluded": True,
+        }
+    return snapshot
 
 
 def no_final_outputs() -> bool:
@@ -294,6 +327,7 @@ def main() -> None:
         "no_best_of_retry_splicing": True,
         "retry": runtime["retry_contract"],
         "required_server_environment": runtime["required_server_environment"],
+        "environment_snapshot": environment_snapshot(),
         "checkpoint_paths": {
             model: symbolic(path) for model, path in CHECKPOINT_PATHS.items()
         },

@@ -7,6 +7,7 @@ import numpy as np
 
 from scripts.simulation import analyze_s4_3_pi2n_final as analysis
 from scripts.simulation import audit_s4_3_pi2n_final_statistics as independent
+from scripts.simulation import finalize_s4_3_pi2n as closeout
 from scripts.simulation import freeze_s4_3_pi2n_final as freeze
 from scripts.simulation import launch_s4_3_pi2n_final as launch
 from scripts.simulation import run_s4_3_pi2n_final as final
@@ -238,6 +239,83 @@ def test_final_plots_are_limited_to_frozen_evidence(
     assert len(paths) == 6
     assert all(path.is_file() and path.stat().st_size > 0 for path in paths)
     assert {path.suffix for path in paths} == {".png", ".pdf"}
+
+
+def test_human_acceptance_is_rendered_from_frozen_statistics(
+    tmp_path: Path, monkeypatch
+) -> None:
+    protocol_path = tmp_path / "protocol.json"
+    freeze_path = tmp_path / "freeze.json"
+    completeness_path = tmp_path / "completeness.json"
+    for path in (protocol_path, freeze_path, completeness_path):
+        path.write_text("{}")
+    monkeypatch.setattr(analysis, "PROTOCOL", protocol_path)
+    monkeypatch.setattr(analysis, "PRE_FREEZE", freeze_path)
+    monkeypatch.setattr(analysis, "COMPLETENESS", completeness_path)
+    rows = {
+        "B0": _analysis_rows(40),
+        "B_VA27": _analysis_rows(60),
+        "B1": _analysis_rows(50),
+        "B_HVA": _analysis_rows(100),
+        "B2": _analysis_rows(80),
+        "B_VAC_V": _analysis_rows(150),
+    }
+    protocol = {
+        "formal_statistics": {
+            "paired_bootstrap_samples": 100,
+            "paired_bootstrap_seed": 4317,
+            "material_threshold_pp": 10,
+        }
+    }
+    statistics, _, claim, _ = analysis.analyze(
+        rows, protocol, {"vac_star": "B_VAC_V"}
+    )
+    rendered = closeout.render_human_acceptance(
+        head="a" * 40, statistics=statistics, claim=claim
+    )
+    assert "150/200 (75.0%)" in rendered
+    assert "VAC_ADVANTAGE_CONFIRMED" in rendered
+    assert "FIXED_SEED_ONLY" in rendered
+    assert "No further training" in rendered
+    assert "PI2B and real-robot work were not started" in rendered
+
+
+def test_closeout_file_manifest_requires_exact_file_set_and_content(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root = tmp_path / "base"
+    root.mkdir()
+    (root / "a.bin").write_bytes(b"abc")
+    (root / "b.bin").write_bytes(b"defg")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{}")
+    monkeypatch.setattr(closeout, "ROOT", tmp_path)
+    monkeypatch.setattr(closeout, "BASE_MANIFEST", manifest_path)
+    manifest = {
+        "files": [
+            {
+                "path": "a.bin",
+                "sha256": closeout.sha256_file(root / "a.bin"),
+                "expected_bytes": 3,
+            },
+            {
+                "path": "b.bin",
+                "sha256": closeout.sha256_file(root / "b.bin"),
+                "expected_bytes": 4,
+            },
+        ]
+    }
+    row = closeout.audit_file_manifest(root, manifest)
+    assert row["all_files_exact"] is True
+    assert row["files"] == 2
+
+    (root / "extra.bin").write_bytes(b"extra")
+    try:
+        closeout.audit_file_manifest(root, manifest)
+    except SystemExit as error:
+        assert "file-set drift" in str(error)
+    else:
+        raise AssertionError("extra pi05_base file was not rejected")
 
 
 def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
