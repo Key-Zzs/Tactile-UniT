@@ -307,4 +307,5 @@ def test_finalizer_freezes_integrity_claims_and_keeps_pi2b_unexecuted() -> None:
     assert "checkpoint_hashes == EXPECTED_CHECKPOINTS" in source
     assert "sidecar_hashes == EXPECTED_SIDECARS" in source
     assert "raw_hashes == EXPECTED_RAW" in source
+    assert "path.absolute().relative_to(ROOT)" in source
     assert "Historical BVA remains byte-identical" in source

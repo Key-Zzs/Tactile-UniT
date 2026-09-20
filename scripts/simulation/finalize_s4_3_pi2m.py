@@ -91,7 +91,7 @@ def tree_hash(path: Path) -> str:
 
 
 def symbolic(path: Path) -> str:
-    return "$REPO_ROOT/" + path.resolve().relative_to(ROOT).as_posix()
+    return "$REPO_ROOT/" + path.absolute().relative_to(ROOT).as_posix()
 
 
 def atomic_text(path: Path, text: str) -> None:
