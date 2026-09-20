@@ -18,6 +18,7 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 DEXJOCO = ROOT / "third_party/dexjoco"
 PROTOCOL = ROOT / "configs/simulation/s4_3_pi2n_runtime_audit_protocol.json"
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2n"

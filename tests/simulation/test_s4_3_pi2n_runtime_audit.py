@@ -65,6 +65,7 @@ def test_payload_and_action_hashes_are_stable_and_sensitive() -> None:
 
 def test_runtime_runner_is_non_overwriting_and_not_formal_selection() -> None:
     source = SCRIPT.read_text()
+    assert "sys.path.insert(0, str(ROOT))" in source
     assert "refusing to overwrite or resume a PI2N runtime audit output" in source
     assert "runtime.gpu_is_idle" in source
     assert "runtime.acquire_gpu_lock" in source
