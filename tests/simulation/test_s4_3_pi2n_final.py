@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from scripts.simulation import analyze_s4_3_pi2n_final as analysis
+from scripts.simulation import audit_s4_3_pi2n_final_statistics as independent
 from scripts.simulation import freeze_s4_3_pi2n_final as freeze
 from scripts.simulation import launch_s4_3_pi2n_final as launch
 from scripts.simulation import run_s4_3_pi2n_final as final
@@ -168,6 +169,34 @@ def test_holm_adjust_is_monotone_and_family_complete() -> None:
     assert len(adjusted) == 6
     assert values == sorted(values)
     assert all(raw[name] <= adjusted[name] <= 1.0 for name in raw)
+
+
+def test_independent_statistics_recompute_all_six_pairs(monkeypatch) -> None:
+    monkeypatch.setattr(
+        independent,
+        "paired_bootstrap",
+        lambda differences: [float(differences.mean()), float(differences.mean())],
+    )
+    outcomes = {
+        "B0": np.arange(200) < 40,
+        "B_VA27": np.arange(200) < 60,
+        "B1": np.arange(200) < 50,
+        "B_HVA": np.arange(200) < 100,
+        "B2": np.arange(200) < 80,
+        "B_VAC_V": np.arange(200) < 150,
+    }
+    models, pairs = independent.recompute(outcomes)
+    assert len(models) == 6
+    assert len(pairs) == 6
+    assert models["B_VAC_V"]["successes"] == 150
+    assert pairs["VAC_STAR-B_HVA"]["risk_difference"] == 0.25
+    assert pairs["VAC_STAR-B_HVA"]["table"] == {
+        "both_success": 100,
+        "left_only_success": 50,
+        "right_only_success": 0,
+        "both_failure": 50,
+    }
+    assert all(0.0 <= row["holm_adjusted_p"] <= 1.0 for row in pairs.values())
 
 
 def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
