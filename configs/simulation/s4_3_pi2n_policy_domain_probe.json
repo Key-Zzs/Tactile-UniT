@@ -1,0 +1,78 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-policy-domain-probe.v1",
+  "status": "FROZEN_BEFORE_NUMERICAL_PROBE",
+  "scope": "official pinch_tongs policy corpus; training-domain diagnostic with episode-held-out checks, not policy generalization",
+  "rows": 40065,
+  "valid_rows": 37365,
+  "horizon_rows": 27,
+  "physical_horizon_seconds": 0.54,
+  "split": {
+    "group": "episode_index",
+    "fit": "episode_index modulo 5 in {0,1,2,3}",
+    "check": "episode_index modulo 5 equals 4",
+    "fit_episodes": 80,
+    "check_episodes": 20
+  },
+  "representations": {
+    "h_t_c": "cached frozen E_T current Contact-State [256]",
+    "z_c": "frozen C3 native Contact transition code at exact t to t+27 [8,32]",
+    "u_c_VAC": "frozen B3 Contact projector output [8,32]",
+    "u_v_VAC": "frozen B3 Vision projector target cache [8,32]",
+    "u_v_VA27": "frozen clean VA-only Vision projector target cache [8,32]"
+  },
+  "labels": {
+    "future_region_occupancy": 5,
+    "region_occupancy_change": 5,
+    "future_log_force_magnitude": 5,
+    "log_force_magnitude_trend": 5,
+    "force_definition": "log1p(L2 norm of each region's two force channels)",
+    "occupancy_definition": "each region occupancy channel > 0.5"
+  },
+  "probe": {
+    "family_id": "P1_P2_MATCHED_LINEAR_READOUTS",
+    "fit_families_consumed": 1,
+    "independent_matched_heads": 5,
+    "model": "TRAIN-standardized multivariate ridge with no hyperparameter selection",
+    "ridge_alpha": 0.001,
+    "feature_width": 256,
+    "outputs": 20,
+    "trainable_parameters_per_head": 5120,
+    "trainable_parameters_family_total": 25600,
+    "optimizer_steps": 0,
+    "parameters_per_fit_max": 200000,
+    "fit_families_stage_max": 4
+  },
+  "controls": [
+    "TRAIN-fitted constant mean",
+    "current-state persistence",
+    "different-episode mismatch"
+  ],
+  "subsets": {
+    "boundary": "any-contact toggles from current to future",
+    "dynamic": "any occupancy change or total absolute force trend above TRAIN 75th percentile",
+    "high_force": "future total log-force above TRAIN 75th percentile"
+  },
+  "geometry": [
+    "mean per-dimension variance",
+    "effective rank from full valid covariance spectrum",
+    "mean within-sample query cosine diversity"
+  ],
+  "paired_uncertainty": {
+    "unit": "check episode",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 4321,
+    "interval": "paired percentile 95% CI"
+  },
+  "diagnosis_thresholds": {
+    "SHARED_CONTACT_INFORMATION_LOSS": "u_c normalized error is at least 10% worse than z_c and paired CI lower bound is >0",
+    "TARGET_READOUT_MISMATCH": "u_v_VAC normalized error is at least 10% lower than u_c and paired CI upper bound is <0",
+    "TEACHER_DOMAIN_OR_SENSOR_LIMIT": "z_c and u_c both fail to beat TRAIN-mean normalized error overall and on boundary/dynamic checks",
+    "no_single_metric_sufficiency": true
+  },
+  "route_constraints": {
+    "P4_action_hidden_not_run_here": true,
+    "g_C_not_run_here": true,
+    "X_route_not_finalized_here": true,
+    "candidate_closed_loop_results_forbidden": true
+  }
+}
