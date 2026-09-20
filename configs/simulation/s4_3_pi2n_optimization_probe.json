@@ -1,0 +1,79 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-optimization-probe.v1",
+  "status": "FROZEN_BEFORE_NUMERICAL_DIAGNOSTIC",
+  "scope": "TRAIN-only diagnostic used once to route the optional X policy; no candidate checkpoint or rollout outcome may be read",
+  "common_reference": {
+    "model": "CONTACT_STATE_TOKENS_PHYSICAL_AUX at exact pi05_base initialization",
+    "seed": 42,
+    "optimizer_updates": 0,
+    "shared_parameter_scope": "all and only parameter paths matching .*lora.*",
+    "auxiliary_head": "the existing mean-first-27-hidden PhysicalAuxiliaryHead, at the same seed42 initialization for both targets",
+    "contact_target": "u_c^VAC from the frozen B2 sidecar",
+    "vision_target": "u_v^VAC from the frozen B3 cache",
+    "teacher_stop_gradient": true
+  },
+  "gradient_batches": {
+    "count": 4,
+    "batch_size": 32,
+    "row_selection_seed": 4331,
+    "selection_pool": "physical_aux_valid TRAIN-corpus rows",
+    "per_batch": "16 current-contact-active and 16 current-contact-free rows, sampled without replacement",
+    "current_contact_active": "any of five tactile_sim occupancy channels exceeds 0.5",
+    "loss_rng": "fold_in(PRNGKey(42), 9100 + batch_index)",
+    "same_random_stream_for_g_pi_g_V_g_C": true,
+    "flow_time_bins": [[0.001, 0.25], [0.25, 0.5], [0.5, 0.75], [0.75, 1.0]],
+    "allowed_reference_groups": [
+      "overall_valid",
+      "contact_active_valid",
+      "contact_free_valid",
+      "flow_time_0",
+      "flow_time_1",
+      "flow_time_2",
+      "flow_time_3"
+    ],
+    "empty_group": "NA for that batch and excluded from group medians"
+  },
+  "gradient_metrics": {
+    "losses": ["L_pi", "L_V", "L_C"],
+    "report": ["norm", "cos_g_pi_g_V", "cos_g_pi_g_C", "weighted_norm_ratio_V", "weighted_norm_ratio_C"],
+    "lambda_V": 0.02659107286232264,
+    "lambda_C": 0.020927851827513076,
+    "epsilon": 1e-12,
+    "interpretation": "negative cosine is interference evidence only, not closed-loop causality"
+  },
+  "p4": {
+    "row_selection": "five evenly spaced valid rows in row order from every episode",
+    "rows": 500,
+    "fit_episodes": "episode_index modulo 5 in {0,1,2,3}",
+    "check_episodes": "episode_index modulo 5 equals 4",
+    "hidden_source": "first 27 action hidden positions from the same exact untrained common reference",
+    "loss_rng": "fold_in(PRNGKey(42), 12000 + hidden_batch_index)",
+    "mean_features": "mean over 27 positions followed by a fixed Gaussian 1024-to-648 projection",
+    "order_features": "each position receives the same fixed Gaussian 1024-to-24 projection, then the 27 projected positions are concatenated in order",
+    "projection_seed": 4332,
+    "projection_scale": "1/sqrt(input_width)",
+    "head": "TRAIN-standardized ridge to flattened u_c^VAC, alpha=0.001",
+    "trainable_parameters_each": 166144,
+    "optimizer_steps": 0,
+    "paired_unit": "check episode",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 4333,
+    "route_threshold": "relative normalized-MSE improvement >= 0.10 and paired absolute-improvement CI lower bound > 0"
+  },
+  "route": {
+    "priority": ["BLOCKED_TEACHER", "C_REBALANCE", "C_ORDER", "C_JOINT", "NOT_RUN_NOT_JUSTIFIED"],
+    "BLOCKED_TEACHER": "teacher_policy_domain_audit status is not PASS, vision_contact_gradient_provenance status is not PASS, teacher_comparability is not PASS_WITH_LIMITATION with PACKAGE_LEVEL_TEACHER_COMPARISON_ONLY, or either B2/VAC-V target audit is not PASS",
+    "C_REBALANCE": "at least two allowed reference groups have cos(g_pi,g_C)<0 in more than half their nonempty fixed batches and median lambda_C*norm(g_C)/(norm(g_pi)+epsilon)>0.5",
+    "C_ORDER": "P4 meets its frozen relative-improvement and paired-CI threshold",
+    "C_JOINT": "u_c and u_v each beat TRAIN-mean overall by at least 10%, and u_c beats u_v by at least 5% on at least one v2 boundary/dynamic event-or-trend metric, while each different-episode mismatch error exceeds its matched overall error by at least 10%",
+    "NOT_RUN_NOT_JUSTIFIED": "none of the preceding routes passes",
+    "single_route_only": true,
+    "candidate_results_forbidden": true
+  },
+  "outputs": {
+    "gradient": ".local/artifacts/simulation/s4_3_pi2n/auxiliary_gradient_diagnostics.json",
+    "p4": ".local/artifacts/simulation/s4_3_pi2n/action_hidden_order_probe.json",
+    "decision": ".local/artifacts/simulation/s4_3_pi2n/refinement_decision.json",
+    "hidden_cache": "$PI2N_RUN_ROOT/caches/action_hidden_order_probe/hidden_first27.npz"
+  }
+}

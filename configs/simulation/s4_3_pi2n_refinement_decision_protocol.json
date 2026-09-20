@@ -1,0 +1,9 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-refinement-decision-protocol.v1",
+  "status": "FROZEN_BEFORE_READING_N2_O_RESULTS",
+  "source": "configs/simulation/s4_3_pi2n_optimization_probe.json",
+  "one_shot_priority": ["BLOCKED_TEACHER", "C_REBALANCE", "C_ORDER", "C_JOINT", "NOT_RUN_NOT_JUSTIFIED"],
+  "candidate_checkpoint_or_rollout_results_may_influence_route": false,
+  "selected_route_may_be_changed_after_training": false,
+  "maximum_X_policy_runs": 1
+}
