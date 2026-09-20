@@ -337,6 +337,10 @@ def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
         "scripts/simulation/audit_s4_3_pi2n_candidate_completion.py"
         in freeze.SOURCE_FILES
     )
+    assert (
+        "scripts/simulation/launch_s4_3_pi2n_candidate_audit.py"
+        in freeze.SOURCE_FILES
+    )
     source = Path(freeze.__file__).read_text()
     launch_source = Path(launch.__file__).read_text()
     runner_source = Path(final.__file__).read_text()
