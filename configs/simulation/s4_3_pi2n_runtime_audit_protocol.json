@@ -1,0 +1,82 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-runtime-audit-protocol.v1",
+  "status": "FROZEN_BEFORE_RUNTIME_AUDIT",
+  "purpose": "classify the observed official asynchronous evaluator variability before any PI2N scientific rollout; never select a checkpoint or policy from these outcomes",
+  "cohort": {
+    "name": "RUNTIME_DIAG",
+    "task": "pinch_tongs",
+    "regime": "rand_obj",
+    "models": ["B1", "B_HVA", "B2"],
+    "evaluator_seed": 8,
+    "episodes_per_replicate": 10,
+    "replicates": 3,
+    "maximum_rollouts": 90,
+    "execution_order": {
+      "replicate_1": ["B1", "B_HVA", "B2"],
+      "replicate_2": ["B_HVA", "B2", "B1"],
+      "replicate_3": ["B2", "B1", "B_HVA"]
+    },
+    "exposure": "DEVELOPMENT_EXPOSED_RUNTIME_ONLY",
+    "scientific_performance_role": false
+  },
+  "runtime": {
+    "evaluator": "official DexJoCo asynchronous evaluator with the already-versioned cross-episode future-chunk quarantine",
+    "online_inputs": "identical current RGB/state/prompt/contact_state for B1/B_HVA/B2",
+    "replan_ratio": 0.8,
+    "action_horizon": 30,
+    "action_output_dim": 22,
+    "state_dim": 23,
+    "history": "26x30 causal LEFT_REPEAT_FIRST, reset every episode",
+    "fresh_policy_server_each_model_replicate": true,
+    "one_gpu_sequential_jobs": true,
+    "training_targets_at_runtime": false
+  },
+  "randomness": {
+    "environment": "official evaluator _set_seed(8), then ten sequential resets in a fresh evaluator process per replicate",
+    "inference_worker": "official evaluator _set_seed(8) in each fresh inference process",
+    "policy_sampling": "OpenPI Policy starts from jax.random.key(0) on each fresh server and advances once per infer request",
+    "per_episode_policy_rng_reset": false,
+    "reason": "the official websocket API exposes no per-episode policy RNG reset; adding one would change sampling semantics",
+    "remaining_variability": ["asynchronous observation/action queue scheduling", "request-count-dependent policy RNG position", "host/GPU timing"]
+  },
+  "fixed_observation_fixture": {
+    "definition": "episode zero's first inference request in each fresh model/replicate process",
+    "input_identity": "canonical SHA256 over every policy payload field after removing diagnostic-only episode/reset keys",
+    "output_identity": "SHA256 over float32 action chunk bytes",
+    "requirements": [
+      "the first input identity is equal across all models and replicates",
+      "within each model the first action identity is equal across all three fresh-server replicates"
+    ],
+    "interpretation": "tests fixed-input/fixed-request-position inference only; does not require full rollout outcomes to be identical"
+  },
+  "episode_identity": {
+    "reset_spec": ["task", "regime", "evaluator_seed", "replicate", "episode_index", "reset_identity"],
+    "reset_identity": "SHA256 over initial mjSTATE_INTEGRATION float64 bytes plus official processed state float64 bytes",
+    "requirement": "the ordered ten reset identities are identical for every model and replicate",
+    "post_reset_checks": ["episode indices 0..9", "history reset and LEFT_REPEAT_FIRST", "finite contact state", "no training target", "finite 30x22 chunks", "no server/client error"]
+  },
+  "classification": {
+    "R_A_STRUCTURAL_ERROR": "any reset identity/order mismatch, failed runtime gate, non-finite/malformed action, target leakage, or unquarantined cross-episode action contamination",
+    "R_B_LEGAL_RANDOMNESS_COMPARABLE": "all structural/fairness gates pass; outcome disagreement may remain and is reported without treating it as a success-rate effect",
+    "R_C_UNEXPLAINED_MODEL_UNFAIRNESS": "all reset identities match but any model has model-specific infrastructure failure, missing episode, altered timeout/replan semantics, or lacks the same fixed-observation opportunity",
+    "cross_episode_quarantine": "count and report every already-versioned stale future-chunk discard; a discard is not executed and does not by itself create an unquarantined contamination",
+    "priority": ["R_A_STRUCTURAL_ERROR", "R_C_UNEXPLAINED_MODEL_UNFAIRNESS", "R_B_LEGAL_RANDOMNESS_COMPARABLE"]
+  },
+  "retry": {
+    "native_failure_or_timeout_in_denominator": true,
+    "infrastructure_failure_separate": true,
+    "resume_only_if_exact_episode_boundary_and_policy_rng_request_position_can_be_restored": true,
+    "otherwise": "retain interrupted attempt and restart the entire model-replicate cohort; accept the first complete clean cohort",
+    "best_of_or_per_reset_splicing": false,
+    "semantic_change_requires_new_version": true
+  },
+  "outputs": {
+    "raw_root": ".local/artifacts/simulation/s4_3_pi2n/runtime_audit_raw",
+    "result": ".local/artifacts/simulation/s4_3_pi2n/runtime_randomness_audit.json",
+    "runtime_contract": ".local/artifacts/simulation/s4_3_pi2n/runtime_protocol.json",
+    "reset_manifest": ".local/artifacts/simulation/s4_3_pi2n/runtime_reset_manifest.json",
+    "logs": ".local/logs/simulation/s4_3_pi2n/runtime_audit",
+    "cache": ".local/cache/simulation/s4_3_pi2n/runtime_audit"
+  },
+  "forbidden": ["checkpoint selection", "formal performance inference", "per-reset best-of splicing", "synchronous evaluator replacement", "policy smoothing", "PI2B", "real robot"]
+}
