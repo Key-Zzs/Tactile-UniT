@@ -1,0 +1,62 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-candidate-protocol.v1",
+  "status": "FROZEN_BEFORE_NEW_POLICY_TRAINING",
+  "common_training": {
+    "initialization": "exact pi05_base independently for every run",
+    "training_seed": 42,
+    "optimizer_steps": 30000,
+    "global_batch_size": 32,
+    "save_interval": 10000,
+    "final_checkpoint_step": 29999,
+    "checkpoint_selection": "final only",
+    "allowed_device_counts": [1, 2, 4],
+    "dataset": "exact official pinch_tongs 100 episodes / 40065 rows",
+    "aux_valid": "episode-local +27; 37365 valid and 2700 tail-masked rows",
+    "bc_rows_filtered_by_aux_mask": false,
+    "runtime_targets_forbidden": true
+  },
+  "B_VA27": {
+    "authorized": true,
+    "mode": "VA_PHYSICAL_AUX",
+    "online_inputs": ["front RGB", "wrist RGB", "state23", "prompt"],
+    "online_contact_history": false,
+    "target": "u_v^VA27",
+    "target_sidecar": ".local/datasets/simulation/s4_3_pi2m/pinch_tongs_va_t27/sidecar.npz",
+    "target_sha256": "7d51a23672273ec3ea46f947080c0c3ea66db55332522b199caab00ad4fc2126",
+    "lambda_formula": "clip(0.1*mean(L_flow)/mean(L_aux),1e-3,1e-1)",
+    "contact_fields_removed_smoke_required": true
+  },
+  "B_VAC_V": {
+    "authorized_if_eligible": true,
+    "mode": "CONTACT_STATE_TOKENS_VAC_V_PHYSICAL_AUX",
+    "online_inputs": ["front RGB", "wrist RGB", "state23", "prompt", "causal contact_state256"],
+    "target": "u_v^VAC27",
+    "teacher_checkpoint": ".local/experiments/simulation/s4_2_formal/bridge/selected.pt",
+    "teacher_checkpoint_sha256": "4d741ee79da2c34879bdc6c20af04e6c0bdbbbce70a26833b9738917ff20d73d",
+    "comparison_level": "PACKAGE_LEVEL_TEACHER_COMPARISON_ONLY",
+    "lambda_formula": "clip(0.1*mean(L_flow)/mean(L_aux),1e-3,1e-1)",
+    "duplicate_target_ineligible": true
+  },
+  "X": {
+    "authorized_runs_max": 1,
+    "selection_source": "configs/simulation/s4_3_pi2n_diagnostics.json refinement_route",
+    "C_REBALANCE": {
+      "target": "u_c^VAC",
+      "change": "fixed auxiliary strength only",
+      "lambda_formula": "min(lambda_loss,0.1*median_norm_g_pi/(median_norm_g_C+1e-12))"
+    },
+    "C_ORDER": {
+      "target": "u_c^VAC",
+      "change": "training-only order-preserving auxiliary readout",
+      "parameter_limit": 1000000,
+      "main_policy_runtime_unchanged": true
+    },
+    "C_JOINT": {
+      "targets": ["u_v^VAC", "u_c^VAC"],
+      "lambda_V_formula": "clip(0.05*mean(L_flow)/mean(L_V),1e-3,1e-1)",
+      "lambda_C_formula": "clip(0.05*mean(L_flow)/mean(L_C),1e-3,1e-1)",
+      "same_aux_valid_mask": true
+    }
+  },
+  "forbidden": ["teacher retraining", "warm-start from B1/B2/B_HVA", "extra seed", "lambda sweep", "head sweep", "fourth policy run", "PI2B"]
+}

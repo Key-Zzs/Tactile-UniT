@@ -1,0 +1,39 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-dag.v1",
+  "goal": "S4.3-PI2N VAC Diagnosis, Matched Controls & Bounded Refinement",
+  "claim_level": "FIXED_SEED_ONLY",
+  "global_limits": {
+    "new_policy_runs_max": 3,
+    "diagnostic_probe_fits_max": 4,
+    "physical_gpus_max": 4,
+    "pi2b_training": false,
+    "real_robot": false
+  },
+  "nodes": {
+    "N0": {"depends_on": [], "purpose": "Git, NAS, protected identities, canonical paper"},
+    "N1_D": {"depends_on": ["N0"], "purpose": "time, data, target lineage and split contracts"},
+    "N1_R": {"depends_on": ["N0"], "purpose": "bounded runtime randomness audit"},
+    "N2_T": {"depends_on": ["N1_D"], "purpose": "teacher and policy-domain diagnostics"},
+    "N2_O": {"depends_on": ["N1_D", "N2_T"], "purpose": "gradient and temporal-readout diagnostics"},
+    "N3_C": {"depends_on": ["N1_D"], "purpose": "B_VA27 matched 0.54-second no-H control"},
+    "N4_V": {"depends_on": ["N1_D", "N2_T"], "purpose": "B_VAC_V Vision-side VAC target candidate"},
+    "N4_X": {"depends_on": ["N1_D", "N2_T", "N2_O"], "purpose": "single diagnosis-routed VAC refinement"},
+    "N5": {"depends_on": ["N1_R", "N3_C", "N4_V", "N4_X"], "purpose": "development evaluation and one VAC-star selection"},
+    "N6": {"depends_on": ["N5"], "purpose": "final freeze"},
+    "N7": {"depends_on": ["N6"], "purpose": "fresh formal paired evaluation"},
+    "N8": {"depends_on": ["N7"], "purpose": "statistics, claims, paper and closure"}
+  },
+  "parallel_rules": {
+    "N1_R_with": ["N1_D", "N2_T", "N2_O"],
+    "N3_C_does_not_wait_for": ["N1_R", "N2_T", "N2_O", "N4_V", "N4_X"],
+    "N4_V_does_not_wait_for": ["N3_C", "N4_X"],
+    "N4_X_must_not_use": "B_VAC_V closed-loop outcomes",
+    "formal_evaluation_exclusive_of": ["training", "heavy_probe"]
+  },
+  "allowed_states": [
+    "NOT_STARTED", "READY", "RUNNING", "COMPLETE_VALID", "COMPLETE_NEGATIVE",
+    "WAITING_GPU", "WAITING_USER", "WAITING_STORAGE", "BLOCKED_DEPENDENCY",
+    "CANDIDATE_INELIGIBLE", "FAILED_STRUCTURAL", "FAILED_NUMERICAL",
+    "NOT_RUN_NOT_JUSTIFIED"
+  ]
+}

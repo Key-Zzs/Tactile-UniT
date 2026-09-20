@@ -1,0 +1,51 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-evaluation-protocol.v1",
+  "status": "FROZEN_BEFORE_NEW_POLICY_TRAINING",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "runtime": {
+    "official_async_evaluator": true,
+    "replan_ratio": 0.8,
+    "action_horizon": 30,
+    "action_output_dim": 22,
+    "state_dim": 23,
+    "retry": "resume only at a fully reproducible episode boundary; otherwise use the first complete clean cohort and retain the interruption record",
+    "native_failure_or_timeout_in_denominator": true,
+    "no_best_of_retry_splicing": true
+  },
+  "cohorts": {
+    "RUNTIME_DIAG": {
+      "seed": 8,
+      "resets": 10,
+      "replicates": 3,
+      "models": ["B1", "B2", "B_HVA"],
+      "maximum_rollouts": 90,
+      "performance_role": "development-exposed runtime audit only"
+    },
+    "PI2N_DEV": {
+      "seed_blocks": [9, 10, 11],
+      "resets_per_block": 10,
+      "resets": 30,
+      "models_max": ["B_HVA", "B2", "B_VAC_V", "X"],
+      "selection": "highest native success among eligible new VAC candidates; parameter count then B_VAC_V ID tie-break"
+    },
+    "PI2N_FINAL": {
+      "seed_blocks": [12, 13, 14, 15],
+      "resets_per_block": 50,
+      "resets": 200,
+      "models": ["B0", "B_VA27", "B1", "B_HVA", "B2", "VAC_STAR"],
+      "performance_seen_before_freeze": false
+    }
+  },
+  "cohort_identity": "persist full reset spec and digest; seed label alone is insufficient",
+  "disjointness": ["RUNTIME_DIAG", "PI2N_DEV", "PI2N_FINAL"],
+  "formal_statistics": {
+    "paired_bootstrap_samples": 100000,
+    "paired_bootstrap_seed": 4317,
+    "mcnemar": "exact two-sided",
+    "holm_family_size": 6,
+    "material_threshold_pp": 10,
+    "claim_level": "FIXED_SEED_ONLY"
+  },
+  "formal_comparisons": ["VAC_STAR-B_HVA", "VAC_STAR-B2", "VAC_STAR-B0", "B_HVA-B_VA27", "B_VA27-B0", "B1-B0"]
+}

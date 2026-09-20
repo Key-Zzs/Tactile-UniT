@@ -1,0 +1,67 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-diagnostics.v1",
+  "status": "FROZEN_BEFORE_NUMERICAL_DIAGNOSTICS",
+  "policy_corpus": {
+    "task": "pinch_tongs",
+    "episodes": 100,
+    "rows": 40065,
+    "group_unit": "episode_index",
+    "fit_groups": "episode_index modulo 5 in {0,1,2,3}",
+    "check_groups": "episode_index modulo 5 equals 4",
+    "interpretation": "training-domain diagnostic with group-held-out checks; not policy generalization"
+  },
+  "targets": ["h_t^c", "z_c", "u_c^VAC", "u_v^VAC", "u_v^VA27"],
+  "probe_budget": {
+    "fits_max": 4,
+    "parameters_per_fit_max": 200000,
+    "optimizer_steps_per_fit_max": 2000,
+    "selection_from_formal_rollouts": false
+  },
+  "probe_fits": [
+    {
+      "id": "P1_CONTACT_SEMANTICS",
+      "inputs": ["h_t^c", "z_c", "u_c^VAC"],
+      "labels": ["current_contact_state", "future_contact_change", "force_trend", "region_activity"],
+      "inactive_or_single_class": "NA"
+    },
+    {
+      "id": "P2_FUTURE_RECOVERY",
+      "inputs": ["u_c^VAC", "u_v^VAC", "u_v^VA27"],
+      "controls": ["TRAIN_mean", "persistence", "different_episode_mismatch"],
+      "horizon_rows": 27
+    },
+    {
+      "id": "P3_TARGET_GEOMETRY",
+      "inputs": ["u_c^VAC", "u_v^VAC", "u_v^VA27"],
+      "metrics": ["variance", "effective_rank", "query_diversity", "paired_information_retention"]
+    },
+    {
+      "id": "P4_ACTION_READOUT",
+      "inputs": ["mean_first27_hidden", "order_preserving_first27_hidden"],
+      "target": "u_c^VAC",
+      "route_threshold": "normalized-error improvement >= 0.10 and episode-paired CI lower bound > 0"
+    }
+  ],
+  "gradient_diagnostic": {
+    "reference": "exact pi05_base initialization with identical TRAIN batches and PRNG/noise time",
+    "batches": 4,
+    "gradients": ["g_pi", "g_V", "g_C"],
+    "shared_parameter_scope": "common authorized LoRA leaves",
+    "strata": ["flow_noise_bin", "contact_state"],
+    "teacher_stop_gradient": true
+  },
+  "teacher_provenance_classification": {
+    "vac_vision_contact_graph": "CONTACT_CAN_INFLUENCE_VISION_PATH_IN_GRAPH",
+    "vac_training_provenance": "CONTACT_INFLUENCE_SUPPORTED_BY_TRAINING_PROVENANCE",
+    "comparison_level": "PACKAGE_LEVEL_TEACHER_COMPARISON_ONLY",
+    "reason": "S4.2 B3 jointly optimized all modality projectors with bidirectional V-C alignment, but clean VA and VAC packages differ in structure, data and optimization budget"
+  },
+  "refinement_route": {
+    "priority": ["BLOCKED_TEACHER", "C_REBALANCE", "C_ORDER", "C_JOINT", "NOT_RUN_NOT_JUSTIFIED"],
+    "C_REBALANCE": "more than half of fixed batches have cos(g_pi,g_C)<0 at at least two allowed reference groups and median weighted norm ratio>0.5",
+    "C_ORDER": "P4 normalized-error improvement>=0.10 and group-paired CI lower bound>0",
+    "C_JOINT": "both VAC targets carry task information and Contact adds predefined event/trend information beyond Vision without an identity shortcut",
+    "single_route_only": true,
+    "closed_loop_candidate_results_forbidden": true
+  }
+}
