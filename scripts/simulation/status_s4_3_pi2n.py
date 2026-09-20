@@ -36,6 +36,18 @@ class ModelSpec:
     completion_manifest: str
 
 
+@dataclass(frozen=True)
+class EvaluationSpec:
+    phase: str
+    session: str
+    launcher: str
+    pre_freeze: str
+    launch: str
+    job_status: str
+    heartbeat: str
+    required_outputs: tuple[tuple[str, str, int], ...]
+
+
 MODEL_SPECS = (
     ModelSpec(
         "B_VA27",
@@ -48,6 +60,36 @@ MODEL_SPECS = (
         "s43_pi2n_b_vac_v_seed42",
         "s43_pi2n_b_vac_v_s42",
         "b_vac_v_checkpoint_manifest.json",
+    ),
+)
+
+EVALUATION_SPECS = (
+    EvaluationSpec(
+        "DEVELOPMENT",
+        "s43_pi2n_dev",
+        "launch_s4_3_pi2n_development.py",
+        "pre_dev_freeze.json",
+        "development_launch.json",
+        "development_job_status.json",
+        "development_heartbeat.json",
+        (
+            ("development_results.json", "total_canonical_outcomes", 90),
+            ("vac_star_selection.json", "selected_vac_star", 0),
+            ("development_gpu_execution.json", "maximum_heavy_workers", 0),
+        ),
+    ),
+    EvaluationSpec(
+        "FINAL",
+        "s43_pi2n_final",
+        "launch_s4_3_pi2n_final.py",
+        "pre_final_freeze.json",
+        "final_launch.json",
+        "final_job_status.json",
+        "final_heartbeat.json",
+        (
+            ("rollout_completeness.json", "total_canonical_outcomes", 1200),
+            ("final_gpu_execution.json", "maximum_heavy_workers", 0),
+        ),
     ),
 )
 
@@ -77,7 +119,11 @@ def parse_utc(value: Any) -> datetime | None:
 
 
 def heartbeat_age_seconds(payload: dict[str, Any] | None, now: datetime) -> float | None:
-    timestamp = parse_utc(payload.get("updated_at_utc") if payload else None)
+    timestamp = parse_utc(
+        (payload.get("updated_at_utc") or payload.get("updated_at"))
+        if payload
+        else None
+    )
     if timestamp is None:
         return None
     return max(0.0, (now - timestamp).total_seconds())
@@ -302,6 +348,120 @@ def mount_status(run_root: Path) -> dict[str, Any]:
     }
 
 
+def evaluation_output_valid(payload: dict[str, Any] | None, field: str, exact: int) -> bool:
+    if not payload or payload.get("status") != "PASS":
+        return False
+    if field == "selected_vac_star":
+        return payload.get(field) == "B_VAC_V"
+    value = payload.get(field)
+    if exact:
+        return value == exact
+    return isinstance(value, int) and 1 <= value <= 4
+
+
+def summarize_evaluation(
+    spec: EvaluationSpec, now: datetime
+) -> dict[str, Any] | None:
+    paths = {
+        "pre_freeze": ARTIFACTS / spec.pre_freeze,
+        "launch": ARTIFACTS / spec.launch,
+        "job_status": ARTIFACTS / spec.job_status,
+        "heartbeat": ARTIFACTS / spec.heartbeat,
+    }
+    if not any(path.exists() for path in paths.values()):
+        return None
+    payloads = {name: read_json(path) for name, path in paths.items()}
+    pre_freeze, pre_freeze_error = payloads["pre_freeze"]
+    launch, launch_error = payloads["launch"]
+    job, job_error = payloads["job_status"]
+    heartbeat, heartbeat_error = payloads["heartbeat"]
+    age = heartbeat_age_seconds(heartbeat, now)
+    supervisor_pid = job.get("supervisor_pid") if job else None
+    supervisor = proc_identity(supervisor_pid)
+    expected_command = bool(
+        supervisor.get("live")
+        and spec.launcher in str(supervisor.get("cmdline", ""))
+        and " supervise " in f" {supervisor.get('cmdline', '')} "
+    )
+    runtime_identity_matches = bool(
+        job
+        and heartbeat
+        and launch
+        and launch.get("session") == spec.session
+        and job.get("session") == spec.session
+        and heartbeat.get("session") == spec.session
+        and job.get("supervisor_pid") == heartbeat.get("supervisor_pid")
+        and job.get("physical_gpu_ids") == heartbeat.get("physical_gpu_ids")
+        and job.get("physical_gpu_uuids") == heartbeat.get("physical_gpu_uuids")
+        and job.get("physical_gpu_ids") == launch.get("physical_gpu_ids")
+        and job.get("physical_gpu_uuids") == launch.get("physical_gpu_uuids")
+        and 1 <= len(job.get("physical_gpu_ids", [])) <= 4
+        and len(job.get("physical_gpu_ids", []))
+        == len(job.get("physical_gpu_uuids", []))
+    )
+    output_rows = []
+    for filename, field, exact in spec.required_outputs:
+        path = ARTIFACTS / filename
+        payload, error = read_json(path)
+        output_rows.append(
+            {
+                "path": str(path),
+                "read_error": error,
+                "valid": evaluation_output_valid(payload, field, exact),
+            }
+        )
+    running_gates = {
+        "pre_freeze_PASS": bool(pre_freeze and pre_freeze.get("status") == "PASS"),
+        "launch_recorded": bool(launch and launch.get("status") == "LAUNCHING"),
+        "job_running": bool(job and job.get("state") == "RUNNING"),
+        "heartbeat_running": bool(heartbeat and heartbeat.get("state") == "RUNNING"),
+        "heartbeat_fresh": age is not None and age <= HEARTBEAT_MAX_AGE_SECONDS,
+        "supervisor_live": bool(supervisor.get("live")),
+        "supervisor_command_matches": expected_command,
+        "runtime_identity_matches": runtime_identity_matches,
+    }
+    if all(running_gates.values()):
+        state = "RUNNING"
+    elif bool(
+        pre_freeze
+        and pre_freeze.get("status") == "PASS"
+        and job
+        and heartbeat
+        and job.get("state") == "DONE"
+        and heartbeat.get("state") == "DONE"
+        and job.get("exit_code") == 0
+        and heartbeat.get("exit_code") == 0
+        and runtime_identity_matches
+        and all(row["valid"] for row in output_rows)
+    ):
+        state = "COMPLETE_VERIFIED"
+    else:
+        state = "EXITED_UNVERIFIED"
+    return {
+        "phase": spec.phase,
+        "state": state,
+        "session": spec.session,
+        "session_present": tmux_session_exists(spec.session),
+        "paths": {name: str(path) for name, path in paths.items()},
+        "read_errors": {
+            "pre_freeze": pre_freeze_error,
+            "launch": launch_error,
+            "job_status": job_error,
+            "heartbeat": heartbeat_error,
+        },
+        "job_status": job,
+        "heartbeat": heartbeat,
+        "heartbeat_age_seconds": age,
+        "supervisor": supervisor,
+        "runtime_identity_matches": runtime_identity_matches,
+        "failed_running_gates": [
+            name for name, value in running_gates.items() if not value
+        ],
+        "required_outputs": output_rows,
+        "performance_values_read": False,
+    }
+
+
 def summarize_model(
     spec: ModelSpec,
     run_root: Path,
@@ -422,8 +582,31 @@ def main() -> None:
     run_root = args.run_root.resolve()
     table = process_table()
     models = [summarize_model(spec, run_root, now, table) for spec in MODEL_SPECS]
+    evaluations = [
+        row
+        for spec in EVALUATION_SPECS
+        if (row := summarize_evaluation(spec, now)) is not None
+    ]
     states = [row["state"] for row in models]
-    if all(state == "COMPLETE_VERIFIED" for state in states):
+    final = next(
+        (row for row in evaluations if row["phase"] == "FINAL"), None
+    )
+    development = next(
+        (row for row in evaluations if row["phase"] == "DEVELOPMENT"), None
+    )
+    if final and final["state"] == "RUNNING":
+        pause_state = "PI2N_EVALUATION_RUNNING"
+    elif final and final["state"] == "COMPLETE_VERIFIED":
+        pause_state = "PI2N_FINAL_COMPLETE_VERIFIED"
+    elif final:
+        pause_state = "PI2N_FINAL_EXITED_UNVERIFIED"
+    elif development and development["state"] == "RUNNING":
+        pause_state = "PI2N_EVALUATION_RUNNING"
+    elif development and development["state"] == "COMPLETE_VERIFIED":
+        pause_state = "PI2N_DEVELOPMENT_COMPLETE_VERIFIED"
+    elif development:
+        pause_state = "PI2N_DEVELOPMENT_EXITED_UNVERIFIED"
+    elif all(state == "COMPLETE_VERIFIED" for state in states):
         pause_state = "PI2N_TRAINING_COMPLETE_VERIFIED"
     elif any(state == "RUNNING" for state in states):
         pause_state = "PI2N_TRAINING_RUNNING"
@@ -438,6 +621,7 @@ def main() -> None:
         "pause_state": pause_state,
         "mount": mount_status(run_root),
         "models": models,
+        "evaluations": evaluations,
     }
     print(json.dumps(payload, sort_keys=True if args.compact else False, indent=None if args.compact else 2))
 

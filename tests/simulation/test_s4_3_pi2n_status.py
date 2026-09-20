@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import sys
+from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -144,3 +146,118 @@ def test_status_entry_is_read_only_and_model_free() -> None:
     assert "jax" not in source.lower()
     assert '"read_only": True' in source
     assert '"runtime_files_written": False' in source
+
+
+def _write(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload))
+
+
+def test_evaluation_status_requires_live_identity_and_fresh_heartbeat(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(
+        module,
+        "proc_identity",
+        lambda pid: {
+            "pid": pid,
+            "live": True,
+            "cmdline": "python launch_s4_3_pi2n_development.py supervise --gpus 1",
+        },
+    )
+    monkeypatch.setattr(module, "tmux_session_exists", lambda name: True)
+    _write(tmp_path / "pre_dev_freeze.json", {"status": "PASS"})
+    _write(
+        tmp_path / "development_launch.json",
+        {
+            "status": "LAUNCHING",
+            "session": "s43_pi2n_dev",
+            "physical_gpu_ids": [1],
+            "physical_gpu_uuids": ["GPU-test"],
+        },
+    )
+    common = {
+        "state": "RUNNING",
+        "exit_code": None,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "session": "s43_pi2n_dev",
+        "supervisor_pid": 123,
+        "physical_gpu_ids": [1],
+        "physical_gpu_uuids": ["GPU-test"],
+    }
+    _write(tmp_path / "development_job_status.json", common)
+    _write(tmp_path / "development_heartbeat.json", common)
+    row = module.summarize_evaluation(
+        module.EVALUATION_SPECS[0], datetime.now(timezone.utc)
+    )
+    assert row is not None
+    assert row["state"] == "RUNNING"
+    assert row["performance_values_read"] is False
+
+    stale = dict(common)
+    stale["updated_at"] = "2000-01-01T00:00:00+00:00"
+    _write(tmp_path / "development_heartbeat.json", stale)
+    row = module.summarize_evaluation(
+        module.EVALUATION_SPECS[0], datetime.now(timezone.utc)
+    )
+    assert row is not None
+    assert row["state"] == "EXITED_UNVERIFIED"
+
+
+def test_evaluation_done_requires_all_atomic_outputs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(
+        module,
+        "proc_identity",
+        lambda pid: {"pid": pid, "live": False, "error": "process not present"},
+    )
+    monkeypatch.setattr(module, "tmux_session_exists", lambda name: False)
+    _write(tmp_path / "pre_dev_freeze.json", {"status": "PASS"})
+    _write(
+        tmp_path / "development_launch.json",
+        {
+            "status": "LAUNCHING",
+            "session": "s43_pi2n_dev",
+            "physical_gpu_ids": [1, 2],
+            "physical_gpu_uuids": ["GPU-a", "GPU-b"],
+        },
+    )
+    done = {
+        "state": "DONE",
+        "exit_code": 0,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "session": "s43_pi2n_dev",
+        "supervisor_pid": 123,
+        "physical_gpu_ids": [1, 2],
+        "physical_gpu_uuids": ["GPU-a", "GPU-b"],
+    }
+    _write(tmp_path / "development_job_status.json", done)
+    _write(tmp_path / "development_heartbeat.json", done)
+    _write(
+        tmp_path / "development_results.json",
+        {"status": "PASS", "total_canonical_outcomes": 90},
+    )
+    _write(
+        tmp_path / "vac_star_selection.json",
+        {"status": "PASS", "selected_vac_star": "B_VAC_V"},
+    )
+    _write(
+        tmp_path / "development_gpu_execution.json",
+        {"status": "PASS", "maximum_heavy_workers": 2},
+    )
+    row = module.summarize_evaluation(
+        module.EVALUATION_SPECS[0], datetime.now(timezone.utc)
+    )
+    assert row is not None
+    assert row["state"] == "COMPLETE_VERIFIED"
+
+    (tmp_path / "vac_star_selection.json").unlink()
+    row = module.summarize_evaluation(
+        module.EVALUATION_SPECS[0], datetime.now(timezone.utc)
+    )
+    assert row is not None
+    assert row["state"] == "EXITED_UNVERIFIED"
