@@ -37,6 +37,10 @@ def test_development_scope_is_exact_and_does_not_replace_x() -> None:
 
 def test_freeze_binds_every_scientific_runtime_source() -> None:
     module = load_module()
+    assert (
+        "scripts/simulation/audit_s4_3_pi2n_candidate_completion.py"
+        in module.SOURCE_FILES
+    )
     assert "scripts/simulation/run_s4_3_pi2n_development.py" in module.SOURCE_FILES
     assert "scripts/simulation/serve_s4_3_pi2n_policy.py" in module.SOURCE_FILES
     assert "scripts/simulation/evaluate_s4_3_pi1d_augmented.py" in module.SOURCE_FILES

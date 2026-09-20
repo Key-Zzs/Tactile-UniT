@@ -63,6 +63,7 @@ EXPECTED_PROTECTED = {
     "B2": "86c4908533ca24da06ae66f943e3605b5ccbae455441290ca8fb35514359e949",
 }
 SOURCE_FILES = (
+    "scripts/simulation/audit_s4_3_pi2n_candidate_completion.py",
     "scripts/simulation/freeze_s4_3_pi2n_final.py",
     "scripts/simulation/run_s4_3_pi2n_final.py",
     "scripts/simulation/launch_s4_3_pi2n_final.py",

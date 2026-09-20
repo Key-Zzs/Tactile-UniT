@@ -50,6 +50,7 @@ CHECKPOINT_PATHS = {
     ),
 }
 SOURCE_FILES = (
+    "scripts/simulation/audit_s4_3_pi2n_candidate_completion.py",
     "scripts/simulation/run_s4_3_pi2n_development.py",
     "scripts/simulation/launch_s4_3_pi2n_development.py",
     "scripts/simulation/freeze_s4_3_pi2n_development.py",
