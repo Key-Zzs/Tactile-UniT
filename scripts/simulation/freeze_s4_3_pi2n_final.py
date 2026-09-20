@@ -66,6 +66,8 @@ SOURCE_FILES = (
     "scripts/simulation/run_s4_3_pi2n_final.py",
     "scripts/simulation/launch_s4_3_pi2n_final.py",
     "scripts/simulation/analyze_s4_3_pi2n_final.py",
+    "scripts/simulation/audit_s4_3_pi2n_final_statistics.py",
+    "scripts/simulation/visualize_s4_3_pi2n_final.py",
     "scripts/simulation/serve_s4_3_pi2n_policy.py",
     "scripts/simulation/run_s4_3_pi2u_eval.py",
     "scripts/simulation/evaluate_s4_3_pi1d_augmented.py",
