@@ -75,3 +75,21 @@ def test_completion_audit_is_non_overwriting_and_performance_blind() -> None:
     assert "restored_train_state_step_30000" in source
     assert "checkpoint_steps_exact" in source
     assert "protected_policy_checkpoints_unchanged" in source
+    assert "candidate_completion_attempts" in source
+    assert 'if status == "PASS"' in source
+    assert "COMPLETION_AUDIT_FAIL_PRESERVED" in source
+
+
+def test_failed_audit_attempts_are_append_only_and_leave_canonical_free(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "ARTIFACTS", tmp_path)
+    spec = module.CANDIDATES["B_VA27"]
+    first = module.reserve_failed_audit_attempt(spec)
+    second = module.reserve_failed_audit_attempt(spec)
+    assert first.name == "attempt_001"
+    assert second.name == "attempt_002"
+    assert first.is_dir() and second.is_dir()
+    assert not (tmp_path / "b_va27_training_completion.json").exists()
+    assert not (tmp_path / "b_va27_checkpoint_manifest.json").exists()

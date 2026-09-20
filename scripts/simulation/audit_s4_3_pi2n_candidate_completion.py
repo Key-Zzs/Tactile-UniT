@@ -108,6 +108,20 @@ def atomic_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
+def reserve_failed_audit_attempt(spec: CandidateSpec) -> Path:
+    """Reserve an immutable directory without touching canonical PASS outputs."""
+    root = ARTIFACTS / "candidate_completion_attempts" / spec.stem
+    root.mkdir(parents=True, exist_ok=True)
+    for index in range(1, 10_000):
+        attempt = root / f"attempt_{index:03d}"
+        try:
+            attempt.mkdir()
+        except FileExistsError:
+            continue
+        return attempt
+    raise RuntimeError(f"too many failed completion audits for {spec.model_id}")
+
+
 def checkpoint_hashes(path: Path) -> tuple[str, str, list[dict[str, Any]]]:
     rows = [
         {
@@ -515,7 +529,15 @@ def main() -> None:
         "policy_evaluation_performed": False,
         "gates": {name: "PASS" if value else "FAIL" for name, value in gates.items()},
     }
-    atomic_json(completion_path, completion)
+    failed_attempt = None
+    if status == "PASS":
+        completion_output = completion_path
+        manifest_output = manifest_path
+    else:
+        failed_attempt = reserve_failed_audit_attempt(spec)
+        completion_output = failed_attempt / "training_completion.json"
+        manifest_output = failed_attempt / "checkpoint_manifest.json"
+    atomic_json(completion_output, completion)
     manifest = {
         "schema": "tactile3d-unit.s4-3-pi2n-candidate-checkpoint-manifest.v1",
         "status": status,
@@ -531,12 +553,12 @@ def main() -> None:
         "tree_hash_algorithm": "sha256(sorted(relative_path NUL file_sha256 NUL bytes newline))",
         "file_manifest": files,
         "training_completion": "$REPO_ROOT/"
-        + completion_path.relative_to(ROOT).as_posix(),
-        "training_completion_sha256": sha256_file(completion_path),
+        + completion_output.relative_to(ROOT).as_posix(),
+        "training_completion_sha256": sha256_file(completion_output),
         "policy_evaluation_performed": False,
         "gates": completion["gates"],
     }
-    atomic_json(manifest_path, manifest)
+    atomic_json(manifest_output, manifest)
     print(
         json.dumps(
             {
@@ -546,6 +568,7 @@ def main() -> None:
                 "checkpoint_tree_sha256": checkpoint_sha,
                 "params_tree_sha256": params_sha,
                 "nonfinite": nonfinite,
+                "failed_attempt": str(failed_attempt) if failed_attempt else None,
             },
             sort_keys=True,
         )
@@ -553,7 +576,8 @@ def main() -> None:
     if status != "PASS":
         failed = [name for name, value in gates.items() if not value]
         raise SystemExit(
-            f"{spec.model_id}_COMPLETION_AUDIT_FAIL: " + ",".join(failed)
+            f"{spec.model_id}_COMPLETION_AUDIT_FAIL_PRESERVED: "
+            + ",".join(failed)
         )
 
 
