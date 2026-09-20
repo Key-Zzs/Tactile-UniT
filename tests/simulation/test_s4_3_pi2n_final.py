@@ -10,6 +10,7 @@ from scripts.simulation import audit_s4_3_pi2n_final_statistics as independent
 from scripts.simulation import finalize_s4_3_pi2n as closeout
 from scripts.simulation import freeze_s4_3_pi2n_final as freeze
 from scripts.simulation import launch_s4_3_pi2n_final as launch
+from scripts.simulation import launch_s4_3_pi2n_closeout as closeout_launch
 from scripts.simulation import run_s4_3_pi2n_final as final
 from scripts.simulation import visualize_s4_3_pi2n_final as visual
 
@@ -316,6 +317,17 @@ def test_closeout_file_manifest_requires_exact_file_set_and_content(
         assert "file-set drift" in str(error)
     else:
         raise AssertionError("extra pi05_base file was not rejected")
+
+
+def test_closeout_launcher_is_persistent_and_cannot_start_followup_work() -> None:
+    source = Path(closeout_launch.__file__).read_text()
+    assert closeout_launch.SESSION == "s43_pi2n_closeout"
+    assert '"gpu_required": False' in source
+    assert '"model_or_policy_inference": False' in source
+    assert '"training_or_evaluation_launched": False' in source
+    assert '"automatic_PI2B": False' in source
+    assert "refusing to overwrite or duplicate PI2N closeout" in source
+    assert "finalize_s4_3_pi2n.py" in source
 
 
 def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
