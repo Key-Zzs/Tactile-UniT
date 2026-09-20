@@ -10,6 +10,7 @@ from scripts.simulation import audit_s4_3_pi2n_final_statistics as independent
 from scripts.simulation import freeze_s4_3_pi2n_final as freeze
 from scripts.simulation import launch_s4_3_pi2n_final as launch
 from scripts.simulation import run_s4_3_pi2n_final as final
+from scripts.simulation import visualize_s4_3_pi2n_final as visual
 
 
 def _raw(model: str, seed: int, identities: list[str]) -> dict:
@@ -197,6 +198,46 @@ def test_independent_statistics_recompute_all_six_pairs(monkeypatch) -> None:
         "both_failure": 50,
     }
     assert all(0.0 <= row["holm_adjusted_p"] <= 1.0 for row in pairs.values())
+
+
+def test_final_plots_are_limited_to_frozen_evidence(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(visual, "PLOTS", tmp_path)
+    protocol_path = tmp_path / "protocol.json"
+    freeze_path = tmp_path / "freeze.json"
+    completeness_path = tmp_path / "completeness.json"
+    for path in (protocol_path, freeze_path, completeness_path):
+        path.write_text("{}")
+    monkeypatch.setattr(analysis, "PROTOCOL", protocol_path)
+    monkeypatch.setattr(analysis, "PRE_FREEZE", freeze_path)
+    monkeypatch.setattr(analysis, "COMPLETENESS", completeness_path)
+    rows = {
+        "B0": _analysis_rows(40),
+        "B_VA27": _analysis_rows(60),
+        "B1": _analysis_rows(50),
+        "B_HVA": _analysis_rows(100),
+        "B2": _analysis_rows(80),
+        "B_VAC_V": _analysis_rows(150),
+    }
+    protocol = {
+        "formal_statistics": {
+            "paired_bootstrap_samples": 100,
+            "paired_bootstrap_seed": 4317,
+            "material_threshold_pp": 10,
+        }
+    }
+    statistics, process, _, _ = analysis.analyze(
+        rows, protocol, {"vac_star": "B_VAC_V"}
+    )
+    paths = [
+        *visual.success_plot(statistics),
+        *visual.paired_effect_plot(statistics),
+        *visual.contact_plot(process),
+    ]
+    assert len(paths) == 6
+    assert all(path.is_file() and path.stat().st_size > 0 for path in paths)
+    assert {path.suffix for path in paths} == {".png", ".pdf"}
 
 
 def test_final_freeze_and_launcher_are_manual_non_overwriting_gates() -> None:
