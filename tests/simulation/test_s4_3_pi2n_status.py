@@ -261,3 +261,60 @@ def test_evaluation_done_requires_all_atomic_outputs(
     )
     assert row is not None
     assert row["state"] == "EXITED_UNVERIFIED"
+
+
+def test_candidate_audit_status_is_read_only_and_identity_checked(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    artifacts = tmp_path / "artifacts"
+    jobs = artifacts / "candidate_completion_audit_jobs"
+    attempt = jobs / "b_va27" / "attempt_001"
+    attempt.mkdir(parents=True)
+    monkeypatch.setattr(module, "ARTIFACTS", artifacts)
+    monkeypatch.setattr(module, "AUDIT_JOB_ROOT", jobs)
+    monkeypatch.setattr(
+        module,
+        "proc_identity",
+        lambda pid: {
+            "pid": pid,
+            "live": True,
+            "cmdline": (
+                "python launch_s4_3_pi2n_candidate_audit.py supervise "
+                "--model-id B_VA27 --attempt-id attempt_001"
+            ),
+        },
+    )
+    monkeypatch.setattr(module, "tmux_session_exists", lambda name: True)
+    session = "s43_pi2n_audit_b_va27_001"
+    _write(
+        attempt / "launch.json",
+        {
+            "status": "LAUNCHING",
+            "model_id": "B_VA27",
+            "attempt_id": "attempt_001",
+            "session": session,
+        },
+    )
+    running = {
+        "state": "RUNNING",
+        "exit_code": None,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "model_id": "B_VA27",
+        "attempt_id": "attempt_001",
+        "session": session,
+        "supervisor_pid": 123,
+    }
+    _write(attempt / "job_status.json", running)
+    _write(attempt / "heartbeat.json", running)
+    rows = module.summarize_candidate_audits(datetime.now(timezone.utc))
+    assert len(rows) == 1
+    assert rows[0]["state"] == "RUNNING"
+    assert rows[0]["runtime_identity_matches"] is True
+    assert rows[0]["performance_values_read"] is False
+
+    stale = dict(running)
+    stale["updated_at"] = "2000-01-01T00:00:00+00:00"
+    _write(attempt / "heartbeat.json", stale)
+    rows = module.summarize_candidate_audits(datetime.now(timezone.utc))
+    assert rows[0]["state"] == "EXITED_UNVERIFIED"

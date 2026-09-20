@@ -22,6 +22,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2n"
+AUDIT_JOB_ROOT = ARTIFACTS / "candidate_completion_audit_jobs"
+AUDIT_LAUNCHER = "launch_s4_3_pi2n_candidate_audit.py"
 DEFAULT_RUN_ROOT = Path(
     "/mnt/ugreen_nas/storage/UniT_storage/experiments/simulation/s4_3_pi2n"
 )
@@ -462,6 +464,131 @@ def summarize_evaluation(
     }
 
 
+def summarize_candidate_audits(now: datetime) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for spec in MODEL_SPECS:
+        model_root = AUDIT_JOB_ROOT / spec.model_id.lower()
+        if not model_root.is_dir():
+            continue
+        for directory in sorted(model_root.glob("attempt_[0-9][0-9][0-9]")):
+            paths = {
+                "launch": directory / "launch.json",
+                "job_status": directory / "job_status.json",
+                "heartbeat": directory / "heartbeat.json",
+            }
+            payloads = {name: read_json(path) for name, path in paths.items()}
+            launch, launch_error = payloads["launch"]
+            job, job_error = payloads["job_status"]
+            heartbeat, heartbeat_error = payloads["heartbeat"]
+            age = heartbeat_age_seconds(heartbeat, now)
+            supervisor = proc_identity(job.get("supervisor_pid") if job else None)
+            session = launch.get("session") if launch else None
+            attempt_id = directory.name
+            command = str(supervisor.get("cmdline", ""))
+            command_matches = bool(
+                supervisor.get("live")
+                and AUDIT_LAUNCHER in command
+                and " supervise " in f" {command} "
+                and f"--model-id {spec.model_id}" in command
+                and f"--attempt-id {attempt_id}" in command
+            )
+            runtime_identity_matches = bool(
+                launch
+                and job
+                and heartbeat
+                and all(
+                    payload.get("model_id") == spec.model_id
+                    and payload.get("attempt_id") == attempt_id
+                    for payload in (launch, job, heartbeat)
+                )
+                and launch.get("session") == job.get("session")
+                and job.get("session") == heartbeat.get("session")
+                and job.get("supervisor_pid") == heartbeat.get("supervisor_pid")
+            )
+            session_present = bool(
+                isinstance(session, str) and tmux_session_exists(session)
+            )
+            running_gates = {
+                "launch_recorded": bool(
+                    launch and launch.get("status") == "LAUNCHING"
+                ),
+                "job_running": bool(job and job.get("state") == "RUNNING"),
+                "heartbeat_running": bool(
+                    heartbeat and heartbeat.get("state") == "RUNNING"
+                ),
+                "heartbeat_fresh": age is not None
+                and age <= HEARTBEAT_MAX_AGE_SECONDS,
+                "supervisor_live": bool(supervisor.get("live")),
+                "supervisor_command_matches": command_matches,
+                "runtime_identity_matches": runtime_identity_matches,
+                "session_present": session_present,
+            }
+            completion_path = (
+                ARTIFACTS / f"{spec.model_id.lower()}_training_completion.json"
+            )
+            manifest_path = ARTIFACTS / spec.completion_manifest
+            completion, completion_error = read_json(completion_path)
+            manifest, manifest_error = read_json(manifest_path)
+            final_checkpoint = (
+                DEFAULT_RUN_ROOT
+                / "runs"
+                / spec.model_id
+                / "pinch_tongs"
+                / spec.experiment
+                / "29999"
+            )
+            canonical_outputs_valid = bool(
+                completion
+                and completion.get("status") == "PASS"
+                and completion.get("optimizer_steps") == 30_000
+                and manifest
+                and completion_manifest_valid(manifest, spec, final_checkpoint)
+            )
+            if all(running_gates.values()):
+                state = "RUNNING"
+            elif bool(
+                job
+                and heartbeat
+                and job.get("state") == "DONE"
+                and heartbeat.get("state") == "DONE"
+                and job.get("exit_code") == 0
+                and heartbeat.get("exit_code") == 0
+                and runtime_identity_matches
+                and canonical_outputs_valid
+            ):
+                state = "COMPLETE_VERIFIED"
+            else:
+                state = "EXITED_UNVERIFIED"
+            rows.append(
+                {
+                    "model_id": spec.model_id,
+                    "attempt_id": attempt_id,
+                    "state": state,
+                    "session": session,
+                    "session_present": session_present,
+                    "paths": {name: str(path) for name, path in paths.items()},
+                    "read_errors": {
+                        "launch": launch_error,
+                        "job_status": job_error,
+                        "heartbeat": heartbeat_error,
+                        "training_completion": completion_error,
+                        "checkpoint_manifest": manifest_error,
+                    },
+                    "job_status": job,
+                    "heartbeat": heartbeat,
+                    "heartbeat_age_seconds": age,
+                    "supervisor": supervisor,
+                    "runtime_identity_matches": runtime_identity_matches,
+                    "failed_running_gates": [
+                        name for name, value in running_gates.items() if not value
+                    ],
+                    "canonical_outputs_valid": canonical_outputs_valid,
+                    "performance_values_read": False,
+                }
+            )
+    return rows
+
+
 def summarize_model(
     spec: ModelSpec,
     run_root: Path,
@@ -587,6 +714,15 @@ def main() -> None:
         for spec in EVALUATION_SPECS
         if (row := summarize_evaluation(spec, now)) is not None
     ]
+    candidate_audits = summarize_candidate_audits(now)
+    latest_candidate_audits = {
+        model_id: next(
+            row
+            for row in reversed(candidate_audits)
+            if row["model_id"] == model_id
+        )
+        for model_id in {row["model_id"] for row in candidate_audits}
+    }
     states = [row["state"] for row in models]
     final = next(
         (row for row in evaluations if row["phase"] == "FINAL"), None
@@ -606,6 +742,15 @@ def main() -> None:
         pause_state = "PI2N_DEVELOPMENT_COMPLETE_VERIFIED"
     elif development:
         pause_state = "PI2N_DEVELOPMENT_EXITED_UNVERIFIED"
+    elif any(
+        row["state"] == "RUNNING" for row in latest_candidate_audits.values()
+    ):
+        pause_state = "PI2N_CANDIDATE_AUDIT_RUNNING"
+    elif latest_candidate_audits and any(
+        row["state"] == "EXITED_UNVERIFIED"
+        for row in latest_candidate_audits.values()
+    ):
+        pause_state = "PI2N_CANDIDATE_AUDIT_EXITED_UNVERIFIED"
     elif all(state == "COMPLETE_VERIFIED" for state in states):
         pause_state = "PI2N_TRAINING_COMPLETE_VERIFIED"
     elif any(state == "RUNNING" for state in states):
@@ -621,6 +766,7 @@ def main() -> None:
         "pause_state": pause_state,
         "mount": mount_status(run_root),
         "models": models,
+        "candidate_audits": candidate_audits,
         "evaluations": evaluations,
     }
     print(json.dumps(payload, sort_keys=True if args.compact else False, indent=None if args.compact else 2))
