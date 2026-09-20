@@ -1,0 +1,41 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2n-policy-domain-probe-remediation.v2",
+  "status": "FROZEN_AFTER_V1_ZERO_THRESHOLD_STRUCTURAL_FINDING_BEFORE_V2_METRICS",
+  "reason": "v1 TRAIN 75th-percentile force thresholds were exactly zero because contact is sparse; v1 high_force therefore meant any positive force and is not a valid high-force label",
+  "preserved_from_v1": [
+    "row identity",
+    "episode fit/check split",
+    "representations and checkpoints",
+    "20 semantic labels",
+    "ridge alpha and parameter budget",
+    "overall and boundary metrics",
+    "episode bootstrap seeds",
+    "geometry metrics"
+  ],
+  "superseded_v1_fields": [
+    "diagnostic_labels_manifest.dynamic_force_threshold_train_q75",
+    "diagnostic_labels_manifest.high_force_threshold_train_q75",
+    "policy_domain_probe_results subset_metrics.*.dynamic",
+    "policy_domain_probe_results subset_metrics.*.high_force",
+    "policy_domain_probe_results controls.*.dynamic",
+    "policy_domain_probe_results controls.*.high_force"
+  ],
+  "v2_subsets": {
+    "high_force": "future total log-force >= TRAIN 75th percentile computed only among strictly positive future total log-force rows",
+    "dynamic": "any occupancy change or total absolute force trend >= TRAIN 75th percentile computed only among strictly positive force-trend rows",
+    "minimum_positive_fit_rows": 100,
+    "zero_or_insufficient_positive_rows": "mark subset NA; do not select a fallback quantile"
+  },
+  "required_parity": {
+    "overall_metrics_exact_v1": true,
+    "boundary_metrics_exact_v1": true,
+    "paired_episode_comparisons_exact_v1": true,
+    "geometry_exact_v1": true
+  },
+  "route_constraints": {
+    "P4_action_hidden_not_run_here": true,
+    "g_C_not_run_here": true,
+    "X_route_not_finalized_here": true,
+    "candidate_closed_loop_results_forbidden": true
+  }
+}
