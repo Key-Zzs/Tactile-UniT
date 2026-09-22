@@ -24,6 +24,7 @@ RUN_ROOT = Path(
     "/mnt/ugreen_nas/storage/UniT_storage/experiments/simulation/s4_3_pi2n"
 )
 AUDITOR = ROOT / "scripts/simulation/audit_s4_3_pi2n_candidate_completion.py"
+AUDIT_PYTHON = Path("/home/wbcd/miniconda3/envs/openpi/bin/python")
 SESSION_PREFIX = "s43_pi2n_audit_"
 ATTEMPT_PATTERN = re.compile(r"attempt_[0-9]{3}")
 
@@ -69,6 +70,46 @@ def canonical_outputs(spec: Candidate) -> tuple[Path, Path]:
         ARTIFACTS / f"{spec.stem}_training_completion.json",
         ARTIFACTS / f"{spec.stem}_checkpoint_manifest.json",
     )
+
+
+def audit_runtime_identity() -> dict[str, Any]:
+    """Fail before hashing unless the frozen model runtime can restore checkpoints."""
+    if not AUDIT_PYTHON.is_file():
+        raise SystemExit(f"candidate audit Python missing: {AUDIT_PYTHON}")
+    probe = subprocess.run(
+        [
+            str(AUDIT_PYTHON),
+            "-c",
+            (
+                "import json,sys; import jax; import orbax.checkpoint as ocp; "
+                "from openpi.models import model; "
+                "print(json.dumps({'executable': sys.executable, "
+                "'jax_version': jax.__version__, "
+                "'orbax_checkpoint': ocp.__file__, "
+                "'openpi_model': model.__file__}, sort_keys=True))"
+            ),
+        ],
+        cwd=ROOT,
+        env=os.environ
+        | {
+            "CUDA_VISIBLE_DEVICES": "",
+            "JAX_PLATFORMS": "cpu",
+            "PYTHONPATH": str(ROOT),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode:
+        detail = probe.stderr.strip() or probe.stdout.strip() or "unknown import failure"
+        raise SystemExit(f"candidate audit Python dependency probe failed: {detail}")
+    try:
+        identity = json.loads(probe.stdout)
+    except json.JSONDecodeError as error:
+        raise SystemExit("candidate audit Python dependency probe returned invalid JSON") from error
+    if Path(identity.get("executable", "")).resolve() != AUDIT_PYTHON.resolve():
+        raise SystemExit("candidate audit Python identity mismatch")
+    return identity
 
 
 def trainer_alive(spec: Candidate) -> bool:
@@ -122,7 +163,7 @@ def reserve_attempt(spec: Candidate) -> Path:
     raise RuntimeError(f"too many completion audit jobs for {spec.model_id}")
 
 
-def preflight(spec: Candidate) -> None:
+def preflight(spec: Candidate) -> dict[str, Any]:
     job_path = runtime_path(spec, "job_status.json")
     heartbeat_path = runtime_path(spec, "heartbeat.json")
     if not AUDITOR.is_file() or not checkpoint(spec).is_dir():
@@ -153,6 +194,7 @@ def preflight(spec: Candidate) -> None:
         ["git", "status", "--short"], cwd=ROOT, text=True
     ).strip():
         raise SystemExit("tracked worktree must be clean before candidate audit")
+    return audit_runtime_identity()
 
 
 def attempt_dir(spec: Candidate, attempt_id: str) -> Path:
@@ -165,7 +207,7 @@ def attempt_dir(spec: Candidate, attempt_id: str) -> Path:
 
 
 def launch(spec: Candidate) -> None:
-    preflight(spec)
+    runtime_identity = preflight(spec)
     directory = reserve_attempt(spec)
     attempt_id = directory.name
     session = f"{SESSION_PREFIX}{spec.stem}_{attempt_id.removeprefix('attempt_')}"
@@ -185,6 +227,8 @@ def launch(spec: Candidate) -> None:
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip(),
         "supervisor_interpreter": sys.executable,
+        "auditor_interpreter": str(AUDIT_PYTHON),
+        "auditor_runtime_identity": runtime_identity,
         "checkpoint": str(checkpoint(spec)),
         "log": str(log),
         "gpu_required": False,
@@ -259,6 +303,7 @@ def supervise(spec: Candidate, attempt_id: str) -> None:
             ["ps", "-p", str(os.getpid()), "-o", "lstart="], text=True
         ).strip(),
         "interpreter": sys.executable,
+        "auditor_interpreter": str(AUDIT_PYTHON),
         "checkpoint": str(checkpoint(spec)),
         "log": str(log),
         "gpu_required": False,
@@ -269,7 +314,7 @@ def supervise(spec: Candidate, attempt_id: str) -> None:
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open("x") as output:
         process = subprocess.Popen(
-            [sys.executable, str(AUDITOR), "--model-id", spec.model_id],
+            [str(AUDIT_PYTHON), str(AUDITOR), "--model-id", spec.model_id],
             cwd=ROOT,
             env=os.environ
             | {
