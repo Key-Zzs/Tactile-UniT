@@ -16,6 +16,7 @@ from gr00t.simulation.pi2b_teacher import (
     matched_teacher_loss,
 )
 from gr00t.simulation.pi2b_teacher.matched_teacher import common_state
+from scripts.simulation.pi2b_teacher.launch_confirmation import resolve_dexjoco_python
 
 ROOT = Path(__file__).resolve().parents[3]
 CONFIG_ROOT = ROOT / "configs/simulation/pi2b_teacher"
@@ -138,3 +139,17 @@ def test_protocol_is_exactly_one_preregistered_pair_and_no_policy() -> None:
     assert protocol["scope"]["policy_training"] is False
     assert protocol["scope"]["pi05_training"] is False
     assert protocol["confirmation"]["source_group_indices"] == [23, 24, 25]
+
+
+def test_confirmation_interpreter_is_runtime_derived(tmp_path: Path) -> None:
+    envs = tmp_path / "conda/envs"
+    unit_python = envs / "unit/bin/python"
+    dex_python = envs / "tactile-unit-dexjoco/bin/python"
+    unit_python.parent.mkdir(parents=True)
+    dex_python.parent.mkdir(parents=True)
+    unit_python.touch()
+    dex_python.touch()
+    assert resolve_dexjoco_python({"python": str(unit_python)}) == dex_python
+    assert resolve_dexjoco_python(
+        {"python": "not-used", "dexjoco_python": str(dex_python)}
+    ) == dex_python

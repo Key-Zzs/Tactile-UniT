@@ -19,6 +19,21 @@ from scripts.simulation.pi2b_teacher.common import atomic_json, load_json  # noq
 from scripts.simulation.pi2b_teacher.launch import compute_processes, gpu_snapshot  # noqa: E402
 
 
+def resolve_dexjoco_python(runtime: dict[str, object]) -> Path:
+    """Resolve the simulator interpreter without embedding a host-specific path."""
+    explicit = runtime.get("dexjoco_python")
+    if explicit is not None:
+        candidate = Path(str(explicit))
+    else:
+        unit_python = Path(str(runtime["python"]))
+        if len(unit_python.parents) < 3:
+            raise RuntimeError(f"cannot derive Conda env root from unit interpreter: {unit_python}")
+        candidate = unit_python.parents[2] / "tactile-unit-dexjoco/bin/python"
+    if not candidate.is_file():
+        raise RuntimeError(f"DexJoCo interpreter is unavailable: {candidate}")
+    return candidate
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu", type=int, choices=(0, 1, 2, 3), required=True)
@@ -54,7 +69,7 @@ def main() -> None:
         if int(after_lock["memory_used_mib"]) > 512 or any(row["gpu_uuid"] == after_lock["uuid"] for row in compute_processes()):
             raise RuntimeError(f"GPU{args.gpu} became busy after lock acquisition")
         snapshot = Path(runtime["snapshot_root"])
-        dex_python = Path("/home/wbcd/miniconda3/envs/tactile-unit-dexjoco/bin/python")
+        dex_python = resolve_dexjoco_python(runtime)
         command = [str(dex_python), str(snapshot / "scripts/simulation/pi2b_teacher/build_confirmation.py")]
         env = os.environ.copy()
         env.pop("DISPLAY", None)

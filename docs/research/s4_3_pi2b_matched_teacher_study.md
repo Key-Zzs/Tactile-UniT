@@ -67,6 +67,53 @@ preservation.
 
 ## Result status
 
-`NOT_RUN`. This section is updated only from frozen Track B artifacts. New
-teachers remain research candidates and are never connected to Track A by this
-study.
+`COMPLETE_VALID`. The frozen analysis decision is
+`VAC_CONTACT_CAPABILITY_WITH_NO_DETECTED_VA_REGRESSION_LIMITED_PRECISION`.
+Engineering, matching, noncollapse, and the independent statistics audit all
+passed. The result remains a fixed-teacher-training-seed comparison and does
+not establish equivalence, noninferiority, or policy utility.
+
+The two canonical runs both completed 800 optimizer updates and 409,600 sample
+exposures. `T_VA_match` has 165,888 trainable parameters and used 0.00440
+measured GPU-hours; `T_VAC_match` has 248,704 trainable parameters and used
+0.00610 measured GPU-hours. Their batch schedule digest is identical. The
+final checkpoint SHA-256 values are:
+
+```text
+T_VA_match:  91ae74d970917535e199822b3fb415997d88b36342dc7178b61efcd7a746c142
+T_VAC_match: 65ba855fda2175c51b23e58cd36e7889fa891da56a697ad442c3ea926951f698
+```
+
+The independent confirmation cohort contains 4,860 legal `t -> t+27` pairs
+from 45 episodes and nine new source groups, with zero pair or source-group
+overlap with prior splits. On this cohort, VAC reduced Vision native-recovery
+MSE by 0.000697 (95% stratified source-group bootstrap CI
+[-0.000906, -0.000461]) and increased Action native-recovery MSE by 0.000618
+([0.000084, 0.001201]); the latter did not survive Holm correction
+(`p_holm=0.0624`). Mean bidirectional V/A R@10 changed by -0.000823
+([-0.013066, 0.012243]), and mean bidirectional MRR changed by -0.002000
+([-0.009300, 0.005619]). VAC improved the true raw-Action reversal margin by
+0.039518 ([0.033757, 0.045948], Holm-significant). These mixed effects support
+only `NO_DETECTED_VA_REGRESSION_WITH_LIMITED_PRECISION`, not a preservation or
+equivalence claim.
+
+The VAC-only Contact path was reliable. Vision-Contact and Action-Contact
+paired margins were 0.596750 ([0.584791, 0.608408]) and 0.645059
+([0.630299, 0.659259]); their temporal reversal margins were 0.564512
+([0.553764, 0.574864]) and 0.594671 ([0.585072, 0.604751]). Contact native
+recovery reached MSE 0.124960, R2 0.847829, and cosine 0.936130. In contrast,
+the paired effect on the preregistered mean common-V/A Contact-probe macro-F1
+was 0.008293 ([-0.001979, 0.019886], `p_holm=0.3012`), so no reliable common
+V/A Contact-readout increment was detected.
+
+Boundary and task effects are heterogeneous: boundary Vision recovery favored
+VAC, while boundary Action recovery was worse; V/A retrieval at boundaries
+was inconclusive. All reported latent geometries had zero near-zero-variance
+fraction, but effective and source-relative ranks remained modest and the
+fresh set has only three source groups per task. Region-transition probes are
+N/A because the accepted TRAIN cache lacks the corresponding training labels.
+
+New teachers remain research candidates. They were not connected to Track A,
+no pi0.5 or policy was trained, and policy utility is `NOT_TESTED`. The main
+`PAPER_CORE` was not edited; integration is limited to the separately generated
+paper delta and handoff artifacts.
