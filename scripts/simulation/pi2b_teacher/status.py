@@ -41,6 +41,11 @@ def main() -> None:
     confirmation_path = root / "status/confirmation_generation.json"
     confirmation = load_json(confirmation_path) if confirmation_path.exists() else {"state": "NOT_STARTED"}
     confirmation["pid_alive"] = alive(confirmation.get("pid"))
+    stages = {}
+    for name in ("confirmation_cache", "evaluation", "analysis", "resume_state"):
+        path = root / "status" / f"{name}.json"
+        stages[name] = load_json(path) if path.exists() else {"state": "NOT_STARTED"}
+        stages[name]["pid_alive"] = alive(stages[name].get("pid"))
     leases = []
     for path in sorted((coordination / "leases").glob("s4_3_pi2b_teacher_*.json")):
         value = load_json(path)
@@ -58,6 +63,7 @@ def main() -> None:
         "checked_utc": datetime.now(timezone.utc).isoformat(),
         "jobs": jobs,
         "confirmation_generation": confirmation,
+        "later_stages": stages,
         "leases": leases,
         "gpu": gpu,
         "track_a_performance_read": False,
