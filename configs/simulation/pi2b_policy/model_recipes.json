@@ -1,0 +1,67 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-policy-model-recipes.v1",
+  "status": "FROZEN_BEFORE_NEW_TRAINING",
+  "common": {
+    "base": "official pi05_base",
+    "dataset": "official pinch_tongs 100 episodes / 40065 rows",
+    "state_dim": 23,
+    "dataset_action_dim": 22,
+    "internal_action_dim": 32,
+    "action_horizon": 30,
+    "dtype": "bfloat16",
+    "paligemma_variant": "gemma_2b_lora",
+    "action_expert_variant": "gemma_300m_lora",
+    "max_token_len": 250,
+    "prompt_from_task": true,
+    "history_bootstrap": "LEFT_REPEAT_FIRST",
+    "physical_target_offset_control_ticks": 27,
+    "physical_target_horizon_seconds": 0.54,
+    "target_valid_rows": 37365,
+    "target_tail_masked_rows": 2700,
+    "tail_mask_filters_bc": false
+  },
+  "models": {
+    "B0": {
+      "mode": "NONE",
+      "online_contact_history": false,
+      "auxiliary_target": null,
+      "lambda_phys": 0.0
+    },
+    "B_VA27": {
+      "mode": "VA_PHYSICAL_AUX",
+      "online_contact_history": false,
+      "auxiliary_target": "clean u_v^VA27",
+      "lambda_phys": 0.03077957631925596,
+      "physical_auxiliary_parameters": 658176
+    },
+    "B1": {
+      "mode": "CONTACT_STATE_TOKENS",
+      "online_contact_history": true,
+      "auxiliary_target": null,
+      "lambda_phys": 0.0,
+      "contact_adapter_parameters": 199680
+    },
+    "B_HVA": {
+      "mode": "CONTACT_STATE_TOKENS_VA_PHYSICAL_AUX",
+      "online_contact_history": true,
+      "auxiliary_target": "clean u_v^VA27",
+      "lambda_phys": 0.026468189597253295,
+      "contact_adapter_parameters": 199680,
+      "physical_auxiliary_parameters": 658176
+    },
+    "B2": {
+      "mode": "CONTACT_STATE_TOKENS_PHYSICAL_AUX",
+      "online_contact_history": true,
+      "auxiliary_target": "frozen u_c^VAC27",
+      "lambda_phys": 0.020927851827513076,
+      "contact_adapter_parameters": 199680,
+      "physical_auxiliary_parameters": 658176
+    }
+  },
+  "historical_bva": {
+    "included": false,
+    "target_offset_control_ticks": 16,
+    "physical_horizon_seconds": 0.32,
+    "reason": "not the matched VA27 model"
+  }
+}

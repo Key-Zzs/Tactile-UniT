@@ -1,0 +1,26 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-policy-statistics.v1",
+  "status": "FROZEN_BEFORE_NEW_TRAINING",
+  "bootstrap_repetitions": 100000,
+  "bootstrap_seed": 4317,
+  "confidence_level": 0.95,
+  "material_effect_reference_pp": 10,
+  "primary_family": ["B_HVA-B_VA27", "B2-B_HVA"],
+  "key_secondary_family": ["B2-B1", "B_HVA-B0", "B2-B0"],
+  "auxiliary_secondary_family": ["B_VA27-B0", "B1-B0"],
+  "interaction_diagnostic": "(B_HVA-B_VA27)-(B1-B0)",
+  "mcnemar": "exact two-sided within each training seed",
+  "multiplicity": "Holm within each declared family",
+  "cross_seed_estimand": "mean of the three within-seed paired reset risk differences",
+  "conditional_interval": "shared-reset bootstrap conditional on the three trained checkpoints",
+  "two_way_sensitivity": "shared training-seed index and shared reset/group index bootstrap",
+  "new_seed_sensitivity": [43, 44],
+  "seed42_disclosure": "previously selected and development-exposed",
+  "training_seed_scope": "THREE_SEEDS_LIMITED",
+  "prohibitions": [
+    "pooling seed-reset rows as independent McNemar observations",
+    "independent bootstrap indices per model",
+    "method switching after performance is seen",
+    "equivalence claims without an equivalence design"
+  ]
+}

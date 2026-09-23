@@ -1,0 +1,48 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-policy-protocol.v1",
+  "status": "FROZEN_BEFORE_NEW_TRAINING",
+  "stage": "S4.3-PI2B Policy Multi-Seed Confirmation",
+  "task": "pinch_tongs",
+  "regime": "rand_obj",
+  "models": ["B0", "B_VA27", "B1", "B_HVA", "B2"],
+  "existing_training_seed": 42,
+  "new_training_seeds": [43, 44],
+  "optimizer_steps": 30000,
+  "global_batch_size": 32,
+  "allowed_device_counts_per_run": [1, 2, 4],
+  "checkpoint_selection": "final train_state step 30000 only",
+  "new_policy_runs": 10,
+  "teacher_runs": 0,
+  "formal_checkpoints": 15,
+  "formal_resets_per_checkpoint": 200,
+  "formal_rollouts": 3000,
+  "initialization": "independent exact frozen pi05_base for every new run",
+  "static_run_order": [
+    "seed43_b0",
+    "seed43_b_va27",
+    "seed43_b1",
+    "seed43_b_hva",
+    "seed43_b2",
+    "seed44_b0",
+    "seed44_b_va27",
+    "seed44_b1",
+    "seed44_b_hva",
+    "seed44_b2"
+  ],
+  "resource_contract": {
+    "maximum_aggregate_gpus": 4,
+    "training_runtime_barrier": "shared",
+    "formal_evaluation_runtime_barrier": "exclusive",
+    "gpu_locks": "common tactile3d_unit_gpu{0..3}.lock",
+    "lock_order": ["runtime_barrier", "scheduler", "gpu_locks_ascending_index"],
+    "persistent_supervisor_required": true
+  },
+  "isolation": {
+    "read_new_teacher_weights": false,
+    "read_teacher_track_results_for_selection": false,
+    "modify_other_worktree": false,
+    "modify_main_paper_core": false,
+    "push_pr_merge_tag_release": false,
+    "automatic_experiment_expansion": false
+  }
+}
