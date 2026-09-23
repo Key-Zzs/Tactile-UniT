@@ -55,7 +55,6 @@ SNAPSHOT_FILES = (
     "gr00t/simulation/pi2b_teacher/__init__.py",
     "gr00t/simulation/pi2b_teacher/matched_teacher.py",
     "gr00t/tactile_unit/continuous_vac_shared_space.py",
-    "gr00t/tactile_unit/__init__.py",
     "scripts/simulation/pi2b_teacher/common.py",
     "scripts/simulation/pi2b_teacher/build_confirmation.py",
     "scripts/simulation/pi2b_teacher/train.py",
