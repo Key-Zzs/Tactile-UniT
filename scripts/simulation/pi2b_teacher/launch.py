@@ -117,6 +117,7 @@ def main() -> None:
         env = os.environ.copy()
         env["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         env["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+        env["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
         env["PYTHONPATH"] = str(snapshot)
         child = subprocess.Popen(command, cwd=snapshot, env=env)
         started = datetime.now(timezone.utc).isoformat()
