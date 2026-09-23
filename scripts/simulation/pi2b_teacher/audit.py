@@ -44,6 +44,30 @@ from scripts.simulation.pi2b_teacher.common import (  # noqa: E402
     workspace,
 )
 
+SNAPSHOT_FILES = (
+    "gr00t/__init__.py",
+    "gr00t/simulation/__init__.py",
+    "gr00t/simulation/dexjoco_adapter.py",
+    "gr00t/simulation/episode_logger.py",
+    "gr00t/simulation/s4_2_dataset.py",
+    "gr00t/simulation/simulated_tactile.py",
+    "gr00t/simulation/timing.py",
+    "gr00t/simulation/pi2b_teacher/__init__.py",
+    "gr00t/simulation/pi2b_teacher/matched_teacher.py",
+    "gr00t/tactile_unit/continuous_vac_shared_space.py",
+    "gr00t/tactile_unit/__init__.py",
+    "scripts/simulation/pi2b_teacher/common.py",
+    "scripts/simulation/pi2b_teacher/build_confirmation.py",
+    "scripts/simulation/pi2b_teacher/train.py",
+    "scripts/simulation/generate_s4_2_dataset.py",
+    "configs/simulation/s4_1_dexjoco_contact_regions.json",
+    "configs/simulation/s4_2_dexjoco_contact_regions.json",
+    "configs/simulation/s4_2_dataset_contract.json",
+    "configs/simulation/s4_2_tf_locked_test_v2.json",
+    "configs/simulation/pi2b_teacher/protocol.json",
+    "configs/simulation/pi2b_teacher/losses.json",
+)
+
 
 def _component_tensor_equal(left: dict[str, torch.Tensor], right: dict[str, torch.Tensor]) -> bool:
     return left.keys() == right.keys() and all(torch.equal(left[key], right[key]) for key in left)
@@ -344,34 +368,15 @@ def confirmation_reservation(protocol: dict[str, Any], coordination: Path) -> di
 
 
 def snapshot_source(snapshot: Path) -> dict[str, str]:
-    files = [
-        "gr00t/__init__.py",
-        "gr00t/simulation/__init__.py",
-        "gr00t/simulation/dexjoco_adapter.py",
-        "gr00t/simulation/episode_logger.py",
-        "gr00t/simulation/s4_2_dataset.py",
-        "gr00t/simulation/pi2b_teacher/__init__.py",
-        "gr00t/simulation/pi2b_teacher/matched_teacher.py",
-        "gr00t/tactile_unit/continuous_vac_shared_space.py",
-        "gr00t/tactile_unit/__init__.py",
-        "scripts/simulation/pi2b_teacher/common.py",
-        "scripts/simulation/pi2b_teacher/build_confirmation.py",
-        "scripts/simulation/pi2b_teacher/train.py",
-        "scripts/simulation/generate_s4_2_dataset.py",
-        "configs/simulation/s4_1_dexjoco_contact_regions.json",
-        "configs/simulation/s4_2_dexjoco_contact_regions.json",
-        "configs/simulation/s4_2_dataset_contract.json",
-        "configs/simulation/s4_2_tf_locked_test_v2.json",
-        "configs/simulation/pi2b_teacher/protocol.json",
-        "configs/simulation/pi2b_teacher/losses.json",
-    ]
     hashes = {}
-    for relative in files:
+    for relative in SNAPSHOT_FILES:
         source = ROOT / relative
         if not source.is_file():
             raise FileNotFoundError(source)
         destination = snapshot / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists() and sha256_file(destination) != sha256_file(source):
+            raise RuntimeError(f"immutable snapshot collision: {destination}")
         shutil.copy2(source, destination)
         hashes[relative] = sha256_file(source)
     return hashes
@@ -428,15 +433,8 @@ def main() -> None:
             ROOT / "configs/simulation/s4_2_dexjoco_contact_regions.json",
         )
     }
-    source_hashes = {
-        "matched_teacher.py": sha256_file(ROOT / "gr00t/simulation/pi2b_teacher/matched_teacher.py"),
-        "train.py": sha256_file(ROOT / "scripts/simulation/pi2b_teacher/train.py"),
-        "audit.py": sha256_file(Path(__file__)),
-        "build_confirmation.py": sha256_file(ROOT / "scripts/simulation/pi2b_teacher/build_confirmation.py"),
-        "generate_s4_2_dataset.py": sha256_file(ROOT / "scripts/simulation/generate_s4_2_dataset.py"),
-        "dexjoco_adapter.py": sha256_file(ROOT / "gr00t/simulation/dexjoco_adapter.py"),
-        "episode_logger.py": sha256_file(ROOT / "gr00t/simulation/episode_logger.py"),
-    }
+    source_hashes = {relative: sha256_file(ROOT / relative) for relative in SNAPSHOT_FILES}
+    source_hashes["scripts/simulation/pi2b_teacher/audit.py"] = sha256_file(Path(__file__))
     freeze_identity = canonical_digest({"configs": config_hashes, "generator_contracts": generator_contract_hashes, "sources": source_hashes, "data": [train["sha256"], dev["sha256"]]})
     snapshot = write_root / "snapshots" / freeze_identity / "source"
     snapshot_hashes = snapshot_source(snapshot)
