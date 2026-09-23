@@ -8,8 +8,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import torch
-
 ROOT = Path(__file__).resolve().parents[3]
 CONFIG_ROOT = ROOT / "configs/simulation/pi2b_teacher"
 
@@ -42,7 +40,7 @@ def atomic_json(path: Path, value: Any) -> None:
     temporary.replace(path)
 
 
-def tensor_digest(values: dict[str, torch.Tensor]) -> str:
+def tensor_digest(values: dict[str, "torch.Tensor"]) -> str:
     digest = hashlib.sha256()
     for name in sorted(values):
         value = values[name].detach().cpu().contiguous()
@@ -79,7 +77,7 @@ def history_cache(name: str) -> Path:
     return ROOT / ".local/refs/base/cache/simulation/s4_2_formal" / name
 
 
-def model_parameter_counts(model: torch.nn.Module) -> dict[str, int]:
+def model_parameter_counts(model: "torch.nn.Module") -> dict[str, int]:
     return {
         "total": sum(parameter.numel() for parameter in model.parameters()),
         "trainable": sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad),
