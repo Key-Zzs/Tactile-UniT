@@ -63,8 +63,11 @@ def nas_probe(workspace: Workspace) -> dict[str, Any]:
         output.flush()
         os.fsync(output.fileno())
     source.replace(destination)
-    with directory.open("rb") as handle:
-        os.fsync(handle.fileno())
+    directory_fd = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
     recovered = destination.read_bytes()
     destination.unlink()
     return {
