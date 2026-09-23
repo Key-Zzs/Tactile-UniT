@@ -1,0 +1,20 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-losses.v1",
+  "temperature": 0.07,
+  "weights": {
+    "alignment": 1.0,
+    "native": 5.0,
+    "relational": 0.25,
+    "variance": 0.05,
+    "contact_pair": 1.0,
+    "contact_native": 5.0,
+    "contact_relational": 0.25,
+    "contact_variance": 0.05
+  },
+  "va_block": "symmetric V-A InfoNCE + mean V/A native recovery + mean V/A relational preservation + mean V/A variance floor",
+  "vac_addition": "mean symmetric V-C and A-C InfoNCE + C native recovery + C relational preservation + C variance floor",
+  "va_pair_dilution": false,
+  "contact_derived_common_sampling_or_weight": false,
+  "global_gradient_clipping_shared_definition": true,
+  "provenance": "S4.2 selected B3_slot_t0.07_w1 fixed recipe, factorized so Contact does not renormalize VA"
+}

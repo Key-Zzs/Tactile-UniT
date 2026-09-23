@@ -1,0 +1,72 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-protocol.v1",
+  "status": "PREREGISTERED_BEFORE_MATCHED_TEACHER_TRAINING",
+  "study": "S4.3-PI2B-T Matched VA/VAC Teacher Study",
+  "base_sha": "8f39aed123adf0a8b7241e75472e678355444e5e",
+  "training_seed": 42,
+  "initialization_seed": 42,
+  "models": {
+    "T_VA_match": ["vision", "action"],
+    "T_VAC_match": ["vision", "action", "contact"]
+  },
+  "architecture": {
+    "family": "S4.2 B3 shared-slot projector and native recovery",
+    "adapter": "independent_slot_resampler",
+    "slots": 8,
+    "width": 32,
+    "heads": 4,
+    "projector_hidden": 64,
+    "recovery_hidden": 128,
+    "query_mixing": true,
+    "component_derived_rng": true,
+    "dropout": 0.0
+  },
+  "training": {
+    "steps": 800,
+    "batch_size": 512,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "gradient_clip_global": 1.0,
+    "schedule": "constant",
+    "checkpoint": "final_step_only_canonical",
+    "batch_sampling": "numpy Generator.choice without replacement",
+    "batch_rng_seed": 42
+  },
+  "data": {
+    "train_rows": 22680,
+    "dev_rows": 4860,
+    "train_groups": 42,
+    "dev_groups": 9,
+    "tasks": ["pinch_tongs", "hammer_nail", "click_mouse"],
+    "transition_offset_steps": 27,
+    "transition_seconds": 0.54,
+    "paired_train_sha256": "73a0ab65fd430970cfc6d05e7fce71ea15a7bff46342dbd11f650076afe0c698",
+    "paired_dev_sha256": "37a7e5f9f2639f63f6923cb01f558c7606f1e837368735c67638200d666ddba9",
+    "normalization": "native_units_identity_transform",
+    "dynamic_resampling": false
+  },
+  "confirmation": {
+    "classification": "FINAL_FROZEN",
+    "tasks": ["pinch_tongs", "hammer_nail", "click_mouse"],
+    "source_group_indices": [23, 24, 25],
+    "episodes_per_group": 5,
+    "groups": 9,
+    "episodes": 45,
+    "pairs_per_episode": 108,
+    "pairs": 4860,
+    "seed_bases": {"pinch_tongs": 620000, "hammer_nail": 630000, "click_mouse": 640000},
+    "selection_rule": "next three unused source-group indices after frozen FORMAL_TEST_V2 groups 20-22",
+    "performance_filtering": false
+  },
+  "scope": {
+    "teacher_runs": 2,
+    "teacher_retrains": 0,
+    "architecture_sweeps": 0,
+    "policy_training": false,
+    "pi05_training": false,
+    "track_a_results_for_configuration": false,
+    "historical_teacher_mutation": false,
+    "paper_core_write": false
+  }
+}

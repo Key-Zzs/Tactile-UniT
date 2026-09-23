@@ -1,0 +1,13 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-evaluation.v1",
+  "status": "FROZEN_BEFORE_CONFIRMATION_PERFORMANCE_ACCESS",
+  "primary_common_va": ["native_recovery", "independent_retrieval", "action_temporal_semantics", "contact_linear_readout_from_common_va"],
+  "retrieval": {"recall_at": [1, 5, 10], "candidate_pool": "same frozen pair set", "controls": ["different_group", "same_task_wrong_time", "reversed_action"]},
+  "recovery": ["mse", "r2", "cosine"],
+  "probe": {"family": "balanced ridge or linear regression", "fit_split": "TRAIN", "same_rows_alpha_seed": true, "nonlinear_search": false},
+  "statistics": {"unit": "source_group_with_episode_windows_intact", "paired_resamples": true, "bootstrap_samples": 10000, "bootstrap_seed": 430042, "multiplicity": "Holm within registered metric family"},
+  "strata": ["overall", "task", "dynamic", "contact_boundary"],
+  "equivalence_or_noninferiority_claim": false,
+  "default_preservation_wording": "NO_DETECTED_VA_REGRESSION_WITH_LIMITED_PRECISION",
+  "policy_utility": "NOT_TESTED"
+}
