@@ -112,6 +112,10 @@ was inconclusive. All reported latent geometries had zero near-zero-variance
 fraction, but effective and source-relative ranks remained modest and the
 fresh set has only three source groups per task. Region-transition probes are
 N/A because the accepted TRAIN cache lacks the corresponding training labels.
+The `right_thumb` region also remained inactive (zero fresh positive
+transitions), so this study cannot support thumb-specific Contact claims; this
+is retained as a data-coverage limitation rather than treated as a mapping or
+model failure.
 
 New teachers remain research candidates. They were not connected to Track A,
 no pi0.5 or policy was trained, and policy utility is `NOT_TESTED`. The main
