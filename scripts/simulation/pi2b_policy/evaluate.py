@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 from typing import Any
 
 
@@ -94,19 +95,14 @@ def raw_path(model: str, training_seed: int, reset_seed: int) -> Path:
     return RAW / f"reset_seed_{reset_seed}" / model.lower() / f"train_seed_{training_seed}.json"
 
 
-def configure_runtime(model: str, training_seed: int, reset_seed: int, attempt: int):
-    from scripts.simulation import run_s4_3_pi2u_eval as runtime
-
+def attempt_paths(model: str, training_seed: int, reset_seed: int, attempt: int):
     key = job_key(model, training_seed, reset_seed)
-    runtime.ARTIFACTS = ARTIFACTS / "final_attempts" / key / f"attempt_{attempt}"
-    runtime.LOGS = LOGS / key / f"attempt_{attempt}"
-    runtime.CACHE = CACHE / key / f"attempt_{attempt}"
-    runtime.TMP = TMP / key / f"attempt_{attempt}"
-    runtime.MODELS = MODEL_ORDER
-    runtime.RUNTIME_MODES = RUNTIME_MODES
-    runtime.EPISODES = 50
-    runtime.EVALUATOR_SEED = reset_seed
-    return runtime
+    return SimpleNamespace(
+        ARTIFACTS=ARTIFACTS / "final_attempts" / key / f"attempt_{attempt}",
+        LOGS=LOGS / key / f"attempt_{attempt}",
+        CACHE=CACHE / key / f"attempt_{attempt}",
+        TMP=TMP / key / f"attempt_{attempt}",
+    )
 
 
 def contact_service(artifact: Path, socket_path: Path) -> None:
@@ -116,8 +112,55 @@ def contact_service(artifact: Path, socket_path: Path) -> None:
 
 
 def evaluate_model(model: str, training_seed: int, reset_seed: int, attempt: int, socket_path: Path, output: Path, diagnostics: Path, port: int) -> None:
-    runtime = configure_runtime(model, training_seed, reset_seed, attempt)
-    runtime.evaluate_model(model, socket_path, output, diagnostics, port)
+    """Parameterize the accepted evaluator without shared mutable module paths."""
+
+    from gr00t.simulation.s4_3_pi1 import TactileUnitMode
+    from scripts.simulation import evaluate_s4_3_pi1d_augmented as frozen
+    from scripts.simulation import run_s4_3_pi2u_eval as accepted
+
+    paths = attempt_paths(model, training_seed, reset_seed, attempt)
+    generated = paths.ARTIFACTS / f"{model.lower()}_raw_rollouts.json"
+    worker_artifacts = paths.TMP / "worker_artifacts"
+    temporary_artifact = worker_artifacts / f"pi1d_{model.lower()}_eval.json"
+    if any(path.exists() for path in (output, diagnostics, generated, worker_artifacts)):
+        raise SystemExit("refusing to overwrite evaluator attempt state")
+    frozen.MODEL_ID = model
+    frozen.MODE = TactileUnitMode(RUNTIME_MODES[model])
+    frozen.DIAGNOSTICS_JSONL = diagnostics
+    frozen.OUTPUT_ROOT = output
+    frozen.CONTACT_SOCKET = socket_path
+    frozen.EXPECTED_EPISODES = 50
+    frozen.EVALUATOR_SEED = reset_seed
+    worker_artifacts.mkdir(parents=True, exist_ok=False)
+    frozen.ARTIFACTS = worker_artifacts
+    diagnostics.parent.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(DEXJOCO / "dexjoco"))
+    from dexjoco_openpi_client import eval_dexjoco_openpi as official
+    from dexjoco_openpi_client.dexjoco_openpi_env import DexJoCoOpenPIEnv
+
+    official.DexJoCoOpenPIEnv = frozen.build_augmented_environment(DexJoCoOpenPIEnv)
+    official.inference_process = frozen.instrumented_inference_process
+    accepted.install_cross_episode_action_quarantine(official, diagnostics, model)
+    official.main(
+        config=DEXJOCO / "configs/rand_obj/pinch_tongs.yaml",
+        seed=reset_seed,
+        rand_full=False,
+        randomize_dynamics=False,
+        port=port,
+        host="127.0.0.1",
+        output=output,
+        render_mode="rgb_array",
+        replan_ratio=0.8,
+        episodes=50,
+        pad_state_dim46=False,
+        record_pressed_digits=False,
+    )
+    if not temporary_artifact.is_file():
+        raise ContractError(f"accepted evaluator did not emit {temporary_artifact}")
+    temporary_artifact.replace(generated)
+    payload = read_json(generated)
+    if payload.get("status") != "PASS" or payload.get("episodes") != 50:
+        raise ContractError("accepted evaluator integrity gate failed")
 
 
 def checkpoint_row(freeze: dict[str, Any], model: str, seed: int) -> dict[str, Any]:
@@ -125,19 +168,21 @@ def checkpoint_row(freeze: dict[str, Any], model: str, seed: int) -> dict[str, A
 
 
 def run_attempt(freeze: dict[str, Any], model: str, training_seed: int, reset_seed: int, gpu: int, port: int, attempt: int) -> dict[str, Any]:
-    runtime = configure_runtime(model, training_seed, reset_seed, attempt)
+    from scripts.simulation import run_s4_3_pi2u_eval as runtime
+
+    paths = attempt_paths(model, training_seed, reset_seed, attempt)
     key = job_key(model, training_seed, reset_seed)
     socket_path = TMP / key / f"a{attempt}.sock"
-    output = runtime.CACHE / "environment"
-    diagnostics = runtime.TMP / "inference.jsonl"
-    contact_artifact = runtime.TMP / "contact_state_service.json"
-    contact_log = runtime.LOGS / "contact.log"
-    server_log = runtime.LOGS / "server.log"
-    client_log = runtime.LOGS / "client.log"
+    output = paths.CACHE / "environment"
+    diagnostics = paths.TMP / "inference.jsonl"
+    contact_artifact = paths.TMP / "contact_state_service.json"
+    contact_log = paths.LOGS / "contact.log"
+    server_log = paths.LOGS / "server.log"
+    client_log = paths.LOGS / "client.log"
     canonical = raw_path(model, training_seed, reset_seed)
-    if canonical.exists() or runtime.ARTIFACTS.exists() or runtime.LOGS.exists() or runtime.CACHE.exists() or runtime.TMP.exists():
+    if canonical.exists() or paths.ARTIFACTS.exists() or paths.LOGS.exists() or paths.CACHE.exists() or paths.TMP.exists():
         raise RuntimeError(f"refusing to overwrite {key} attempt {attempt}")
-    for path in (runtime.ARTIFACTS, runtime.LOGS, runtime.CACHE, runtime.TMP):
+    for path in (paths.ARTIFACTS, paths.LOGS, paths.CACHE, paths.TMP):
         path.mkdir(parents=True, exist_ok=False)
     started = time.time()
     contact = policy = None
@@ -173,7 +218,7 @@ def run_attempt(freeze: dict[str, Any], model: str, training_seed: int, reset_se
         )
         if result.returncode:
             raise RuntimeError(f"evaluator exited {result.returncode}")
-        generated = runtime.ARTIFACTS / f"{model.lower()}_raw_rollouts.json"
+        generated = paths.ARTIFACTS / f"{model.lower()}_raw_rollouts.json"
         payload = read_json(generated)
         if payload.get("status") != "PASS" or len(payload.get("episode_results", [])) != 50:
             raise ContractError("frozen evaluator integrity gate failed")
@@ -268,7 +313,7 @@ def orchestrate(max_workers: int) -> None:
     required_executables = (OPENPI_PYTHON, UNIT_PYTHON, EVAL_PYTHON)
     if any(not path.is_file() for path in required_executables):
         raise SystemExit(f"required runtime executable missing: {required_executables}")
-    if not (DEXJOCO / "dexjoco/dexjoco_openpi_client/eval_dexjoco_openpi.py").is_file():
+    if not (DEXJOCO / "dexjoco/dexjoco_openpi_client/eval_dexjoco_openpi.py").is_file() or not (DEXJOCO / "configs/rand_obj/pinch_tongs.yaml").is_file():
         raise SystemExit(f"audited DexJoCo source missing: {DEXJOCO}")
     freeze = read_json(PRE_FREEZE)
     if freeze.get("status") != "PASS" or freeze.get("cohort_performance_seen") is not False:

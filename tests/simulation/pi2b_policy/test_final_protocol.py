@@ -42,3 +42,15 @@ def test_determinism_environment_matches_accepted_pi2n_contract():
         "--xla_gpu_exclude_nondeterministic_ops=true",
         "--xla_gpu_autotune_level=0",
     )
+
+
+def test_parallel_attempt_paths_are_disjoint_and_dexjoco_is_bound():
+    module = load_evaluate()
+    first = module.attempt_paths("B0", 42, 16, 1)
+    second = module.attempt_paths("B1", 42, 16, 1)
+    assert first.ARTIFACTS != second.ARTIFACTS
+    assert first.LOGS != second.LOGS
+    assert first.CACHE != second.CACHE
+    assert first.TMP != second.TMP
+    assert (module.DEXJOCO / "configs/rand_obj/pinch_tongs.yaml").is_file()
+    assert module.EVAL_PYTHON.is_file()
