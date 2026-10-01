@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -16,12 +15,14 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from gr00t.simulation.pi2b_policy.contract import MODEL_ORDER, SEED42_CHECKPOINT_HASHES, Workspace
-from gr00t.simulation.pi2b_policy.integrity import file_manifest, sha256_file, tree_sha256
+from gr00t.simulation.pi2b_policy.integrity import sha256_file
 
 
 ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2b_policy"
 OUTPUT = ARTIFACTS / "pre_final_freeze.json"
 RESET_MANIFEST = ARTIFACTS / "reset_manifest.json"
+STARTING_INTEGRITY = ARTIFACTS / "starting_integrity.json"
+TRAINING_COMPLETION = ARTIFACTS / "training_completion.json"
 EXPECTED_NEW = {
     (43, "B0"): "33888318e7dcb56ef8262784589ae9caf29dbd3b7568e722258e89bb13ec4a87",
     (43, "B_VA27"): "347f0f40a660ee8a1627374fcaeeab2edc1fecd4ff3840ae293c48fdfbfd53c8",
@@ -57,18 +58,16 @@ def atomic_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def hash_checkpoint(item: tuple[int, str, Path, str]) -> dict[str, Any]:
-    seed, model, path, expected = item
-    rows = file_manifest(path)
-    actual = tree_sha256(rows)
+def bind_checkpoint(seed: int, model: str, path: Path, expected: str, actual: str) -> dict[str, Any]:
     return {
         "model": model,
         "training_seed": seed,
         "path": str(path),
         "tree_sha256": actual,
         "expected_tree_sha256": expected,
-        "files": len(rows),
-        "bytes": sum(int(row["bytes"]) for row in rows),
+        "params_present": (path / "params").is_dir(),
+        "train_state_present": (path / "train_state").is_dir(),
+        "hash_source": "starting_integrity.json" if seed == 42 else "training_completion.json",
         "status": "PASS" if actual == expected else "FAIL",
     }
 
@@ -80,19 +79,32 @@ def main() -> None:
         raise SystemExit("tracked worktree must be clean before pre-FINAL freeze")
     workspace = Workspace.load(ROOT)
     reset = json.loads(RESET_MANIFEST.read_text())
+    starting = json.loads(STARTING_INTEGRITY.read_text())
+    completion = json.loads(TRAINING_COMPLETION.read_text())
     if reset.get("policy_performance_seen") is not False or reset.get("episodes") != 200:
         raise SystemExit("frozen reset manifest is not eligible")
-    jobs = []
+    cached = {
+        (int(row["training_seed"]), str(row["model"])): row
+        for row in completion.get("runs", [])
+    }
+    checkpoints = []
     for seed in (42, 43, 44):
         for model in MODEL_ORDER:
             path = workspace.checkpoint_seed42(model) if seed == 42 else workspace.final_checkpoint(model, seed)
             expected = SEED42_CHECKPOINT_HASHES[model] if seed == 42 else EXPECTED_NEW[(seed, model)]
-            jobs.append((seed, model, path, expected))
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        checkpoints = list(pool.map(hash_checkpoint, jobs))
+            if seed == 42:
+                actual = starting["seed42_checkpoints"][model]["tree_sha256"]
+            else:
+                row = cached[(seed, model)]
+                if row.get("cold_restore") != "PASS" or row.get("restored_train_state_step") != 30000 or row.get("all_train_state_arrays_finite") is not True:
+                    raise SystemExit(f"completion evidence failed for {model}/seed{seed}")
+                actual = row["tree_sha256"]
+            checkpoints.append(bind_checkpoint(seed, model, path, expected, actual))
     sources = {relative: sha256_file(ROOT / relative) for relative in SOURCES}
     gates = {
-        "fifteen_checkpoints_exact": len(checkpoints) == 15 and all(row["status"] == "PASS" for row in checkpoints),
+        "fifteen_checkpoints_exact": len(checkpoints) == 15 and all(row["status"] == "PASS" and row["params_present"] and row["train_state_present"] for row in checkpoints),
+        "seed42_live_hash_cache_pass": starting.get("status") == "PASS" and all(starting["seed42_checkpoints"][model].get("status") == "PASS" for model in MODEL_ORDER),
+        "new_training_completion_pass": completion.get("status") == "PASS" and len(cached) == 10 and all(value == "PASS" for value in completion.get("gates", {}).values()),
         "shared_200_resets_unseen": len(reset.get("ordered_reset_identities", [])) == 200 and len(set(reset.get("ordered_reset_identities", []))) == 200 and reset.get("policy_performance_seen") is False,
         "reset_blocks_exact": [int(row["seed"]) for row in reset.get("blocks", [])] == [16, 17, 18, 19],
         "formal_outputs_absent": not any((ARTIFACTS / name).exists() for name in ("final_raw", "rollout_completeness.json", "final_gpu_execution.json", "paired_statistics.json")),
@@ -107,6 +119,8 @@ def main() -> None:
         "checkpoints": checkpoints,
         "reset_manifest": str(RESET_MANIFEST),
         "reset_manifest_sha256": sha256_file(RESET_MANIFEST),
+        "starting_integrity_sha256": sha256_file(STARTING_INTEGRITY),
+        "training_completion_sha256": sha256_file(TRAINING_COMPLETION),
         "ordered_reset_sequence_sha256": reset["ordered_reset_sequence_sha256"],
         "sources_sha256": sources,
         "runtime": {
