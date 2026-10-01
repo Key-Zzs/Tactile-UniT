@@ -110,7 +110,7 @@ def main() -> None:
         "new_training_completion_pass": completion.get("status") == "PASS" and len(cached) == 10 and all(value == "PASS" for value in completion.get("gates", {}).values()),
         "shared_200_resets_unseen": len(reset.get("ordered_reset_identities", [])) == 200 and len(set(reset.get("ordered_reset_identities", []))) == 200 and reset.get("policy_performance_seen") is False,
         "reset_blocks_exact": [int(row["seed"]) for row in reset.get("blocks", [])] == [16, 17, 18, 19],
-        "formal_outputs_absent": not any((ARTIFACTS / name).exists() for name in ("final_raw", "rollout_completeness.json", "final_gpu_execution.json", "paired_statistics.json")),
+        "formal_outputs_absent": not any((ARTIFACTS / name).exists() for name in ("attempts", "final_raw", "final_progress.json", "rollout_completeness.json", "final_gpu_execution.json", "paired_statistics.json")),
     }
     payload = {
         "schema": "tactile3d-unit.s4-3-pi2b-policy-pre-final.v1",

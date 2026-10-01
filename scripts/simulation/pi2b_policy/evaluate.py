@@ -43,7 +43,7 @@ TMP = Path("/tmp/pi2ba_final")
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 OPENPI_PYTHON = CONDA_ROOT / "envs/openpi/bin/python"
 UNIT_PYTHON = CONDA_ROOT / "envs/unit/bin/python"
-EVAL_PYTHON = ROOT / ".local/external/s4_3_pi0/eval-venv/bin/python"
+EVAL_PYTHON = Workspace.load(ROOT).main_root / ".local/external/s4_3_pi0/eval-venv/bin/python"
 TRAINING_SEEDS = (42, 43, 44)
 RESET_SEEDS = (16, 17, 18, 19)
 RUNTIME_MODES = {
@@ -265,6 +265,11 @@ def update_coordination(workspace: Workspace, status: str, **extra: Any) -> None
 
 def orchestrate(max_workers: int) -> None:
     workspace = Workspace.load(ROOT)
+    required_executables = (OPENPI_PYTHON, UNIT_PYTHON, EVAL_PYTHON)
+    if any(not path.is_file() for path in required_executables):
+        raise SystemExit(f"required runtime executable missing: {required_executables}")
+    if not (DEXJOCO / "dexjoco/dexjoco_openpi_client/eval_dexjoco_openpi.py").is_file():
+        raise SystemExit(f"audited DexJoCo source missing: {DEXJOCO}")
     freeze = read_json(PRE_FREEZE)
     if freeze.get("status") != "PASS" or freeze.get("cohort_performance_seen") is not False:
         raise SystemExit("pre-FINAL freeze is not eligible")
