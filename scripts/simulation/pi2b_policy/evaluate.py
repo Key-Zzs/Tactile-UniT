@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -38,6 +39,7 @@ RAW = ARTIFACTS / "final_raw"
 EXECUTION = ARTIFACTS / "final_gpu_execution.json"
 COMPLETENESS = ARTIFACTS / "rollout_completeness.json"
 PROGRESS = ARTIFACTS / "final_progress.json"
+AMENDMENT = ARTIFACTS / "runtime_amendment_cross_device_publish.json"
 LOGS = ROOT / ".local/logs/simulation/s4_3_pi2b_policy/final"
 CACHE = ROOT / ".local/cache/simulation/s4_3_pi2b_policy/final"
 TMP = Path("/tmp/pi2ba_final")
@@ -79,8 +81,60 @@ def now() -> str:
 def atomic_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    temporary.replace(path)
+    with temporary.open("w", encoding="utf-8") as output:
+        output.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        output.flush()
+        os.fsync(output.fileno())
+    os.replace(temporary, path)
+    directory_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def publish_file(source: Path, destination: Path) -> dict[str, Any]:
+    """Durably publish a file across mounts without moving the source.
+
+    The copy is written and fsynced inside the destination directory, then
+    renamed atomically on that same filesystem.  Keeping the source preserves
+    the first-complete-attempt evidence required by the retry contract.
+    """
+
+    if not source.is_file():
+        raise FileNotFoundError(source)
+    if destination.exists():
+        raise FileExistsError(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(f".{destination.name}.publish-{os.getpid()}.tmp")
+    if temporary.exists():
+        raise FileExistsError(temporary)
+    source_sha = sha256_file(source)
+    try:
+        with source.open("rb") as input_file, temporary.open("xb") as output_file:
+            shutil.copyfileobj(input_file, output_file, length=8 * 1024 * 1024)
+            output_file.flush()
+            os.fsync(output_file.fileno())
+        copied_sha = sha256_file(temporary)
+        if copied_sha != source_sha or temporary.stat().st_size != source.stat().st_size:
+            raise RuntimeError("cross-filesystem publish copy verification failed")
+        os.replace(temporary, destination)
+        directory_fd = os.open(destination.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    return {
+        "source": str(source),
+        "destination": str(destination),
+        "bytes": destination.stat().st_size,
+        "sha256": source_sha,
+        "source_preserved": source.is_file(),
+        "destination_fsynced_before_atomic_rename": True,
+    }
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -157,7 +211,7 @@ def evaluate_model(model: str, training_seed: int, reset_seed: int, attempt: int
     )
     if not temporary_artifact.is_file():
         raise ContractError(f"accepted evaluator did not emit {temporary_artifact}")
-    temporary_artifact.replace(generated)
+    publish_file(temporary_artifact, generated)
     payload = read_json(generated)
     if payload.get("status") != "PASS" or payload.get("episodes") != 50:
         raise ContractError("accepted evaluator integrity gate failed")
@@ -308,7 +362,41 @@ def update_coordination(workspace: Workspace, status: str, **extra: Any) -> None
         atomic_json(paths["request"], {"schema": "tactile3d-unit.pi2b-coordination-policy-request.v1", "track": "policy", "kind": "FORMAL_EVALUATION", "runtime_barrier": "exclusive", "status": status, "updated_at_utc": now(), **extra})
 
 
-def orchestrate(max_workers: int) -> None:
+def validate_amendment(freeze: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if not AMENDMENT.is_file():
+        raise SystemExit("resume amendment is missing")
+    amendment = read_json(AMENDMENT)
+    if amendment.get("status") != "PASS" or amendment.get("performance_seen") is not False:
+        raise SystemExit("resume amendment is not eligible")
+    if amendment.get("pre_final_freeze_sha256") != sha256_file(PRE_FREEZE):
+        raise SystemExit("resume amendment does not bind the current pre-FINAL freeze")
+    current_source = sha256_file(Path(__file__).resolve())
+    if amendment.get("amended_evaluate_sha256") != current_source:
+        raise SystemExit("amended evaluator source drifted")
+    recovery_script = ROOT / "scripts/simulation/pi2b_policy/recover_cross_device_publish.py"
+    if amendment.get("recovery_script_sha256") != sha256_file(recovery_script):
+        raise SystemExit("recovery script drifted")
+    unchanged = {
+        relative: expected
+        for relative, expected in freeze["sources_sha256"].items()
+        if relative != "scripts/simulation/pi2b_policy/evaluate.py"
+    }
+    if any(sha256_file(ROOT / relative) != expected for relative, expected in unchanged.items()):
+        raise SystemExit("a non-amended frozen source drifted")
+    workers = amendment.get("recovered_workers", [])
+    expected_jobs = {(str(row["model"]), int(row["training_seed"]), int(row["reset_seed"])) for row in workers}
+    if len(workers) != 3 or expected_jobs != {
+        ("B0", 42, 16), ("B_VA27", 42, 16), ("B1", 42, 16)
+    }:
+        raise SystemExit("resume amendment recovered-job set is not exact")
+    for row in workers:
+        path = raw_path(str(row["model"]), int(row["training_seed"]), int(row["reset_seed"]))
+        if not path.is_file() or sha256_file(path) != row["raw_sha256"]:
+            raise SystemExit(f"recovered canonical raw drifted: {path}")
+    return amendment, workers
+
+
+def orchestrate(max_workers: int, *, resume_amendment: bool = False) -> None:
     workspace = Workspace.load(ROOT)
     required_executables = (OPENPI_PYTHON, UNIT_PYTHON, EVAL_PYTHON)
     if any(not path.is_file() for path in required_executables):
@@ -318,9 +406,16 @@ def orchestrate(max_workers: int) -> None:
     freeze = read_json(PRE_FREEZE)
     if freeze.get("status") != "PASS" or freeze.get("cohort_performance_seen") is not False:
         raise SystemExit("pre-FINAL freeze is not eligible")
-    if any(path.exists() for path in (RAW, EXECUTION, COMPLETENESS, PROGRESS, LOGS, CACHE, TMP)):
+    protected = (RAW, EXECUTION, COMPLETENESS, PROGRESS, LOGS, CACHE, TMP)
+    if not resume_amendment and any(path.exists() for path in protected):
         raise SystemExit("refusing to overwrite or resume canonical FINAL state")
-    if any(sha256_file(ROOT / relative) != expected for relative, expected in freeze["sources_sha256"].items()):
+    workers: list[dict[str, Any]] = []
+    amendment = None
+    if resume_amendment:
+        if any(path.exists() for path in (EXECUTION, COMPLETENESS, PROGRESS)):
+            raise SystemExit("resume refuses final/progress outputs")
+        amendment, workers = validate_amendment(freeze)
+    elif any(sha256_file(ROOT / relative) != expected for relative, expected in freeze["sources_sha256"].items()):
         raise SystemExit("frozen source drifted")
     if any(sha256_file(Path(path)) != expected for path, expected in freeze["external_sources_sha256"].items()):
         raise SystemExit("frozen external source drifted")
@@ -329,7 +424,6 @@ def orchestrate(max_workers: int) -> None:
     paths = coordination_paths(workspace)
     barrier = open_lock(paths["runtime_barrier"], shared=False, nonblocking=False)
     gpu_locks = []
-    workers = []
     started = time.time()
     try:
         update_coordination(workspace, "EVAL_SELECTING_GPU", supervisor_pid=os.getpid())
@@ -352,9 +446,17 @@ def orchestrate(max_workers: int) -> None:
         if not all(gpu_is_idle(index, snap3) for index in selected):
             raise RuntimeError("selected GPU became busy after locking")
         for path in (RAW, LOGS, CACHE, TMP):
-            path.mkdir(parents=True, exist_ok=False)
-        update_coordination(workspace, "EVAL_RUNNING", supervisor_pid=os.getpid(), gpus=selected, total_blocks=60, total_rollouts=3000)
-        pending = list(enumerate(JOBS))
+            path.mkdir(parents=True, exist_ok=resume_amendment)
+        update_coordination(workspace, "EVAL_RUNNING", supervisor_pid=os.getpid(), gpus=selected, total_blocks=60, total_rollouts=3000, recovered_blocks=len(workers), infrastructure_amendment=resume_amendment)
+        completed_jobs = {
+            (str(row["model"]), int(row["training_seed"]), int(row["reset_seed"]))
+            for row in workers
+        }
+        pending = [
+            (index, job) for index, job in enumerate(JOBS) if job not in completed_jobs
+        ]
+        recovered_count = len(workers)
+        atomic_json(PROGRESS, {"schema": "tactile3d-unit.s4-3-pi2b-policy-progress.v1", "status": "RUNNING", "updated_at_utc": now(), "completed_blocks": recovered_count, "total_blocks": 60, "completed_rollouts": recovered_count * 50, "total_rollouts": 3000, "elapsed_seconds": 0.0, "rollouts_per_hour": None, "eta_seconds": None, "gpus": selected, "performance_values_read": False, "recovered_first_complete_blocks": recovered_count})
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(selected)) as pool:
             active: dict[concurrent.futures.Future, tuple[int, tuple[str, int, int], int]] = {}
             while pending or active:
@@ -370,7 +472,8 @@ def orchestrate(max_workers: int) -> None:
                     workers.append(future.result())
                     elapsed = time.time() - started
                     completed = len(workers)
-                    atomic_json(PROGRESS, {"schema": "tactile3d-unit.s4-3-pi2b-policy-progress.v1", "status": "RUNNING", "updated_at_utc": now(), "completed_blocks": completed, "total_blocks": 60, "completed_rollouts": completed * 50, "total_rollouts": 3000, "elapsed_seconds": elapsed, "rollouts_per_hour": completed * 50 / elapsed * 3600, "eta_seconds": elapsed / completed * (60 - completed), "gpus": selected, "performance_values_read": False})
+                    new_completed = completed - recovered_count
+                    atomic_json(PROGRESS, {"schema": "tactile3d-unit.s4-3-pi2b-policy-progress.v1", "status": "RUNNING", "updated_at_utc": now(), "completed_blocks": completed, "total_blocks": 60, "completed_rollouts": completed * 50, "total_rollouts": 3000, "elapsed_seconds": elapsed, "rollouts_per_hour": new_completed * 50 / elapsed * 3600, "eta_seconds": elapsed / new_completed * (60 - completed), "gpus": selected, "performance_values_read": False, "recovered_first_complete_blocks": recovered_count})
         completeness = audit_completeness(workers)
         atomic_json(COMPLETENESS, completeness)
         atomic_json(EXECUTION, {"schema": "tactile3d-unit.s4-3-pi2b-policy-final-execution.v1", "status": completeness["status"], "created_at_utc": now(), "workers": workers, "gpu_snapshots": [snap1, snap2, snap3, gpu_snapshot()], "exclusive_barrier_held_for_full_wave": True, "performance_interpreted_during_execution": False})
@@ -404,6 +507,7 @@ def parse_args() -> argparse.Namespace:
     evaluate.add_argument("--port", type=int, required=True)
     launch = sub.add_parser("orchestrate")
     launch.add_argument("--max-workers", type=int, choices=(1, 2, 3, 4), default=4)
+    launch.add_argument("--resume-amendment", action="store_true")
     return parser.parse_args()
 
 
@@ -414,7 +518,7 @@ def main() -> None:
     elif args.command == "evaluate-model":
         evaluate_model(args.model, args.training_seed, args.reset_seed, args.attempt, args.contact_socket, args.output, args.diagnostics, args.port)
     else:
-        orchestrate(args.max_workers)
+        orchestrate(args.max_workers, resume_amendment=args.resume_amendment)
 
 
 if __name__ == "__main__":

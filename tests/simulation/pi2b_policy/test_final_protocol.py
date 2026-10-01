@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -54,3 +55,22 @@ def test_parallel_attempt_paths_are_disjoint_and_dexjoco_is_bound():
     assert first.TMP != second.TMP
     assert (module.DEXJOCO / "configs/rand_obj/pinch_tongs.yaml").is_file()
     assert module.EVAL_PYTHON.is_file()
+
+
+def test_publish_file_preserves_source_and_refuses_overwrite():
+    module = load_evaluate()
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        source = root / "source.json"
+        destination = root / "nas" / "artifact.json"
+        source.write_bytes(b'{"status":"PASS"}\n')
+        record = module.publish_file(source, destination)
+        assert source.read_bytes() == destination.read_bytes()
+        assert record["source_preserved"] is True
+        assert record["destination_fsynced_before_atomic_rename"] is True
+        try:
+            module.publish_file(source, destination)
+        except FileExistsError:
+            pass
+        else:
+            raise AssertionError("publish_file overwrote an existing destination")
