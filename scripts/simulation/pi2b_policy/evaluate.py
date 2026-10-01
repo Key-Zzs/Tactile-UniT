@@ -98,7 +98,7 @@ def configure_runtime(model: str, training_seed: int, reset_seed: int, attempt: 
     from scripts.simulation import run_s4_3_pi2u_eval as runtime
 
     key = job_key(model, training_seed, reset_seed)
-    runtime.ARTIFACTS = ARTIFACTS / "attempts" / key / f"attempt_{attempt}"
+    runtime.ARTIFACTS = ARTIFACTS / "final_attempts" / key / f"attempt_{attempt}"
     runtime.LOGS = LOGS / key / f"attempt_{attempt}"
     runtime.CACHE = CACHE / key / f"attempt_{attempt}"
     runtime.TMP = TMP / key / f"attempt_{attempt}"
