@@ -18,8 +18,6 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
-DEXJOCO = ROOT / "third_party/dexjoco"
-
 from gr00t.simulation.pi2b_policy.contract import MODEL_ORDER, Workspace
 from gr00t.simulation.pi2b_policy.coordination import (
     coordination_paths,
@@ -66,6 +64,7 @@ JOBS = tuple(
     for training_seed in TRAINING_SEEDS
     for model in MODEL_ORDER
 )
+DEXJOCO = Workspace.load(ROOT).main_root / "third_party/dexjoco"
 
 
 class ContractError(RuntimeError):
@@ -273,6 +272,8 @@ def orchestrate(max_workers: int) -> None:
         raise SystemExit("refusing to overwrite or resume canonical FINAL state")
     if any(sha256_file(ROOT / relative) != expected for relative, expected in freeze["sources_sha256"].items()):
         raise SystemExit("frozen source drifted")
+    if any(sha256_file(Path(path)) != expected for path, expected in freeze["external_sources_sha256"].items()):
+        raise SystemExit("frozen external source drifted")
     if teacher_has_pending_request(workspace):
         raise SystemExit("teacher has a pending heavy request")
     paths = coordination_paths(workspace)

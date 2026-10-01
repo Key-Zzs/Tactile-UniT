@@ -48,7 +48,6 @@ SOURCES = (
     "gr00t/simulation/pi05_tactile_unit.py",
     "gr00t/simulation/s4_3_pi1.py",
     "configs/simulation/pi2b_policy/statistics.json",
-    "third_party/dexjoco/configs/rand_obj/pinch_tongs.yaml",
 )
 
 
@@ -101,6 +100,10 @@ def main() -> None:
                 actual = row["tree_sha256"]
             checkpoints.append(bind_checkpoint(seed, model, path, expected, actual))
     sources = {relative: sha256_file(ROOT / relative) for relative in SOURCES}
+    external_sources = {
+        str(workspace.main_root / "third_party/dexjoco/configs/rand_obj/pinch_tongs.yaml"):
+        sha256_file(workspace.main_root / "third_party/dexjoco/configs/rand_obj/pinch_tongs.yaml")
+    }
     gates = {
         "fifteen_checkpoints_exact": len(checkpoints) == 15 and all(row["status"] == "PASS" and row["params_present"] and row["train_state_present"] for row in checkpoints),
         "seed42_live_hash_cache_pass": starting.get("status") == "PASS" and all(starting["seed42_checkpoints"][model].get("status") == "PASS" for model in MODEL_ORDER),
@@ -123,6 +126,7 @@ def main() -> None:
         "training_completion_sha256": sha256_file(TRAINING_COMPLETION),
         "ordered_reset_sequence_sha256": reset["ordered_reset_sequence_sha256"],
         "sources_sha256": sources,
+        "external_sources_sha256": external_sources,
         "runtime": {
             "official_async_dexjoco_openpi": True,
             "replan_ratio": 0.8,
