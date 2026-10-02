@@ -46,7 +46,7 @@ TMP = Path("/tmp/pi2ba_final")
 CONDA_ROOT = Path(sys.executable).resolve().parents[3]
 OPENPI_PYTHON = CONDA_ROOT / "envs/openpi/bin/python"
 UNIT_PYTHON = CONDA_ROOT / "envs/unit/bin/python"
-EVAL_PYTHON = Workspace.load(ROOT).main_root / ".local/external/s4_3_pi0/eval-venv/bin/python"
+EVAL_PYTHON = Workspace.load_readonly(ROOT).main_root / ".local/external/s4_3_pi0/eval-venv/bin/python"
 TRAINING_SEEDS = (42, 43, 44)
 RESET_SEEDS = (16, 17, 18, 19)
 RUNTIME_MODES = {
@@ -67,7 +67,7 @@ JOBS = tuple(
     for training_seed in TRAINING_SEEDS
     for model in MODEL_ORDER
 )
-DEXJOCO = Workspace.load(ROOT).main_root / "third_party/dexjoco"
+DEXJOCO = Workspace.load_readonly(ROOT).main_root / "third_party/dexjoco"
 
 
 class ContractError(RuntimeError):

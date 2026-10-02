@@ -18,6 +18,8 @@ MODEL_ORDER = ("B0", "B_VA27", "B1", "B_HVA", "B2")
 NEW_SEEDS = (43, 44)
 BASE_SHA = "8f39aed123adf0a8b7241e75472e678355444e5e"
 EXPECTED_BRANCH = "develop/pi2b-policy"
+INTEGRATED_BRANCH = "develop/sim-benchmark"
+TRACK_A_FINAL_SHA = "ac750461e19ec6f287bbe4ee28dcb751dd268485"
 
 
 @dataclass(frozen=True)
@@ -77,6 +79,7 @@ class Workspace:
     nas_experiment_root: Path
     write_root: Path
     coordination_contract: Path
+    access_mode: str = "FROZEN_TRACK_RUNTIME"
 
     @classmethod
     def load(cls, root: Path | None = None) -> "Workspace":
@@ -117,6 +120,60 @@ class Workspace:
         teacher_name = "s4_3_pi2b_teacher"
         if teacher_name in workspace.write_root.parts:
             raise RuntimeError("policy write root resolves into Track B")
+        return workspace
+
+    @classmethod
+    def load_readonly(cls, root: Path | None = None) -> "Workspace":
+        """Resolve integrated evidence without enabling a historical runtime.
+
+        The frozen Track-A entry points continue to use :meth:`load`, which
+        requires the original ignored worktree contract and source branch.
+        Evidence integration instead derives only stable main/NAS paths after
+        proving that the exact Track-A final commit is an ancestor.  This keeps
+        imports and offline audits independent of the source worktree without
+        making training or formal evaluation runnable from the integrated
+        branch.
+        """
+
+        root = (root or repository_root()).resolve()
+        config_path = root / ".local/config/pi2b_workspace.json"
+        if config_path.is_file():
+            return cls.load(root)
+        branch = subprocess.check_output(
+            ["git", "branch", "--show-current"], cwd=root, text=True
+        ).strip()
+        if branch != INTEGRATED_BRANCH:
+            raise RuntimeError(
+                f"read-only integration requires {INTEGRATED_BRANCH}: {branch}"
+            )
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", TRACK_A_FINAL_SHA, "HEAD"],
+            cwd=root,
+            check=False,
+        )
+        if ancestor.returncode:
+            raise RuntimeError("Track-A final commit is not an ancestor of integrated HEAD")
+        nas_experiment_root = (root / ".local/experiments").resolve(strict=True)
+        common_git_dir = Path(
+            subprocess.check_output(
+                ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                cwd=root,
+                text=True,
+            ).strip()
+        ).resolve()
+        workspace = cls(
+            root=root,
+            main_root=root,
+            common_git_dir=common_git_dir,
+            nas_experiment_root=nas_experiment_root,
+            write_root=(nas_experiment_root / "simulation/s4_3_pi2b_policy").resolve(),
+            coordination_contract=(
+                common_git_dir / "pi2b_coordination/coordination_contract.json"
+            ).resolve(),
+            access_mode="INTEGRATED_READ_ONLY",
+        )
+        if not workspace.coordination_contract.is_file():
+            raise RuntimeError("PI2B coordination contract is unavailable")
         return workspace
 
     @property

@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from gr00t.simulation.pi2b_policy.contract import MODEL_ORDER, NEW_SEEDS, RECIPES
+import pytest
+
+from gr00t.simulation.pi2b_policy.contract import MODEL_ORDER, NEW_SEEDS, RECIPES, Workspace
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -34,3 +36,13 @@ def test_public_protocol_authorizes_exact_counts():
     assert protocol["formal_rollouts"] == 3000
     assert len(protocol["static_run_order"]) == 10
     assert protocol["isolation"]["read_new_teacher_weights"] is False
+
+
+def test_integrated_resolver_is_read_only_and_source_runtime_stays_closed():
+    workspace = Workspace.load_readonly(ROOT)
+    assert workspace.root == ROOT
+    assert workspace.main_root == ROOT
+    assert workspace.access_mode == "INTEGRATED_READ_ONLY"
+    assert workspace.write_root.name == "s4_3_pi2b_policy"
+    with pytest.raises(FileNotFoundError):
+        Workspace.load(ROOT)

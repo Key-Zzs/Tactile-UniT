@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_five_model_configs_keep_batch_steps_seed_and_mode():
-    workspace = Workspace.load(ROOT)
+    workspace = Workspace.load_readonly(ROOT)
+    assert workspace.access_mode == "INTEGRATED_READ_ONLY"
     summaries = {}
     for model_id in MODEL_ORDER:
         config = build_config(workspace, model_id, 43, fsdp_devices=1)
@@ -38,7 +39,7 @@ def test_five_model_configs_keep_batch_steps_seed_and_mode():
 
 
 def test_canonical_config_rejects_extra_seed_or_changed_steps():
-    workspace = Workspace.load(ROOT)
+    workspace = Workspace.load_readonly(ROOT)
     with pytest.raises(ValueError):
         build_config(workspace, "B0", 45, fsdp_devices=1)
     with pytest.raises(ValueError):
@@ -48,7 +49,7 @@ def test_canonical_config_rejects_extra_seed_or_changed_steps():
 
 
 def test_sidecar_indices_masks_and_no_h_va_fields():
-    workspace = Workspace.load(ROOT)
+    workspace = Workspace.load_readonly(ROOT)
     with np.load(workspace.contact_sidecar, allow_pickle=False) as contact, np.load(
         workspace.va27_sidecar, allow_pickle=False
     ) as va:
