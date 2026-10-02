@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 
+from gr00t.simulation.pi2b_policy.analysis import (
+    direction_label,
+    exact_sign_flip_p,
+    summarize_seed_deltas,
+)
 from gr00t.simulation.pi2b_policy.statistics import (
     conditional_reset_bootstrap,
     discordant_table,
@@ -49,3 +54,26 @@ def test_two_way_uses_crossed_shared_indices():
     result = two_way_bootstrap(first, second, repetitions=500, seed=7, chunk_size=100)
     assert result["estimate"] == 4 / 6
     assert result["unit"] == "shared training-seed index crossed with shared reset index"
+
+
+def test_exact_sign_flip_exposes_three_seed_resolution_limit():
+    assert exact_sign_flip_p([0.1, 0.2, 0.3]) == 0.25
+    assert exact_sign_flip_p([0.1, -0.1, 0.0]) == 1.0
+    summary = summarize_seed_deltas([0.1, 0.2, 0.3])
+    assert summary["mean"] == 0.20000000000000004
+    assert summary["sample_sd"] == 0.09999999999999999
+    assert summary["range"] == [0.1, 0.3]
+
+
+def test_direction_labels_require_same_sign_and_interval_support():
+    kwargs = {
+        "positive": "POSITIVE",
+        "negative": "NEGATIVE",
+        "mixed": "MIXED",
+        "inconclusive": "INCONCLUSIVE",
+    }
+    assert direction_label([0.1, 0.2, 0.3], [0.02, 0.25], **kwargs) == "POSITIVE"
+    assert direction_label([-0.1, -0.2, -0.3], [-0.25, -0.02], **kwargs) == "NEGATIVE"
+    assert direction_label([0.1, -0.2, 0.3], [-0.2, 0.2], **kwargs) == "MIXED"
+    assert direction_label([0.1, 0.2, 0.3], [-0.01, 0.25], **kwargs) == "INCONCLUSIVE"
+    assert direction_label([0.0, 0.0, 0.0], [0.0, 0.0], **kwargs) == "INCONCLUSIVE"
