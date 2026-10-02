@@ -1,0 +1,55 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-policy-final-decision.v1",
+  "status": "COMPLETE_VALID",
+  "engineering_status": "COMPLETE_VALID",
+  "training_seed_scope": "THREE_SEEDS_LIMITED",
+  "decision_axes": {
+    "H_GIVEN_VA27": "MIXED",
+    "VAC_C_VS_VA_TARGET": "MIXED",
+    "VAC_C_VS_H_ONLY": "MIXED"
+  },
+  "primary_effects_percentage_points": {
+    "B_HVA-B_VA27": {
+      "per_seed_42_43_44": [13.0, -48.0, -18.0],
+      "mean": -17.666666666666668,
+      "conditional_shared_reset_95ci": [-23.0, -12.333333333333334],
+      "two_way_seed_by_reset_95ci": [-46.5, 11.0]
+    },
+    "B2-B_HVA": {
+      "per_seed_42_43_44": [-18.5, 6.5, 9.0],
+      "mean": -1.0,
+      "conditional_shared_reset_95ci": [-5.166666666666667, 3.3333333333333335],
+      "two_way_seed_by_reset_95ci": [-17.0, 11.833333333333334]
+    }
+  },
+  "full_recipes_vs_b0_percentage_points": {
+    "B_HVA-B0": {
+      "per_seed_42_43_44": [17.5, -40.5, -10.0],
+      "mean": -11.000000000000004,
+      "conditional_shared_reset_95ci": [-15.833333333333332, -6.333333333333334],
+      "two_way_seed_by_reset_95ci": [-39.0, 15.5]
+    },
+    "B2-B0": {
+      "per_seed_42_43_44": [-1.0, -34.0, -1.0],
+      "mean": -12.000000000000002,
+      "conditional_shared_reset_95ci": [-17.0, -7.000000000000001],
+      "two_way_seed_by_reset_95ci": [-32.0, 4.0]
+    }
+  },
+  "disclosures": {
+    "seed42": "previously selected and development-exposed",
+    "seeds43_44": "preregistered independent training additions",
+    "label_rule": "A directional label requires all three seed estimates to have the same strict sign and the conditional shared-reset 95% interval to exclude zero in that direction; opposite signs are MIXED.",
+    "material_10pp_reference_is_engineering_gate": false,
+    "equivalence_claimed": false,
+    "training_seed_population_significance_claimed": false,
+    "track_b_new_teacher_read": false,
+    "automatic_experiment_expansion_authorized": false
+  },
+  "authoritative_artifacts": {
+    "per_seed_statistics": ".local/artifacts/simulation/s4_3_pi2b_policy/per_seed_statistics.json",
+    "crossed_seed_reset_analysis": ".local/artifacts/simulation/s4_3_pi2b_policy/crossed_seed_reset_analysis.json",
+    "new_seeds_only_sensitivity": ".local/artifacts/simulation/s4_3_pi2b_policy/new_seeds_only_sensitivity.json",
+    "statistics_independent_audit": ".local/artifacts/simulation/s4_3_pi2b_policy/statistics_independent_audit.json"
+  }
+}
