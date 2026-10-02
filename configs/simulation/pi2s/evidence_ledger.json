@@ -1,0 +1,173 @@
+{
+  "schema": "tactile3d-unit.pi2s-evidence-ledger.v1",
+  "status": "EVIDENCE_INTEGRATED_PI2S_PLANNED",
+  "integration": {
+    "base": "8f39aed123adf0a8b7241e75472e678355444e5e",
+    "track_a_final": "ac750461e19ec6f287bbe4ee28dcb751dd268485",
+    "track_a_merge": "d78108d0cb623a109179c7e862ff8d461a2e9848",
+    "track_b_final": "d5f52a5ac63e1662820da6855c9177c2abf218e2",
+    "track_b_merge": "f0af6e14c65d2c799040701a84740d811fe05106",
+    "merge_order": [
+      "track_a",
+      "track_b"
+    ],
+    "path_overlap_count": 0,
+    "conflicts": 0,
+    "submodule_changed": false,
+    "source_refs_fetch_verified": true,
+    "integration_push_performed": false
+  },
+  "track_a": {
+    "status": "COMPLETE_VALID_THREE_SEEDS_LIMITED",
+    "task": "pinch_tongs",
+    "training_seeds": [
+      42,
+      43,
+      44
+    ],
+    "models": [
+      "B0",
+      "B_VA27",
+      "B1",
+      "B_HVA",
+      "B2"
+    ],
+    "new_30k_runs": 10,
+    "reused_seed42_checkpoints": 5,
+    "reset_blocks": [
+      16,
+      17,
+      18,
+      19
+    ],
+    "shared_resets_per_checkpoint": 200,
+    "canonical_outcomes": 3000,
+    "successes": 803,
+    "failures": 2197,
+    "ipc_timeouts": 0,
+    "success_counts": {
+      "B0": {
+        "42": 47,
+        "43": 82,
+        "44": 70
+      },
+      "B_VA27": {
+        "42": 56,
+        "43": 97,
+        "44": 86
+      },
+      "B1": {
+        "42": 22,
+        "43": 41,
+        "44": 42
+      },
+      "B_HVA": {
+        "42": 82,
+        "43": 1,
+        "44": 50
+      },
+      "B2": {
+        "42": 45,
+        "43": 14,
+        "44": 68
+      }
+    },
+    "contrast_deltas_percentage_points": {
+      "B_HVA-B_VA27": [
+        13.0,
+        -48.0,
+        -18.0
+      ],
+      "B2-B_HVA": [
+        -18.5,
+        6.5,
+        9.0
+      ],
+      "B2-B1": [
+        11.5,
+        -13.5,
+        13.0
+      ],
+      "B1-B0": [
+        -12.5,
+        -20.5,
+        -14.0
+      ]
+    },
+    "claim_axes": {
+      "H_GIVEN_VA27": "MIXED",
+      "VAC_C_VS_VA_TARGET": "MIXED",
+      "VAC_C_VS_H_ONLY": "MIXED",
+      "B1_VS_B0": "CONSISTENT_NEGATIVE_POINT_DIRECTION_NOT_UNIVERSAL"
+    },
+    "seed42_exposure": "DEVELOPMENT_EXPOSED",
+    "seed43_44_exposure": "PREREGISTERED_ADDITIONS",
+    "teacher_identity": "HISTORICAL_FROZEN_TEACHERS",
+    "track_b_teacher_used": false,
+    "limitations": [
+      "one task",
+      "three training seeds",
+      "weak outer-level uncertainty estimation",
+      "conditional reset intervals do not estimate future training-run uncertainty",
+      "no equivalence or noninferiority claim",
+      "no real-robot evidence"
+    ]
+  },
+  "track_b": {
+    "status": "VAC_CONTACT_CAPABILITY_WITH_NO_DETECTED_VA_REGRESSION_LIMITED_PRECISION",
+    "teacher_seed": 42,
+    "fresh_pairs": 4860,
+    "fresh_episodes": 45,
+    "source_groups": 9,
+    "teacher_sha256": {
+      "T_VA_match": "91ae74d970917535e199822b3fb415997d88b36342dc7178b61efcd7a746c142",
+      "T_VAC_match": "65ba855fda2175c51b23e58cd36e7889fa891da56a697ad442c3ea926951f698"
+    },
+    "findings": {
+      "contact_pairing_and_temporal_relations": "SUPPORTED_WITH_SCOPE",
+      "vision_native_recovery": "IMPROVED_IN_TESTED_SETTING",
+      "action_native_recovery": "UNFAVORABLE_POINT_ESTIMATE_NOT_HOLM_CONFIRMED",
+      "common_va_contact_probe_increment": "INCONCLUSIVE",
+      "policy_utility": "NOT_TESTED"
+    },
+    "retrieval_estimands": {
+      "pooled_candidate_count": 4860,
+      "formal_group_candidate_count": 540,
+      "classification": "MULTIPLE_DEFINED_ESTIMANDS",
+      "mechanism": "CANDIDATE_POOL_DIFFERENCE",
+      "implementation_bug": false
+    },
+    "limitations": [
+      "one teacher training seed",
+      "three fresh source groups per task",
+      "no equivalence or noninferiority margin",
+      "no policy evaluation",
+      "parameter count and compute differ",
+      "right_thumb has no fresh positive transitions"
+    ]
+  },
+  "historical_evidence": {
+    "pi2m_fixed_seed_results_preserved": true,
+    "pi2n_fixed_seed_results_preserved": true,
+    "all_positive_and_negative_results_preserved": true,
+    "fixed_seed_results_not_reinterpreted_as_multi_seed": true
+  },
+  "pi2s": {
+    "status": "PLANNED_DIAGNOSTIC",
+    "scientific_role": "POST_HOC_DEVELOPMENT_DIAGNOSIS",
+    "formal_results_will_not_be_replaced": true,
+    "policy_training_budget": 0,
+    "teacher_training_budget": 0,
+    "optimizer_update_budget": 0,
+    "maximum_development_rollouts": 120,
+    "inconclusive_is_valid_endpoint": true
+  },
+  "claim_boundaries": {
+    "new_track_b_teacher_improved_track_a_policy": "NOT_TESTED",
+    "tactile_is_universally_useless": "UNSUPPORTED",
+    "contact_target_is_universally_worse": "UNSUPPORTED",
+    "real_robot_performance": "NOT_TESTED",
+    "human_robot_transfer": "NOT_TESTED",
+    "original_unit_superiority": "UNSUPPORTED"
+  }
+}
