@@ -62,7 +62,7 @@ OUTPUTS = {
     "per_seed": ARTIFACTS / "per_seed_statistics.json",
     "crossed": ARTIFACTS / "crossed_seed_reset_analysis.json",
     "new_only": ARTIFACTS / "new_seeds_only_sensitivity.json",
-    "audit": ARTIFACTS / "statistics_independent_audit.json",
+    "audit": ARTIFACTS / "analysis_input_audit.json",
     "decision": ARTIFACTS / "final_decision.json",
 }
 
