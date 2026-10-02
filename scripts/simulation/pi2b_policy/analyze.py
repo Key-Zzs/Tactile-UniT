@@ -40,6 +40,7 @@ ARTIFACTS = ROOT / ".local/artifacts/simulation/s4_3_pi2b_policy"
 PREFINAL = ARTIFACTS / "pre_final_freeze.json"
 COMPLETENESS = ARTIFACTS / "rollout_completeness.json"
 RESET_MANIFEST = ARTIFACTS / "reset_manifest.json"
+RUNTIME_AMENDMENT = ARTIFACTS / "runtime_amendment_cross_device_publish.json"
 STATISTICS_CONFIG = ROOT / "configs/simulation/pi2b_policy/statistics.json"
 MODELS = ("B0", "B_VA27", "B1", "B_HVA", "B2")
 SEEDS = (42, 43, 44)
@@ -102,6 +103,7 @@ def load_and_validate() -> tuple[dict[str, np.ndarray], dict[tuple[str, int], li
     prefinal = read_json(PREFINAL)
     completeness = read_json(COMPLETENESS)
     reset_manifest = read_json(RESET_MANIFEST)
+    amendment = read_json(RUNTIME_AMENDMENT)
     config = read_json(STATISTICS_CONFIG)
     if prefinal.get("status") != "PASS" or completeness.get("status") != "PASS":
         raise SystemExit("formal completeness inputs are not PASS")
@@ -111,8 +113,28 @@ def load_and_validate() -> tuple[dict[str, np.ndarray], dict[tuple[str, int], li
         raise SystemExit("pre-final model/seed identity drift")
     if sha256_file(RESET_MANIFEST) != prefinal["reset_manifest_sha256"]:
         raise SystemExit("reset manifest drift")
+    amended_source = "scripts/simulation/pi2b_policy/evaluate.py"
+    amendment_gates = {
+        "status": amendment.get("status") == "PASS",
+        "scope": amendment.get("scope") == "ARTIFACT_PUBLICATION_ONLY",
+        "prefinal": amendment.get("pre_final_freeze_sha256") == sha256_file(PREFINAL),
+        "old_hash": amendment.get("original_frozen_evaluate_sha256")
+        == prefinal["sources_sha256"][amended_source],
+        "new_hash": amendment.get("amended_evaluate_sha256")
+        == sha256_file(ROOT / amended_source),
+        "performance_blind": amendment.get("performance_seen") is False,
+        "policy_semantics": amendment.get("policy_or_evaluator_semantics_changed") is False,
+        "reset_semantics": amendment.get("reset_or_sampling_semantics_changed") is False,
+        "success_rules": amendment.get("success_or_timeout_rules_changed") is False,
+        "track_b_isolated": amendment.get("track_b_new_teacher_read") is False,
+    }
+    if not all(amendment_gates.values()):
+        failed = [name for name, passed in amendment_gates.items() if not passed]
+        raise SystemExit("runtime amendment gate failure: " + ",".join(failed))
     for relative, expected in prefinal["sources_sha256"].items():
         path = ROOT / relative
+        if relative == amended_source:
+            expected = amendment["amended_evaluate_sha256"]
         if not path.is_file() or sha256_file(path) != expected:
             raise SystemExit(f"frozen source drift: {relative}")
     for absolute, expected in prefinal["external_sources_sha256"].items():
@@ -224,6 +246,8 @@ def load_and_validate() -> tuple[dict[str, np.ndarray], dict[tuple[str, int], li
         "completeness_sha256": sha256_file(COMPLETENESS),
         "reset_manifest_sha256": sha256_file(RESET_MANIFEST),
         "statistics_config_sha256": sha256_file(STATISTICS_CONFIG),
+        "runtime_amendment_sha256": sha256_file(RUNTIME_AMENDMENT),
+        "runtime_amendment_gates": amendment_gates,
         "raw_artifact_sha256": raw_hashes,
         "ordered_reset_sequence_sha256": prefinal["ordered_reset_sequence_sha256"],
         "git_head_at_analysis": git("rev-parse", "HEAD"),
