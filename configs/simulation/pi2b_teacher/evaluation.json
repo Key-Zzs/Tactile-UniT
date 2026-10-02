@@ -1,0 +1,16 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-evaluation.v1",
+  "status": "FROZEN_BEFORE_CONFIRMATION_PERFORMANCE_ACCESS",
+  "primary_common_va": ["vision_native_recovery_mse", "action_native_recovery_mse", "mean_bidirectional_va_retrieval_r10", "action_reversal_margin", "mean_common_va_contact_probe_macro_f1"],
+  "retrieval": {"recall_at": [1, 5, 10], "candidate_pool": "same frozen pair set", "controls": ["different_group", "same_task_wrong_time", "reversed_action"]},
+  "recovery": ["mse", "r2", "cosine"],
+  "probe": {"family": "StandardScaler plus balanced RidgeClassifier or Ridge regression", "alpha": 10.0, "fit_split": "TRAIN", "same_rows_alpha_seed": true, "nonlinear_search": false},
+  "statistics": {"unit": "source_group_with_episode_windows_intact", "paired_resamples": true, "bootstrap_samples": 10000, "bootstrap_seed": 430042, "multiplicity": "Holm across primary_common_va"},
+  "strata": ["overall", "task", "dynamic", "contact_boundary"],
+  "train_gap_subset": "within each task take the lexicographically first three TRAIN source groups; retain all rows",
+  "controls": {"different_group": "deterministic cyclic candidate from another source group", "same_task_wrong_time": "deterministic cyclic candidate from the same task and a different episode", "reversed_action": "reverse raw [27,22] action time, rebuild frozen A0 features, then encode P_a", "current_vision": "frozen Original UniT current/current path before P_v", "reversed_contact": "swap frozen Contact-State current/future before frozen C3 and P_c"},
+  "contact_capability_reliability": "paired similarity margin and temporal-control margin have source-group bootstrap CI lower bound greater than zero",
+  "equivalence_or_noninferiority_claim": false,
+  "default_preservation_wording": "NO_DETECTED_VA_REGRESSION_WITH_LIMITED_PRECISION",
+  "policy_utility": "NOT_TESTED"
+}

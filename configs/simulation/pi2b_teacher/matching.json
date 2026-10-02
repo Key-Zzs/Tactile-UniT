@@ -1,0 +1,19 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-matching.v1",
+  "required": [
+    "COMMON_PATH_INITIALIZATION_MATCHED",
+    "COMMON_DATA_AND_UPDATE_BUDGET_MATCHED",
+    "CONTACT_SUPERVISION_IS_TREATMENT",
+    "TOTAL_PARAMETER_AND_COMPUTE_DIFFERENT_REPORTED",
+    "FIXED_TEACHER_TRAINING_SEED_ONLY"
+  ],
+  "parity": {
+    "contact_disabled_forward": "exact",
+    "contact_disabled_va_loss": "exact",
+    "contact_disabled_common_gradients": "exact",
+    "contact_disabled_one_adamw_step": "exact",
+    "batch_pair_ids_each_step": "exact"
+  },
+  "va_forbidden_fields": ["z_c", "h_current", "h_future", "contact_transition", "force_trend"],
+  "failure_decision": "MATCHING_IMPLEMENTATION_BLOCKED"
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2b-teacher-final-decision.v1",
+  "status": "COMPLETE_VALID",
+  "scientific_decision": "VAC_CONTACT_CAPABILITY_WITH_NO_DETECTED_VA_REGRESSION_LIMITED_PRECISION",
+  "axes": {
+    "engineering_status": "PASS",
+    "matching_grade": "COMMON_PATH_INITIALIZATION_AND_DATA_UPDATE_BUDGET_MATCHED",
+    "common_va_recovery_effect": "NO_DETECTED_VA_REGRESSION_WITH_LIMITED_PRECISION",
+    "common_va_semantic_effect": "NO_DETECTED_VA_REGRESSION_WITH_LIMITED_PRECISION",
+    "contact_cross_modal_capability": "RELIABLE",
+    "contact_information_in_common_va_readouts": "NO_RELIABLE_COMMON_VA_CONTACT_READOUT_INCREMENT",
+    "noncollapse_status": "PASS"
+  },
+  "evaluation_metric_digest": "79b0679c8448c906c36ee8e5ca6a5a222e47087513c086960902dd8574df8f6d",
+  "analysis_digest": "30b7698e105313c033f05350a0ada0d41a8dcab6dc243f3463e60075ceefba56",
+  "independent_statistics_audit": "PASS",
+  "equivalence_or_noninferiority_claim": false,
+  "fixed_teacher_training_seed_only": true,
+  "policy_utility": "NOT_TESTED",
+  "track_a_integration_authorized": false,
+  "main_paper_core_modified": false,
+  "next_study": "RECOMMENDATION_ONLY",
+  "research_teacher_candidate_only": true
+}
