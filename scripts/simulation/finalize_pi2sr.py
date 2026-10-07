@@ -58,7 +58,14 @@ def read(name: str) -> dict[str, Any]:
 
 def changed_file_privacy_scan() -> dict[str, Any]:
     names = git("diff", "--name-only", "--diff-filter=ACM", f"{MAIN_BASE_SHA}...HEAD").splitlines()
-    forbidden = ("/home/", "/mnt/", "Authorization:", "Bearer ", "github_pat_", "HF_TOKEN")
+    forbidden = (
+        "/" + "home/",
+        "/" + "mnt/",
+        "Author" + "ization:",
+        "Bear" + "er ",
+        "github" + "_pat_",
+        "HF" + "_TOKEN",
+    )
     matches = []
     for name in names:
         path = ROOT / name
