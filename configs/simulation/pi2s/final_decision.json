@@ -1,0 +1,37 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2s-final-decision.v1",
+  "stage": "S4.3-PI2S",
+  "status": "COMPLETE_VALID_DIAGNOSIS_INCONCLUSIVE",
+  "scientific_role": "POST_HOC_DEVELOPMENT_DIAGNOSIS_DOES_NOT_REPLACE_TRACK_A_FORMAL_SCORES",
+  "budget": {
+    "base_development_rollouts": 72,
+    "optional_h_rollouts": 48,
+    "total_development_rollouts": 120,
+    "maximum_authorized": 120,
+    "optimizer_updates": 0,
+    "checkpoint_writes": 0,
+    "real_robot_runs": 0
+  },
+  "supported": [
+    "H conditions reach policy actions at frozen observations",
+    "cached and direct E_T outputs are bitwise equal on 64 frozen histories",
+    "the live Unix-service H path exceeds the frozen numeric parity tolerance",
+    "seed42 and Track A seeds43/44 are not source-identical cohorts",
+    "B_HVA_43 failure is coarsely after contact/lift and before native trigger"
+  ],
+  "not_supported": [
+    "a unique causal root for B_HVA_43",
+    "simple H latent-norm collapse",
+    "persistent main/aux gradient conflict as the unique cause",
+    "an exact APPROACH or STABLE_GRASP first-failure stage",
+    "a validated repair, teacher replacement, or real-robot claim"
+  ],
+  "next_action": "STOP_AUTOMATIC_POLICY_SEARCH_AND_VERSION_H_RUNTIME_CONTRACT_FIRST",
+  "further_rollout_expansion_authorized": false,
+  "automatic_training_authorized": false,
+  "teacher_replacement_authorized": false,
+  "real_robot_authorized": false,
+  "worktree_removal_authorized": false,
+  "push_or_pr_authorized": false,
+  "evidence_root": "$EXPERIMENT_ROOT/simulation/s4_3_pi2s"
+}
