@@ -1,0 +1,102 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2s-optional-h-audit-recovery-decision.v2.1",
+  "status": "AUTHORIZED_AUDIT_ONLY_CORRECTION_AFTER_V2_FALSE_POSITIVE_STOP",
+  "decision": "PRESERVE_V2_FAILURES_REAUDIT_THREE_COMPLETED_EPISODES_WITH_HASH_DOMAINS_SEPARATED_AND_RUN_ONLY_39_UNEXECUTED_TUPLES",
+  "authorization_basis": "The user authorized continued Evidence Integration + S4.3-PI2S. This correction changes only the post-episode audit; it does not change the frozen v2 policy, environment, raw-tick H runtime, reset, sampling seed, or rollout budget.",
+  "v2": {
+    "source_commit": "dfcc64670c4466185dcc7fe8233b725869ee5ec0",
+    "runner": "scripts/simulation/run_pi2s_optional_h_interventions_v2.py",
+    "runner_sha256": "afd393bb11669ccd235be3e513d058ca403c821112d095e7aafc0061f6690957",
+    "manifest": "$PI2S_ROOT/artifacts/diagnostic_rollout_optional_recovery_v2_manifest.json",
+    "manifest_sha256": "4c05fbe34d0695db8c55659c1bda3ac21298d5f49a089ae1165b3bf8c7e9e983",
+    "terminal_progress": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/progress.json",
+    "terminal_progress_sha256": "878d7bf2c58c7162c515a1c2b71291f258922aa0efc062ba66a85da92480363e",
+    "failed_resume_state": "$PI2S_ROOT/resume_state.json",
+    "failed_resume_state_sha256": "396d2b5f2f03b33155bfb7ed9f1359c308015f61173da9620e58b3080d2c1c07",
+    "failed_resume_state_snapshot": "$PI2S_ROOT/artifacts/diagnostic_rollout_optional_v2_failed_resume_state.json",
+    "supervisor_log": "$PI2S_ROOT/logs/rollouts_optional_h_v2/supervisor.log",
+    "supervisor_log_sha256": "2d7f6f74fef718e3206fdaeab8e4c73806412e63d42e415a3ff164f5c9294f93",
+    "terminal_status": "FAILED",
+    "completed_native_episodes": 3,
+    "v2_audits_marked_fail": 3,
+    "attempt_2_started": false,
+    "formal_result_published": false
+  },
+  "root_cause": {
+    "classification": "AUDIT_HASH_DOMAIN_MISMATCH_CONFIRMED",
+    "base_hash_domain": "SHA256(dtype ASCII || shape ASCII || contiguous array bytes)",
+    "v2_hash_domain": "SHA256(contiguous array bytes)",
+    "incorrect_comparison": "build_v2_audit compared base observation_events.correct_h_sha256 against v2 post_step_correct_h.sha256 as though the two domains were identical.",
+    "runtime_value_gate": "Before serialization, v2 get_obs compared the buffered post-step H and repeated same-tick H with np.array_equal and raised ContractError on any value difference.",
+    "observed_l2_result": "All 388 repeated same-tick observation/post-step pairs across the three completed episodes have exactly equal recorded float32 L2 values; all completed the in-memory np.array_equal gate.",
+    "scientific_runtime_changed": false,
+    "policy_or_checkpoint_changed": false,
+    "environment_or_task_changed": false,
+    "reset_or_sampling_changed": false,
+    "post_result_tolerance_relaxation": false,
+    "correction": "Keep hash domains separate. Validate each domain internally, require the frozen in-memory equality gate and exact continuous raw-tick sequence, and compare delivered lag H only against raw-domain buffered hashes."
+  },
+  "completed_v2_episodes_for_reaudit": [
+    {
+      "protocol_tuple_key": "b_hva_42__r11_i00__p4317__hsame_episode_lag5",
+      "v2_tuple_key": "b_hva_42__r11_i00__p4317__hsame_episode_lag5__v2",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "628be97def5921828620930ebc9ff5a46d2884299097edc6308e815baf17c9d0",
+      "original_failure": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v2_failure.json",
+      "original_failure_sha256": "a781125c6db35fce0b617daa6b147c9f7bb34aa0efa691b0fd6fa9abe6398afe",
+      "corrected_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v21.json",
+      "attempt": 1,
+      "steps": 770,
+      "success": true,
+      "canonical_only_if_corrected_audit_passes": true
+    },
+    {
+      "protocol_tuple_key": "b_hva_43__r11_i00__p4317__hsame_episode_lag5",
+      "v2_tuple_key": "b_hva_43__r11_i00__p4317__hsame_episode_lag5__v2",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "bac141e40edfe5f6c4a97eb9b13667c61f41541a66dc7f603786764a5867227f",
+      "original_failure": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v2_failure.json",
+      "original_failure_sha256": "46db6337e8ad95dfc80c4225d6b5c5dcf1ac211e33c60692241bd54b142fad89",
+      "corrected_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v21.json",
+      "attempt": 1,
+      "steps": 1000,
+      "success": false,
+      "canonical_only_if_corrected_audit_passes": true
+    },
+    {
+      "protocol_tuple_key": "b1_43__r11_i00__p4317__hsame_episode_lag5",
+      "v2_tuple_key": "b1_43__r11_i00__p4317__hsame_episode_lag5__v2",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b1_43/attempts/b1_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "deeafb64d056df1bf7b5401025fda04a24642fab7c4ac9abea9f40a759e0a2e0",
+      "original_failure": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b1_43/attempts/b1_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v2_failure.json",
+      "original_failure_sha256": "0dd254e587b021f3410de0c5e845b6072fcad491344461a75bec7d6f96745b4a",
+      "corrected_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v2/blocks/b1_43/attempts/b1_43__r11_i00__p4317__hsame_episode_lag5__v2/attempt_1/h_intervention_audit_v21.json",
+      "attempt": 1,
+      "steps": 1000,
+      "success": false,
+      "canonical_only_if_corrected_audit_passes": true
+    }
+  ],
+  "recovery_budget": {
+    "valid_v1_protocol_tuples_reused": 6,
+    "completed_v2_episodes_reaudited_without_rerun": 3,
+    "v21_unexecuted_protocol_tuples_to_run": 39,
+    "final_unique_optional_protocol_tuples": 48,
+    "final_total_s5_protocol_tuples_including_base": 120,
+    "original_v1_invalid_attempts_preserved": 3,
+    "original_v2_false_positive_audit_failures_preserved": 3,
+    "further_expansion_authorized": false
+  },
+  "guardrails": {
+    "completed_v2_episodes_may_be_rerun": false,
+    "v2_failure_files_may_be_modified_or_removed": false,
+    "v2_attempt_2_may_be_used": false,
+    "scientific_runtime_may_change": false,
+    "performance_selection": false,
+    "formal_track_a_score_replacement": false,
+    "best_intervention_deployment_selection": false,
+    "training_or_optimizer_updates": 0,
+    "checkpoint_writes": 0,
+    "real_robot_allowed": false
+  }
+}
