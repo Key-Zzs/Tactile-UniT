@@ -1,0 +1,126 @@
+{
+  "schema": "tactile3d-unit.pi2sr-runtime-contract.v2",
+  "stage": "S4.3-PI2S-R",
+  "status": "FROZEN_BEFORE_QUALIFICATION",
+  "scientific_role": "PROSPECTIVE_ENGINEERING_QUALIFICATION_NO_POLICY_EFFECT_CLAIM",
+  "historical_pi2s": {
+    "decision": "COMPLETE_VALID_DIAGNOSIS_INCONCLUSIVE",
+    "live_direct_status": "HISTORICAL_PI2S_LIVE_DIRECT_NONPARITY",
+    "max_absolute_error": 2.7418136596679688e-06,
+    "old_tolerance_result_modified": false,
+    "formal_scores_modified": false
+  },
+  "contact_encoder": {
+    "checkpoint": "$UNIT_EXPERIMENT_ROOT/simulation/s4_2r/contact_state/accepted.pt",
+    "checkpoint_sha256": "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19",
+    "normalization": "N1 embedded in accepted checkpoint",
+    "history_shape": [26, 30],
+    "history_order": "oldest_to_current",
+    "history_bootstrap": "LEFT_REPEAT_FIRST",
+    "history_reset": "reset before every episode",
+    "output_shape": [256]
+  },
+  "canonical_candidate": {
+    "runtime": "DIRECT_IN_PROCESS",
+    "device": "cpu",
+    "input_dtype": "float32",
+    "compute_dtype": "float32",
+    "output_dtype": "float32",
+    "batch_shape": [1, 26, 30],
+    "model_mode": "eval",
+    "gradients": false,
+    "inference_mode": true,
+    "autocast": false,
+    "torch_num_threads": 1,
+    "torch_num_interop_threads": 1,
+    "mkldnn": false,
+    "deterministic_algorithms": true,
+    "tf32_matmul": false,
+    "tf32_cudnn": false,
+    "float32_matmul_precision": "highest",
+    "cuda_visible_devices": "",
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+    }
+  },
+  "transport_only": {
+    "framing": "AF_UNIX SOCK_STREAM; network-order uint32 byte length then contiguous native-little-endian float32 payload",
+    "payload_shape": [256],
+    "payload_dtype": "float32",
+    "requests": 64,
+    "input_generation": "numpy Generator PCG64 seed 4327001 standard_normal cast to float32",
+    "qualification": "exact payload bytes, dtype, shape, finite values and zero NaN/Inf",
+    "classification_order": [
+      "TRANSPORT_EXACT",
+      "TRANSPORT_NUMERICALLY_STABLE_WITH_SCOPE",
+      "TRANSPORT_MISMATCH",
+      "TRANSPORT_NOT_SEPARATELY_TESTABLE"
+    ]
+  },
+  "compute_only": {
+    "source": "$UNIT_EXPERIMENT_ROOT/simulation/s4_3_pi2s/source_snapshots/data/pi1_contact_sidecar.npz",
+    "source_sha256": "833db9ddb4d37534bf38a7ed0b214fee2f000bb4e489d3fa9507b4e7bca5bd8e",
+    "sample_rows": [
+      14925,
+      25126,
+      34318,
+      18985,
+      36866,
+      23172,
+      37703,
+      14834,
+      7456,
+      8944,
+      25917,
+      29123,
+      27910,
+      420,
+      6585,
+      34247
+    ],
+    "strata_counts": {"free_space": 5, "contact": 6, "dynamic_boundary": 5},
+    "selection": "first frozen PI2S H-parity rows in each deterministic tactile stratum; no H-error or policy-outcome screening",
+    "direct_repeats": 8,
+    "service_repeats": 8,
+    "cross_path_pairs": 16,
+    "prospective_v2_tolerance_calibration": {
+      "scope": "PI2S-R matched CPU float32 batch-one runtime only",
+      "absolute": "max(1e-7, 8 * max_direct_repeat_error, 8 * max_service_repeat_error, 8 * float32_epsilon * max_abs_output)",
+      "relative": "8 * float32_epsilon",
+      "historical_reclassification_allowed": false
+    }
+  },
+  "latency": {
+    "warmup_requests": 8,
+    "measured_requests": 64,
+    "statistics": ["p50", "p95", "p99"],
+    "performance_gate": null
+  },
+  "canonical_selection_priority": [
+    "checkpoint_and_preprocessing_identity",
+    "causal_current_or_history_only_input",
+    "declared_environment_reproducibility",
+    "stable_low_complexity_api",
+    "measurable_latency",
+    "supported_scope_numeric_consistency"
+  ],
+  "action_sensitivity": {
+    "models": ["B1_seed43", "B_HVA_seed42", "B_HVA_seed43", "B2_seed43"],
+    "fixed_observation_positions": [0, 1, 2, 3, 4, 5, 6, 7],
+    "shared_policy_noise": true,
+    "conditions": ["canonical_h", "alternate_h", "historical_same_episode_lag5", "historical_zero"],
+    "rollout_success_metric": false,
+    "checkpoint_selection": false
+  },
+  "budgets": {
+    "training_updates": 0,
+    "teacher_training": 0,
+    "formal_success_rate_rollouts": 0,
+    "real_hardware_runs": 0,
+    "smoke_episodes_max": 6
+  }
+}

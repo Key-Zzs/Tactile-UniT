@@ -1,0 +1,57 @@
+{
+  "schema": "tactile3d-unit.pi2sr-provenance-prng.v1",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION",
+  "source_identity": [
+    "git_commit",
+    "git_branch",
+    "git_dirty",
+    "submodule_commits",
+    "config_sha256",
+    "base_model_checkpoint_tree_sha256",
+    "teacher_or_contact_encoder_sha256"
+  ],
+  "environment": [
+    "python_version",
+    "package_versions",
+    "cuda_version",
+    "jax_version",
+    "torch_version",
+    "deterministic_environment",
+    "visible_gpu_indices_and_uuids",
+    "device",
+    "dtype",
+    "thread_counts",
+    "normalized_environment_digest"
+  ],
+  "data": [
+    "dataset_manifest_sha256",
+    "split_identity",
+    "source_group_identities",
+    "normalization_sha256",
+    "target_mask_sha256",
+    "episode_reset_manifest_sha256"
+  ],
+  "randomness": [
+    "root_training_seed",
+    "initialization_seed_namespace",
+    "data_loader_seed",
+    "augmentation_seed",
+    "noise_time_sampling_seed",
+    "evaluator_reset_seed",
+    "policy_sampling_root_key",
+    "policy_request_counter",
+    "policy_key_index"
+  ],
+  "missing_value_policy": "record null plus an explicit availability reason; never infer or fabricate",
+  "comparison_classes": [
+    "same_source_same_config_same_seed",
+    "same_source_same_config_different_seed",
+    "different_source_or_config",
+    "insufficient_provenance"
+  ],
+  "historical_per_step_prng_reconstruction": false,
+  "privacy": {
+    "tracked_absolute_paths": false,
+    "environment_values": "allowlisted names and normalized values only; no secrets or credentials"
+  }
+}

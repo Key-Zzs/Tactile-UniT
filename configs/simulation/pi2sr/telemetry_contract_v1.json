@@ -1,0 +1,100 @@
+{
+  "schema": "tactile3d-unit.pi2sr-stepwise-telemetry.v1",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION",
+  "role": "SHADOW_ONLY",
+  "policy_input": false,
+  "storage": {
+    "root": "$UNIT_EXPERIMENT_ROOT/simulation/s4_3_pi2sr/telemetry",
+    "format": "gzip-compressed JSON Lines with externally referenced float arrays allowed",
+    "writer": "bounded asynchronous queue, atomic fsync-and-rename at close",
+    "queue_capacity": 1024,
+    "failure_policy": "drop-and-count; writer failures never change policy observation or action"
+  },
+  "required_fields": {
+    "identity_timing": [
+      "schema",
+      "run_id",
+      "episode_id",
+      "task",
+      "reset_identity",
+      "control_step_index",
+      "simulation_time_sec",
+      "wall_monotonic_ns",
+      "observation_timestamp_ns",
+      "policy_request_id",
+      "policy_request_index",
+      "action_chunk_generated_ns",
+      "action_applied_ns"
+    ],
+    "robot_state": [
+      "policy_facing_state",
+      "environment_facing_state",
+      "commanded_action",
+      "environment_applied_action",
+      "tcp_target",
+      "tcp_actual",
+      "hand_target",
+      "hand_actual"
+    ],
+    "contact_tactile": [
+      "raw_canonical_tactile",
+      "occupancy_count_by_region",
+      "normal_force_by_region",
+      "tangential_magnitude_by_region",
+      "cop_by_region",
+      "history_valid_samples",
+      "history_bootstrap_status",
+      "canonical_h",
+      "canonical_h_reference",
+      "h_norm",
+      "h_finite",
+      "h_runtime_identity"
+    ],
+    "control_semantics": [
+      "replan_required",
+      "replan_stride",
+      "action_queue_index",
+      "action_queue_remaining",
+      "terminated",
+      "truncated"
+    ],
+    "stage_predicates": ["CONTACT", "LIFT", "NATIVE_TRIGGER", "SUCCESS", "STABLE_GRASP"]
+  },
+  "evaluation_only_contract": {
+    "evaluation_only": true,
+    "policy_input": false,
+    "allowed_when_exposed": [
+      "object_pose",
+      "object_height",
+      "native_pinch_count",
+      "native_trigger",
+      "native_latch",
+      "task_progress",
+      "native_success_components"
+    ],
+    "unavailable_fields": "null with availability=false; never invented"
+  },
+  "stage_predicates": {
+    "CONTACT": "native or canonical occupancy count across regions is greater than zero",
+    "LIFT": "native task lift predicate when exposed; otherwise unavailable",
+    "NATIVE_TRIGGER": "native task trigger/latch only",
+    "SUCCESS": "native task success predicate only",
+    "STABLE_GRASP": {
+      "scope": "PROSPECTIVE_DIAGNOSTIC_ONLY",
+      "equation": "at least 2 occupied regions and total normal force >= 0.5 for 5 consecutive control steps",
+      "retroactive_preregistration_claim": false
+    },
+    "APPROACH": "NOT_DEFINED"
+  },
+  "non_interference_gates": [
+    "identical_policy_observation_with_telemetry_on_off",
+    "identical_commanded_and_transformed_action",
+    "identical_success_predicate",
+    "identical_replan_ratio_and_stride",
+    "identical_action_queue_semantics",
+    "evaluation_only_fields_never_enter_policy_input",
+    "writer_failure_does_not_change_action_output",
+    "all_submissions_accounted_as_written_or_dropped"
+  ],
+  "overhead_reporting": ["p50_ms", "p95_ms", "p99_ms", "dropped_records", "max_queue_backlog"]
+}
