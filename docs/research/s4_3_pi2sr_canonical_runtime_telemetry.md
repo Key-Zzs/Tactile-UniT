@@ -29,3 +29,19 @@ The prospective manifest binds source, submodules, configs, checkpoints, environ
 ## Completion boundary
 
 PI2S-R may run at most six non-scientific smoke episodes. Smoke validates runtime, reset, contact, queue, end-of-episode, telemetry, and failure isolation only. It cannot support a policy-effect, success-rate, checkpoint-selection, teacher-replacement, or real-hardware claim.
+
+## Qualified result
+
+Status: `PI2SR_CANONICAL_RUNTIME_TELEMETRY_READY`.
+
+The selected runtime is `DIRECT_IN_PROCESS` under the exact CPU/float32/batch-one scope above. The accepted `E_T` checkpoint SHA-256 remains `3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19`. Sixty-four transport-only echo requests were byte-exact (`TRANSPORT_EXACT`; maximum and mean error `0`). Direct and Unix-service computation were each byte-repeatable across eight repetitions of sixteen frozen histories; their matched cross-path outputs were also byte-exact (`COMPUTE_REPEATABLE_CANONICAL`; maximum and mean error `0`). This isolates the historical discrepancy away from float32 AF_UNIX transport and to historical compute execution conditions such as batch/runtime settings. It does not establish that the discrepancy caused any rollout failure.
+
+Canonical direct latency over 64 measured CPU requests was p50 `3.919 ms`, p95 `4.218 ms`, and p99 `5.862 ms`. GPU, accelerator kernels, autocast/float16/bfloat16, batch sizes other than one, MKLDNN-enabled execution, and cross-host transport remain unsupported.
+
+Fixed-observation binding covered four H-conditioned checkpoints and eight positions each. Matched canonical/alternate H was byte-identical, so the bound frozen action was also byte-identical (maximum/mean difference `0`). Historical lag-5 H changed 12/32 action samples and zero-H changed 32/32, preserving the historical sensitivity finding without a causal rollout claim.
+
+The six-run engineering smoke paired telemetry off/on for three development task fixtures and 90 total control steps. It exercised reset, contact, the prospective `STABLE_GRASP` diagnostic, stride-five action queues, writer failure, and end-of-episode handling. All 45 telemetry-on records were written to `$UNIT_EXPERIMENT_ROOT/simulation/s4_3_pi2sr/telemetry/`, with zero drops and maximum queue backlog one. Worst per-task submit overhead was p50 `0.159 ms`, p95 `0.166 ms`, and p99 `0.170 ms`; observation/action traces, transforms, predicates, and queue semantics matched telemetry-off traces exactly. The smoke used a deterministic engineering stub, not a trained policy, and is not a scientific benchmark.
+
+The prospective provenance manifest binds a clean source commit, submodules, three config hashes, the contact encoder, CPU environment, development data/reset identities, reset seed, and policy request counter. Training/initialization/data-loader/augmentation/noise seeds and policy key indices that do not exist for this smoke are explicitly null. No historical per-step PRNG reconstruction is claimed.
+
+The sibling `develop/real-dualflexiv` worktree was created from the same merged main base and remains clean. Real-hardware execution still requires separate authorization. The recommended next stage is `S5.0 — DualFlexiv + RH56DFTP Sensor / Control / Data Contract`.

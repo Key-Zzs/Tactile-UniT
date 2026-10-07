@@ -262,7 +262,10 @@ class AsyncTelemetryWriter:
         unwritten = max(0, self.submitted - self.written - self.dropped)
         self.dropped += unwritten
         latencies = np.asarray(self.submit_latency_ns, dtype=np.float64) / 1_000_000.0
-        percentile = lambda level: float(np.quantile(latencies, level)) if len(latencies) else 0.0
+
+        def percentile(level: float) -> float:
+            return float(np.quantile(latencies, level)) if len(latencies) else 0.0
+
         return {
             "status": "PASS" if self.writer_error is None and self.written == self.submitted else "FAIL",
             "destination": str(self.destination),
