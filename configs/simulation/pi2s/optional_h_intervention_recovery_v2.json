@@ -1,0 +1,126 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2s-optional-h-recovery-decision.v2",
+  "status": "AUTHORIZED_AFTER_V1_SCIENTIFIC_CONTRACT_STOP",
+  "decision": "PRESERVE_V1_AND_RUN_ONLY_THE_42_UNIQUE_UNCOMPLETED_PROTOCOL_TUPLES_WITH_V2_RUNTIME",
+  "authorization_basis": "User resumed with the exact Evidence Integration + S4.3-PI2S continuation phrase after the v1 stop was reported.",
+  "v1": {
+    "source_commit": "f399bdf9d5c3685d13e4fdfb233718f5847891ec",
+    "runner": "scripts/simulation/run_pi2s_optional_h_interventions.py",
+    "runner_sha256": "5fec675818ab74b8d2e9859b5804e9c2fd310684f5e237d7adc94cfc4c03242e",
+    "manifest": "$PI2S_ROOT/artifacts/diagnostic_rollout_optional_manifest.json",
+    "manifest_sha256": "d2cbd3c6aefe911b375c9869a3a518c062828767bdbbfab173a2c7a8667d5f2d",
+    "terminal_progress": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/progress.json",
+    "terminal_progress_sha256": "993bbca9fd8b5f20ec19a389ddb57730ce3fbfdea37442ffd0d23424dd6fe013",
+    "failed_resume_state": "$PI2S_ROOT/resume_state.json",
+    "failed_resume_state_sha256": "b5a877c24c50ec460bd588081f653af2d7be7cab42b0acadfb1ac4a44e257a50",
+    "failed_resume_state_snapshot": "$PI2S_ROOT/artifacts/diagnostic_rollout_optional_v1_failed_resume_state.json",
+    "terminal_status": "FAILED",
+    "formal_result_published": false,
+    "completed_valid_protocol_tuples": 6,
+    "invalid_scientific_attempts": 3,
+    "attempt_2_started": false,
+    "failure": {
+      "type": "SCIENTIFIC_INTEGRITY_GATE_NOT_INFRASTRUCTURE_FAILURE",
+      "first_failing_control_step": 7,
+      "requested_lag_source_step": 2,
+      "cause": "v1 cached correct H only when get_obs was called at the policy replan cadence; the frozen intervention requires a five-tick lag on the raw 50 Hz physical-control clock.",
+      "prohibited_reinterpretation": "The v1 failure may not be repaired by treating policy-query lag as physical-tick lag or by using attempt_2 under the v1 runtime."
+    }
+  },
+  "preserved_valid_v1_tuples": [
+    {
+      "protocol_tuple_key": "b_hva_42__r11_i00__p4317__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "a44f157fd4bb2b1382ecff65ee2e2337547014f1fd58d3646053c5011a9b623b",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "6088fb5f1fd851a4e148a9b177e8078ad1d4b6fdc18e63b0d279668ccf2ec4ea"
+    },
+    {
+      "protocol_tuple_key": "b_hva_42__r11_i00__p4318__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4318__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "d81e25df729874304e570efa17378e4ffcdce9b6afaf919468ab1a96ac007b71",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4318__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "9899b9b0a2493e652704c111b73d0acf34b4a6e51f3f8f5fa9a18f9742442aa6"
+    },
+    {
+      "protocol_tuple_key": "b_hva_43__r11_i00__p4317__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "7675de75df51a9bb8d2edb5fff26e2b5fd2dd0bc448f48d4dc04c6843fcd1f65",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "9a8f641f591a7992a30f1185888ab9b9e690e147a18fcb37a381efad6dacf778"
+    },
+    {
+      "protocol_tuple_key": "b_hva_43__r11_i00__p4318__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4318__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "0804fac6758c40ad49a11aeaa4a98c3d6ba28f4dad18d9615f076dd66194513b",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4318__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "92440fe14569f72930e8d87931159a17e173cde9baa50eec12bc4a200fe43b6f"
+    },
+    {
+      "protocol_tuple_key": "b1_43__r11_i00__p4317__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b1_43/attempts/b1_43__r11_i00__p4317__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "1156845a916509aeb451aadcd32b8f39558511573b9553c1d95cc52c877f2133",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b1_43/attempts/b1_43__r11_i00__p4317__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "7fa5d64cbd179815f58e5a2fba4fccf9ad9892adb29d3be024fc019100deb9bb"
+    },
+    {
+      "protocol_tuple_key": "b1_43__r11_i00__p4318__htrain_mean",
+      "tuple_artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b1_43/attempts/b1_43__r11_i00__p4318__htrain_mean/attempt_1/tuple_result.json",
+      "tuple_artifact_sha256": "ca96c47a102a7899d9e26c41fb130dbe40996aaa2932247c98debaaa5226dcf5",
+      "h_audit": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b1_43/attempts/b1_43__r11_i00__p4318__htrain_mean/attempt_1/h_intervention_audit.json",
+      "h_audit_sha256": "4ee26e0c52cf01ab38de290abd2d31ddc3a3025ecda45bc07fbcac94e4393b3e"
+    }
+  ],
+  "preserved_invalid_v1_attempts": [
+    {
+      "protocol_tuple_key": "b_hva_42__r11_i00__p4317__hsame_episode_lag5",
+      "attempt": 1,
+      "artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_42/attempts/b_hva_42__r11_i00__p4317__hsame_episode_lag5/attempt_1/tuple_result.json",
+      "sha256": "e18cf47c2a1f076146bca45098c56ccc5eefa64bd641a024ce39092dafc648d2",
+      "canonical_outcome": false
+    },
+    {
+      "protocol_tuple_key": "b_hva_43__r11_i00__p4317__hsame_episode_lag5",
+      "attempt": 1,
+      "artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b_hva_43/attempts/b_hva_43__r11_i00__p4317__hsame_episode_lag5/attempt_1/tuple_result.json",
+      "sha256": "81d1ed7c7f2ef4efb9c42c92356619606891439415b20d6a1d67d0002cdfb3e5",
+      "canonical_outcome": false
+    },
+    {
+      "protocol_tuple_key": "b1_43__r11_i00__p4317__hsame_episode_lag5",
+      "attempt": 1,
+      "artifact": "$PI2S_ROOT/diagnostics/rollouts_optional_h_v1/blocks/b1_43/attempts/b1_43__r11_i00__p4317__hsame_episode_lag5/attempt_1/tuple_result.json",
+      "sha256": "a1552a30d2081ff93711fa79760fd8ef7f352a43c4a8c56f313646575ec7eda3",
+      "canonical_outcome": false
+    }
+  ],
+  "v2_runtime": {
+    "version": "OPTIONAL_H_V2_RAW50HZ_TICK_BUFFER",
+    "scientific_change": "For lag5 only, compute and retain correct H after every physical control step; at each policy observation deliver the correct H from max(0,current_control_step-5).",
+    "train_mean_path_change": "NONE: per-physical-step H queries are disabled for TRAIN-mean tuples.",
+    "environment_or_task_counter_change": false,
+    "policy_or_checkpoint_change": false,
+    "optimizer_or_training_change": false,
+    "sampling_or_reset_change": false,
+    "new_identity_required": true
+  },
+  "recovery_budget": {
+    "valid_v1_protocol_tuples_reused": 6,
+    "v2_protocol_tuples_to_run": 42,
+    "final_unique_optional_protocol_tuples": 48,
+    "final_total_s5_protocol_tuples_including_base": 120,
+    "invalid_v1_attempts_excluded_from_canonical_count": 3,
+    "further_expansion_authorized": false
+  },
+  "guardrails": {
+    "v1_files_may_be_modified_or_removed": false,
+    "v1_attempt_2_may_be_used": false,
+    "valid_v1_protocol_tuples_may_be_rerun": false,
+    "performance_selection": false,
+    "formal_track_a_score_replacement": false,
+    "best_intervention_deployment_selection": false,
+    "training_or_optimizer_updates": 0,
+    "checkpoint_writes": 0,
+    "real_robot_allowed": false
+  }
+}
