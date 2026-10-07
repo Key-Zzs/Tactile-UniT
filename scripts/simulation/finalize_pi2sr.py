@@ -79,6 +79,7 @@ def main() -> None:
         "starting_integrity.json": "PASS",
         "transport_parity.json": "PASS",
         "compute_parity.json": "PASS",
+        "canonical_runtime_decision.json": "PI2SR_CANONICAL_RUNTIME_READY_WITH_SCOPE",
         "telemetry_schema_audit.json": "PASS",
         "telemetry_noninterference.json": "PASS",
         "telemetry_smoke.json": "PASS",
