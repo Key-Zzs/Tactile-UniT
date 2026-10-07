@@ -1,0 +1,109 @@
+{
+  "schema": "tactile3d-unit.s4-3-pi2s-optional-h-intervention-decision.v1",
+  "status": "AUTHORIZED_BY_PREREGISTERED_INFORMATION_NEED",
+  "decision": "RUN_EXACTLY_THE_FROZEN_OPTIONAL_48_AND_DO_NOT_EXPAND_FURTHER",
+  "decision_time": "POST_BASE_72_PRE_OPTIONAL_EXECUTION",
+  "protocol": {
+    "path": "configs/simulation/pi2s/diagnostic_protocol.json",
+    "sha256": "04cad1bb5ba994bb0a8eff9eac495eb4ea88b1a89df14aa7c8cbd46616425e88"
+  },
+  "evidence": {
+    "base_72": {
+      "path": "$PI2S_ROOT/artifacts/diagnostic_rollout_results.json",
+      "sha256": "dc41e4189f42b9aaabb6e0215d8ef53eccb93bbfc9f4982fd833caf433d2c086",
+      "status": "PASS",
+      "canonical_tuples": 72,
+      "invalid_tuples": 0,
+      "successes": 20,
+      "failures": 52,
+      "hva42_successes_of_12": 4,
+      "hva43_successes_of_12": 0,
+      "hva43_failures_with_object_contact": 12,
+      "hva43_failures_with_lift": 12,
+      "hva43_failure_max_pinch_histogram": {
+        "0": 0,
+        "1": 11,
+        "2": 1,
+        "3_or_more": 0
+      },
+      "hva42_failure_max_pinch_histogram": {
+        "0": 0,
+        "1": 1,
+        "2": 7,
+        "3_or_more": 0
+      },
+      "interpretation": "The exposed diagnostic difference is concentrated in native pinch-cycle progression after observed object contact and lift; exact first failure remains unavailable because APPROACH and STABLE_GRASP have no preregistered native predicates."
+    },
+    "s2_h_parity": {
+      "path": "$PI2S_ROOT/artifacts/offline_online_h_parity.json",
+      "sha256": "c76cc468801caadde35e575b98910016f725bd045fb755fb7be4cc9cfdd33c0e",
+      "cached_vs_direct_bitwise_equal": true,
+      "live_max_absolute_error": 2.7418136596679688e-06,
+      "all_pairs_within_frozen_tolerance": false,
+      "interpretation": "This small live numerical mismatch is preserved as a contract violation but is not asserted to explain behavior."
+    },
+    "s3_action_interventions": {
+      "path": "$PI2S_ROOT/artifacts/fixed_observation_interventions.json",
+      "sha256": "93d594f6b1df6695d024dc2500f89f19c08c21dc8a933aa2b12e4d38d83dc170",
+      "checkpoints": [
+        "B_HVA_42",
+        "B_HVA_43",
+        "B1_43"
+      ],
+      "conditions_with_nonzero_action_effect": [
+        "train_mean",
+        "same_episode_lag5"
+      ],
+      "interpretation": "Frozen-observation evidence establishes action sensitivity to both planned H interventions, but not their closed-loop causal effect."
+    },
+    "s3_gradients": {
+      "path": "$PI2S_ROOT/artifacts/read_only_gradient_diagnostics.json",
+      "sha256": "95fb6ba9d18bd39fde225cd776c5a77309a1c08274c48026575f896167517614",
+      "hva42_common_main_aux_cosine_median": 0.06849091173642662,
+      "hva43_common_main_aux_cosine_median": 0.010396329669312523,
+      "hva43_common_main_aux_cosine_min": -0.061183361156312996,
+      "interpretation": "Mixed gradient alignment is descriptive support for an interference question, not a confirmed cause."
+    }
+  },
+  "questions": [
+    "Under identical frozen reset and sampling-seed tuples, does replacing correct H with TRAIN-mean H change native pinch-cycle progress differently for B_HVA_42, B_HVA_43, and B1_43?",
+    "Under the same paired tuples, does a causal five-control-tick H lag change native pinch-cycle progress differently across those checkpoints?",
+    "Do intervention effects support H-conditioning or temporal-misalignment contribution without treating any intervention score as a replacement policy result?"
+  ],
+  "frozen_budget": {
+    "canonical_tuples": 48,
+    "checkpoints": [
+      "B_HVA_42",
+      "B_HVA_43",
+      "B1_43"
+    ],
+    "resets_per_checkpoint": 4,
+    "sampling_seeds": [
+      4317,
+      4318
+    ],
+    "h_conditions": [
+      "train_mean",
+      "same_episode_lag5"
+    ],
+    "maximum_total_s5_canonical_tuples_including_base": 120,
+    "further_rollout_expansion_authorized": false
+  },
+  "guardrails": {
+    "performance_selected": false,
+    "tuple_identities_changed_after_base_results": false,
+    "interventions_changed_after_base_results": false,
+    "formal_track_a_scores_may_be_replaced": false,
+    "best_intervention_may_be_selected_for_deployment": false,
+    "training_or_optimizer_updates": 0,
+    "checkpoint_writes": 0,
+    "real_robot_allowed": false,
+    "purpose": "MECHANISM_DIAGNOSIS_NOT_POSITIVE_RESULT_SEARCH"
+  },
+  "failure_policy": {
+    "same_tuple_exact_infrastructure_retries": 1,
+    "failed_scientific_tuple_replacement": false,
+    "runtime_semantic_patch_during_wave": false,
+    "incomplete_is_valid_outcome": true
+  }
+}
