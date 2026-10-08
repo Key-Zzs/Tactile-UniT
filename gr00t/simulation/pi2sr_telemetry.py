@@ -5,14 +5,13 @@ from __future__ import annotations
 import gzip
 import json
 import os
-from pathlib import Path
 import queue
 import threading
 import time
+from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
-
 
 SCHEMA = "tactile3d-unit.pi2sr-stepwise-telemetry.v1"
 REGION_COUNT = 5
@@ -46,9 +45,7 @@ def tactile_summary(tactile: np.ndarray) -> dict[str, Any]:
         "raw_canonical_tactile": value.astype(float).tolist(),
         "occupancy_count_by_region": occupied.astype(int).tolist(),
         "normal_force_by_region": np.maximum(regions[:, 1], 0.0).astype(float).tolist(),
-        "tangential_magnitude_by_region": np.maximum(regions[:, 2], 0.0)
-        .astype(float)
-        .tolist(),
+        "tangential_magnitude_by_region": np.maximum(regions[:, 2], 0.0).astype(float).tolist(),
         "cop_by_region": cop,
     }
 
@@ -136,18 +133,22 @@ def build_step_record(
         "policy_request_index": int(policy_request_index),
         "action_chunk_generated_ns": int(action_chunk_generated_ns),
         "action_applied_ns": int(action_applied_ns),
-        "policy_facing_state": _finite_vector(
-            policy_facing_state, "policy-facing state"
-        ).astype(float).tolist(),
+        "policy_facing_state": _finite_vector(policy_facing_state, "policy-facing state")
+        .astype(float)
+        .tolist(),
         "environment_facing_state": _finite_vector(
             environment_facing_state, "environment-facing state"
-        ).astype(float).tolist(),
+        )
+        .astype(float)
+        .tolist(),
         "commanded_action": _finite_vector(commanded_action, "commanded action")
         .astype(float)
         .tolist(),
         "environment_applied_action": _finite_vector(
             environment_applied_action, "environment-applied action"
-        ).astype(float).tolist(),
+        )
+        .astype(float)
+        .tolist(),
         "tcp_target": _optional_vector(tcp_target, "TCP target"),
         "tcp_actual": _optional_vector(tcp_actual, "TCP actual"),
         "hand_target": _optional_vector(hand_target, "hand target"),
@@ -267,7 +268,9 @@ class AsyncTelemetryWriter:
             return float(np.quantile(latencies, level)) if len(latencies) else 0.0
 
         return {
-            "status": "PASS" if self.writer_error is None and self.written == self.submitted else "FAIL",
+            "status": (
+                "PASS" if self.writer_error is None and self.written == self.submitted else "FAIL"
+            ),
             "destination": str(self.destination),
             "submitted_records": self.submitted,
             "written_records": self.written,

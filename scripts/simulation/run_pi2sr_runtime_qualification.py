@@ -4,16 +4,16 @@
 from __future__ import annotations
 
 import argparse
-from contextlib import contextmanager
 import importlib.metadata
 import json
 import os
-from pathlib import Path
 import signal
 import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Iterator
 
 import numpy as np
@@ -31,7 +31,6 @@ from gr00t.simulation.pi2sr_runtime import (  # noqa: E402
     repeatability_metrics,
     sha256_file,
 )
-
 
 CONTRACT = ROOT / "configs/simulation/pi2sr/runtime_contract_v2.json"
 ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_pi2sr"
@@ -242,10 +241,12 @@ def qualify_compute(
     difference = np.abs(direct_array[0].astype(np.float64) - service_array[0].astype(np.float64))
     compute = {
         "schema": "tactile3d-unit.pi2sr-compute-parity.v1",
-        "status": "PASS"
-        if classification
-        in {"COMPUTE_REPEATABLE_CANONICAL", "COMPUTE_CROSS_PATH_NUMERICALLY_STABLE_WITH_SCOPE"}
-        else "FAIL",
+        "status": (
+            "PASS"
+            if classification
+            in {"COMPUTE_REPEATABLE_CANONICAL", "COMPUTE_CROSS_PATH_NUMERICALLY_STABLE_WITH_SCOPE"}
+            else "FAIL"
+        ),
         "classification": classification,
         "conditions": direct.settings,
         "checkpoint_sha256": sha256_file(checkpoint),
@@ -278,9 +279,11 @@ def qualify_compute(
     }
     decision = {
         "schema": "tactile3d-unit.pi2sr-canonical-runtime-decision.v1",
-        "status": "PI2SR_CANONICAL_RUNTIME_READY_WITH_SCOPE"
-        if compute["status"] == "PASS"
-        else "PI2SR_BLOCKED_RUNTIME_MISMATCH",
+        "status": (
+            "PI2SR_CANONICAL_RUNTIME_READY_WITH_SCOPE"
+            if compute["status"] == "PASS"
+            else "PI2SR_BLOCKED_RUNTIME_MISMATCH"
+        ),
         "selected_runtime": "DIRECT_IN_PROCESS",
         "selection_uses_policy_success": False,
         "checkpoint": "$UNIT_EXPERIMENT_ROOT/simulation/s4_2r/contact_state/accepted.pt",
@@ -354,9 +357,7 @@ def main() -> None:
             "git_branch": git("branch", "--show-current"),
             "dexjoco_commit": git("-C", "third_party/dexjoco", "rev-parse", "HEAD"),
             "openpi_tree": git("-C", "third_party/dexjoco", "rev-parse", "HEAD:openpi"),
-            "runtime_module_sha256": sha256_file(
-                ROOT / "gr00t/simulation/pi2sr_runtime.py"
-            ),
+            "runtime_module_sha256": sha256_file(ROOT / "gr00t/simulation/pi2sr_runtime.py"),
             "service_sha256": sha256_file(SERVICE),
         },
         "training": False,

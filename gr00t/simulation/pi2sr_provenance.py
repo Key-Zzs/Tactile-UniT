@@ -6,12 +6,11 @@ import hashlib
 import importlib.metadata
 import json
 import os
-from pathlib import Path
 import platform
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Mapping, Sequence
-
 
 SCHEMA = "tactile3d-unit.pi2sr-provenance-prng.v1"
 SAFE_ENVIRONMENT_NAMES = (

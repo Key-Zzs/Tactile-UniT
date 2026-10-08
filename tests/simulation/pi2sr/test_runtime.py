@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import socket
 import threading
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -15,7 +15,6 @@ from gr00t.simulation.pi2sr_runtime import (
     repeatability_metrics,
     send_float32_frame,
 )
-
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = ROOT / "configs/simulation/pi2sr/runtime_contract_v2.json"

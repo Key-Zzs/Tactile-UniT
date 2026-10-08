@@ -6,11 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import signal
 import socket
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 

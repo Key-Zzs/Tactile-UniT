@@ -6,9 +6,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +20,6 @@ from gr00t.simulation.pi2sr_provenance import (  # noqa: E402
     sha256_file,
 )
 from gr00t.simulation.pi2sr_runtime import CANONICAL_CHECKPOINT_SHA256  # noqa: E402
-
 
 ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_pi2sr"
 PAPER_CORE = ROOT / ".local/paper/PAPER_CORE.md"
@@ -75,7 +74,11 @@ def changed_file_privacy_scan() -> dict[str, Any]:
         for term in forbidden:
             if term in text:
                 matches.append({"path": name, "term": term})
-    return {"status": "PASS" if not matches else "FAIL", "scanned_files": len(names), "matches": matches}
+    return {
+        "status": "PASS" if not matches else "FAIL",
+        "scanned_files": len(names),
+        "matches": matches,
+    }
 
 
 def main() -> None:

@@ -6,8 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -16,7 +16,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from gr00t.simulation.pi2sr_provenance import sha256_file  # noqa: E402
-
 
 ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_pi2sr"
 CONTRACT = ROOT / "configs/simulation/pi2sr/runtime_contract_v2.json"
@@ -101,15 +100,18 @@ def main() -> None:
     parser.add_argument("--artifact-root", type=Path, default=ARTIFACT_ROOT)
     args = parser.parse_args()
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
-    expected_models = [name.replace("seed", "") for name in contract["action_sensitivity"]["models"]]
+    expected_models = [
+        name.replace("seed", "") for name in contract["action_sensitivity"]["models"]
+    ]
     if expected_models != list(MODELS):
         raise RuntimeError("action-sensitivity implementation/model freeze mismatch")
     compute = json.loads((args.artifact_root / "compute_parity.json").read_text(encoding="utf-8"))
     if not compute["cross_path"]["byte_equal"]:
-        raise RuntimeError("alternate H is not byte-identical; fresh policy inference would be required")
+        raise RuntimeError(
+            "alternate H is not byte-identical; fresh policy inference would be required"
+        )
     historical = (
-        experiment_root()
-        / "simulation/s4_3_pi2s/artifacts/fixed_observation_interventions.json"
+        experiment_root() / "simulation/s4_3_pi2s/artifacts/fixed_observation_interventions.json"
     )
     source = json.loads(historical.read_text(encoding="utf-8"))
     if source["status"] != "PASS" or source["gates"]["fixed_observation_actions_exact"] != "PASS":

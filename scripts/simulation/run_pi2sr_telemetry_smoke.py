@@ -8,11 +8,11 @@ import gzip
 import hashlib
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -38,7 +38,6 @@ from gr00t.simulation.pi2sr_telemetry import (  # noqa: E402
 )
 from gr00t.simulation.s4_3_pi1 import OnlineTactileHistory  # noqa: E402
 from gr00t.simulation.s4_3_runtime import ActionChunkQueue  # noqa: E402
-
 
 ARTIFACT_ROOT = ROOT / ".local/artifacts/simulation/s4_3_pi2sr"
 RUNTIME_CONTRACT = ROOT / "configs/simulation/pi2sr/runtime_contract_v2.json"
@@ -261,12 +260,10 @@ def main() -> None:
                 "task": baseline["task"],
                 "observation_action_trace_equal": baseline["trace_sha256"]
                 == telemetry["trace_sha256"],
-                "replan_semantics_equal": baseline["replan_steps"]
-                == telemetry["replan_steps"],
+                "replan_semantics_equal": baseline["replan_steps"] == telemetry["replan_steps"],
                 "success_predicate_equal": baseline["native_success_claimed"]
                 == telemetry["native_success_claimed"],
-                "termination_equal": baseline["terminated_count"]
-                == telemetry["terminated_count"],
+                "termination_equal": baseline["terminated_count"] == telemetry["terminated_count"],
             }
         )
     noninterference_pass = all(all(row.values()) for row in comparisons)
@@ -322,14 +319,14 @@ def main() -> None:
         name: max(summary[name] for summary in writer_summaries)
         for name in ("p50_ms", "p95_ms", "p99_ms", "max_queue_backlog")
     }
-    overhead["dropped_records"] = sum(
-        summary["dropped_records"] for summary in writer_summaries
-    )
+    overhead["dropped_records"] = sum(summary["dropped_records"] for summary in writer_summaries)
     noninterference = {
         "schema": "tactile3d-unit.pi2sr-telemetry-noninterference.v1",
-        "status": "PASS"
-        if noninterference_pass and writer_failure_isolated and overhead["dropped_records"] == 0
-        else "FAIL",
+        "status": (
+            "PASS"
+            if noninterference_pass and writer_failure_isolated and overhead["dropped_records"] == 0
+            else "FAIL"
+        ),
         "paired_runs": comparisons,
         "policy_observation_equal": noninterference_pass,
         "action_transform_equal": noninterference_pass,
@@ -344,9 +341,9 @@ def main() -> None:
 
     smoke = {
         "schema": "tactile3d-unit.pi2sr-telemetry-smoke.v1",
-        "status": "PASS"
-        if schema_audit["status"] == noninterference["status"] == "PASS"
-        else "FAIL",
+        "status": (
+            "PASS" if schema_audit["status"] == noninterference["status"] == "PASS" else "FAIL"
+        ),
         "run_id": run_id,
         "episodes": 6,
         "paired_development_runs": 3,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import gzip
 import json
-from pathlib import Path
 import time
+from pathlib import Path
 
 import numpy as np
 
@@ -12,15 +12,14 @@ from gr00t.simulation.pi2sr_provenance import (
     compare_provenance,
 )
 from gr00t.simulation.pi2sr_telemetry import (
-    AsyncTelemetryWriter,
     SCHEMA,
+    AsyncTelemetryWriter,
     StableGraspTracker,
     build_step_record,
     storage_probe,
     tactile_summary,
 )
 from scripts.simulation.run_pi2sr_telemetry_smoke import policy_stub, synthetic_tactile
-
 
 ROOT = Path(__file__).resolve().parents[3]
 

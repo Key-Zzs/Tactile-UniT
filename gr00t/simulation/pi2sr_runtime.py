@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
-from pathlib import Path
 import socket
 import struct
 import time
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
@@ -16,7 +16,6 @@ from gr00t.simulation.pi1d_runtime import recv_exact
 from gr00t.simulation.s4_3_act import TorchTactileNormalization
 from gr00t.simulation.s4_3_pi1 import CONTACT_STATE_DIM, HISTORY_STEPS, TACTILE_DIM
 from gr00t.simulation.sim_contact_models import load_teacher_checkpoint
-
 
 FRAME_HEADER = struct.Struct("!I")
 CANONICAL_CHECKPOINT_SHA256 = "3d4519195e7a0d9f5af63399840a48121d5f614ea587c80b9461fc696a372a19"
@@ -182,8 +181,10 @@ def numeric_metrics(left: np.ndarray, right: np.ndarray) -> dict[str, Any]:
     lhs_flat = lhs.astype(np.float64).reshape(-1)
     rhs_flat = rhs.astype(np.float64).reshape(-1)
     norm_product = float(np.linalg.norm(lhs_flat) * np.linalg.norm(rhs_flat))
-    cosine = 1.0 if norm_product == 0.0 and np.array_equal(lhs, rhs) else (
-        float(np.dot(lhs_flat, rhs_flat) / norm_product) if norm_product else 0.0
+    cosine = (
+        1.0
+        if norm_product == 0.0 and np.array_equal(lhs, rhs)
+        else (float(np.dot(lhs_flat, rhs_flat) / norm_product) if norm_product else 0.0)
     )
     return {
         "shape": list(lhs.shape),
@@ -211,9 +212,7 @@ def repeatability_metrics(values: np.ndarray) -> dict[str, Any]:
         "repeats": len(samples),
         "all_byte_equal": all(row["byte_equal"] for row in comparisons),
         "max_absolute_error": max(row["max_absolute_error"] for row in comparisons),
-        "mean_absolute_error": float(
-            np.mean([row["mean_absolute_error"] for row in comparisons])
-        ),
+        "mean_absolute_error": float(np.mean([row["mean_absolute_error"] for row in comparisons])),
     }
 
 
