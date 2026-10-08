@@ -37,11 +37,20 @@ jobs:
               # Run those artifact-backed suites only in their owning worktrees.
               pytest -v --color=yes tests/tactile_unit/test_c6_m3_system.py
 
+          - name: PI2S-R
+            run: |
+              # Prospective PI2S-R contract tests are CPU-only and self-contained.
+              # The accepted E_T checkpoint test skips when the ignored local
+              # checkpoint is unavailable; artifact-backed qualification remains local.
+              pytest -v --color=yes tests/simulation/pi2sr
+
         include:
           - python: "3.10"
             task:
               name: Lint
-              run: ruff check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
+              run: |
+                ruff check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
+                ruff check gr00t/simulation/pi2sr_*.py scripts/simulation/*pi2sr*.py tests/simulation/pi2sr
 
           - python: "3.10"
             task:
@@ -49,6 +58,8 @@ jobs:
               run: |
                 isort --check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
                 black --check gr00t/tactile_unit/c6_runtime_router.py scripts/tactile_unit/evaluate_c6_m3_system.py tests/tactile_unit/test_c6_m3_system.py
+                isort --check gr00t/simulation/pi2sr_*.py scripts/simulation/*pi2sr*.py tests/simulation/pi2sr
+                black --check gr00t/simulation/pi2sr_*.py scripts/simulation/*pi2sr*.py tests/simulation/pi2sr
 
     steps:
       - uses: actions/checkout@v4
